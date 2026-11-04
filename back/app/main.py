@@ -7,6 +7,7 @@ from app.database import get_db
 import hashlib
 import secrets
 
+from app.response import success, error
 
 
 
@@ -45,7 +46,7 @@ def read_root():
 def health_check():
     return {"status": "ok"}
 
-
+#CRUD*
 # 用户注册
 class UserCreate(BaseModel):
     username: str
@@ -90,12 +91,113 @@ def create_user(
         })
         db.commit()
 
-        return {
-            "message": "用户创建成功",
-            "id": result.lastrowid,
-            "username": user.username,
-            "nickname": user.nickname,
-        }
+        return success(
+            data={
+                "id": result.lastrowid,
+                "username": user.username,
+                "nickname": user.nickname,
+            },
+            message="用户创建成功",
+            code=201,
+        )
+            
+        
     except Exception:
         db.rollback()
         raise
+
+
+#查询全部
+@app.get("/users")
+def get_all_users(db: Session = Depends(get_db)):
+    sql = text("""
+        SELECT id, username, nickname, created_id, updated_a
+        FROM users
+        ORDER BY id
+    """)
+
+    result = db.execute(sql)
+
+    users = [
+        dict(row)
+        for row in result.mappings().all()
+    ]
+
+    return users
+
+#查询单个id
+@app.get("/users/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    sql = text("""
+        SELECT id, username, nickname, created_at, updated_at
+        FROM users
+        WHERE id = :user_id
+    """)
+
+    result = db.execute(sql, {"user_id": user_id})
+    user = result.mappings().first()
+
+    if user is None:
+        return error(404, "User not found")
+
+    return success(
+        data=dict(user),
+        message="User found"
+    )
+#修改用户昵称
+@app.put("/users/{user_id}")
+def update_user(
+     user_id: int,
+     user: UserUpdate,
+     db: Session = Depends(get_db),
+ ):
+    sql = text("""
+        UPDATE users
+        SET nickname = :nickname,
+            updated_at = NOW()
+        WHERE id = :user_id
+    """)
+    result = db.execute(sql,{"nickname":user.nickname,"user_id":user_id,})
+
+    if result.rowcount == 0:
+        db.rollback()
+        return error(404, "User not found")
+    db.commit()
+    
+    return success(
+        data={
+            "id":user_id,
+            "nickname":user.nickname,
+        },
+        message="用户修改成功",
+        code=200,
+    )
+       
+
+
+#删除用户
+@app.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    sql = text("""
+        DELETE FROM users
+        WHERE id = :user_id
+    """)
+
+    result = db.execute(sql, {"user_id": user_id})
+
+    if result.rowcount == 0:
+        db.rollback()
+        return error(404, "User not found")
+
+    db.commit()
+
+    return success(
+        data={
+            "id":user_id,
+        },
+        message="用户删除成功",
+        code=200,
+    )

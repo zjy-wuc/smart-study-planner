@@ -1,14 +1,18 @@
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 
-DATABASE_URL = (
-    f"mysql+pymysql://{settings.DB_USER}:"
-    f"{settings.DB_PASSWORD}@{settings.DB_HOST}:"
-    f"{settings.DB_PORT}/{settings.DB_NAME}"
-    "?charset=utf8mb4"
+DATABASE_URL = URL.create(
+    drivername="mysql+pymysql",
+    username=settings.DB_USER,
+    password=settings.DB_PASSWORD,
+    host=settings.DB_HOST,
+    port=settings.DB_PORT,
+    database=settings.DB_NAME,
+    query={"charset": "utf8mb4"},
 )
 
 engine = create_engine(
@@ -21,3 +25,11 @@ SessionLocal = sessionmaker(
     autoflush=False,
     autocommit=False,
 )
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
