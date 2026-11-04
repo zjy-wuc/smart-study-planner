@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -102,6 +103,10 @@ def create_user(
         )
             
         
+    except IntegrityError:
+        # 用户名唯一索引 uk_users_username 冲突
+        db.rollback()
+        return error(409, "用户名已存在")
     except Exception:
         db.rollback()
         raise
