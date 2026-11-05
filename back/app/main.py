@@ -5,8 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-import hashlib
-import secrets
+from app.core.security import hash_password
 
 from app.response import success, error
 
@@ -65,18 +64,8 @@ def create_user(
     user: UserCreate,
     db: Session = Depends(get_db),
 ):
-    # 生成随机盐，并使用 PBKDF2 派生密码哈希
-    salt = secrets.token_bytes(16)
-    password_hash = hashlib.pbkdf2_hmac(
-        "sha256",
-        user.password.encode("utf-8"),
-        salt,
-        600000,
-    ).hex()
+    stored_hash = hash_password(user.password)
 
-    # 保存盐和哈希，便于后续验证密码
-    stored_hash = f"pbkdf2_sha256${salt.hex()}${password_hash}"
-#pbkdf2_sha256$600000$盐的十六进制值$密码哈希的十六进制值
     sql = text("""
         INSERT INTO users
             (username, password_hash, nickname, created_at, updated_at)
@@ -116,7 +105,7 @@ def create_user(
 @app.get("/users")
 def get_all_users(db: Session = Depends(get_db)):
     sql = text("""
-        SELECT id, username, nickname, created_id, updated_a
+        SELECT id, username, nickname, created_at, updated_at
         FROM users
         ORDER BY id
     """)
