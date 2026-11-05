@@ -1,10 +1,22 @@
-from app.core.security import hash_password, verify_password
+from app.core.security import (
+    create_access_token,
+    decode_access_token,
+)
 
-password = "hello123"
+# 模拟用户登录成功
+token = create_access_token({
+    "sub": "1"
+})
 
-# 注册时生成哈希
-stored_hash = hash_password(password)
+print("Token created:", bool(token))
 
-# 登录时验证
-print(verify_password("hello123", stored_hash))
-print(verify_password("wrong123", stored_hash))
+# 验证令牌
+payload = decode_access_token(token)
+
+print("Token valid:", payload is not None)
+print("User ID:", payload["sub"] if payload else None)
+
+# 测试错误令牌
+wrong_payload = decode_access_token("invalid.token.value")
+
+print("Wrong token:", wrong_payload)
