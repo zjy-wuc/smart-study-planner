@@ -15,6 +15,12 @@ from app.response import success, error
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+
 app = FastAPI(
     title="智能学习计划管理系统",
     description="学习计划与每日任务管理 API",
