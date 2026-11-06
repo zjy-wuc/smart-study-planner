@@ -286,7 +286,7 @@ def login(
 
     user = result.mappings().first()
 #验证账号密码
-    if user is None or not vertify_password(
+    if user is None or not verify_password(
         form_data.password,
         user["password_hash"]
     ):
