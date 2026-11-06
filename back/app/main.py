@@ -150,7 +150,17 @@ def get_current_user_info(
 
 #查询单个id
 @app.get("/users/{user_id}")
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if user_id != current_user["id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot access another user's data",
+        )
+
     sql = text("""
         SELECT id, username, nickname, created_at, updated_at
         FROM users
@@ -161,41 +171,62 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     user = result.mappings().first()
 
     if user is None:
-        return error(404, "User not found")
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
 
     return success(
         data=dict(user),
         message="User found"
     )
+
 #修改用户昵称
 @app.put("/users/{user_id}")
 def update_user(
-     user_id: int,
-     user: UserUpdate,
-     db: Session = Depends(get_db),
- ):
+    user_id: int,
+    user: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    # 检查当前用户是否有权修改这个账户
+    if user_id != current_user["id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot modify another user's data",
+        )
+
     sql = text("""
         UPDATE users
         SET nickname = :nickname,
             updated_at = NOW()
         WHERE id = :user_id
     """)
-    result = db.execute(sql,{"nickname":user.nickname,"user_id":user_id,})
+
+    result = db.execute(
+        sql,
+        {
+            "nickname": user.nickname,
+            "user_id": user_id,
+        },
+    )
 
     if result.rowcount == 0:
         db.rollback()
-        return error(404, "User not found")
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
     db.commit()
-    
+
     return success(
         data={
-            "id":user_id,
-            "nickname":user.nickname,
+            "id": user_id,
+            "nickname": user.nickname,
         },
         message="用户修改成功",
-        code=200,
-    )
-       
+    )  
 
 
 #删除用户
@@ -203,7 +234,16 @@ def update_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
+    # 检查当前用户是否有权删除目标账户
+    if user_id != current_user["id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot delete another user's data",
+        )
+
+   
     sql = text("""
         DELETE FROM users
         WHERE id = :user_id
@@ -211,20 +251,23 @@ def delete_user(
 
     result = db.execute(sql, {"user_id": user_id})
 
+    #检查目标用户是否存在
     if result.rowcount == 0:
         db.rollback()
-        return error(404, "User not found")
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
 
+ 
     db.commit()
 
+    
     return success(
-        data={
-            "id":user_id,
-        },
+        data={"id": user_id},
         message="用户删除成功",
         code=200,
     )
-
 
 
 # 统一处理请求参数验证异常
