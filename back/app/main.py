@@ -5,11 +5,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.core.security import hash_password
+from fastapi.security import OAuth2PasswordRequestForm
 
 from app.response import success, error
 
-
+from app.core.deps import get_current_user
 
 
 from fastapi import FastAPI
@@ -20,6 +20,13 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+
+
+from app.core.security import (
+    hash_password,
+    verify_password,
+    create_access_token,
+)
 
 app = FastAPI(
     title="智能学习计划管理系统",
@@ -123,7 +130,23 @@ def get_all_users(db: Session = Depends(get_db)):
         for row in result.mappings().all()
     ]
 
-    return users
+    return success(
+        data=users,
+        message="Users found"
+    )
+
+#当前用户接口
+@app.get("/users/me")
+def get_current_user_info(
+    current_user: dict = Depends(get_current_user),
+):
+    return success(
+        data=current_user,
+        message="Current user info found",
+        code=200,
+    )
+
+
 
 #查询单个id
 @app.get("/users/{user_id}")
@@ -201,3 +224,89 @@ def delete_user(
         message="用户删除成功",
         code=200,
     )
+
+
+
+# 统一处理请求参数验证异常
+# 统一处理 HTTP 异常
+@app.exception_handler(StarletteHTTPException)
+#使用了异步函数
+async def http_exception_handler(
+    request: Request,
+    exc: StarletteHTTPException,
+):
+    response = error(
+        code=exc.status_code,
+        message=str(exc.detail),
+    )
+
+    # 保留认证相关响应头
+    if exc.headers:
+        response.headers.update(exc.headers)
+
+    return response
+
+
+# 统一处理请求参数验证异常
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError,
+):
+    return error(
+        code=422,
+        message="Request validation failed",
+        data=exc.errors(),
+    )
+
+#处理其他异常
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    return error(code=500, message="服务器内部错误")
+
+
+
+#登录接口,返回令牌和token种类
+@app.post("/auth/login")
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),#从请求体中获取用户名和密码
+    db: Session = Depends(get_db),
+):
+     # 查询用户
+    sql = text("""
+        SELECT id, username, password_hash, nickname
+        FROM users
+        WHERE username = :username
+    """)
+
+    result = db.execute(
+        sql,
+        {"username": form_data.username},
+    )
+
+    user = result.mappings().first()
+#验证账号密码
+    if user is None or not vertify_password(
+        form_data.password,
+        user["password_hash"]
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+         )
+#creat jwt
+    access_token = create_access_token(
+        {"sub":str(user["id"])},
+    )
+#返回统一的格式
+    return success(
+        data={
+            "access_token":access_token,
+            "token_type":"Bearer",
+        },
+        message="登录成功",
+        code=200,
+    )
+   
+

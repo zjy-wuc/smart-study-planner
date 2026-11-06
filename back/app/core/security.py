@@ -1,3 +1,4 @@
+#hash和jwt的工具函数
 #hashcode
 import hashlib
 import hmac
