@@ -23,18 +23,28 @@ export interface RegisterData {
 
 
 
-/**
- * 用户登录请求数据
- */
+
+ // 用户登录请求数据
+ 
 export interface LoginRequest {
   username: string;
   password: string;
 }
 
-/**
- * 用户登录成功返回的数据
- */
+//
+ //用户登录成功返回的数据
+ 
 export interface LoginResponse {
   access_token: string;
   token_type: string;
 }
+
+// 当前登录用户信息（GET /users/me 返回）
+export interface User {
+  id: number;
+  username: string;
+  nickname: string | null;
+}
+
+
+
