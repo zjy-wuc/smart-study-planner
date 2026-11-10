@@ -118,6 +118,7 @@ def issue_token_pair(db: Session, user_id: int) -> dict:
 
     return token_data["token_pair"]
 
+#更新refresh token
 def rotate_refresh_token(
     db: Session,
     refresh_token: str,
@@ -303,3 +304,128 @@ def rotate_refresh_token(
         )
 
     return token_pair
+    
+
+
+
+
+
+
+
+#退出当前会话
+def revoke_current_session(
+    db: Session,
+    refresh_token: str,
+) -> None:
+    """
+    撤销当前 Refresh Token 所属的整个 family。
+    """
+
+    # 验证 Refresh Token
+    payload = decode_refresh_token(refresh_token)
+
+    if payload is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired refresh token",
+        )
+
+    user_id = payload.get("sub")
+    family_id = payload.get("family_id")
+
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token payload",
+        )
+
+    if not family_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid refresh token payload",
+        )
+
+    token_hash = hash_refresh_token(refresh_token)
+
+    try:
+        # 查询数据库，确认这个 Token 确实存在
+        result = db.execute(
+            text("""
+                SELECT user_id, family_id
+                FROM tb_refresh_token
+                WHERE token_hash = :token_hash
+                FOR UPDATE
+            """),
+            {"token_hash": token_hash},
+        )
+
+        record = result.mappings().first()
+
+        if (
+            record is None
+            or record["user_id"] != user_id
+            or record["family_id"] != family_id
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail="Refresh token not found",
+            )
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        # 撤销当前 family 所有尚未撤销的 Token
+        db.execute(
+            text("""
+                UPDATE tb_refresh_token
+                SET revoked_at = :now
+                WHERE
+                    user_id = :user_id
+                    AND family_id = :family_id
+                    AND revoked_at IS NULL
+            """),
+            {
+                "now": now,
+                "user_id": user_id,
+                "family_id": family_id,
+            },
+        )
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise   
+
+#撤销所有会话
+def revoke_all_sessions(
+    db: Session,
+    user_id: int,
+) -> None:
+    """
+    撤销当前用户的所有 Refresh Token。
+    """
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    try:
+        db.execute(
+            text("""
+                UPDATE tb_refresh_token
+                SET revoked_at = :now
+                WHERE
+                    user_id = :user_id
+                    AND revoked_at IS NULL
+            """),
+            {
+                "now": now,
+                "user_id": user_id,
+            },
+        )
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise 

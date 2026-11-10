@@ -15,7 +15,12 @@ from app.schemas.auth import RefreshRequest
 from app.services.auth_service import (
     issue_token_pair,
     rotate_refresh_token,
+    revoke_current_session,
+    revoke_all_sessions,
 )
+
+
+from app.core.deps import get_current_user
 
 router = APIRouter()
 #登录接口,返回令牌和token种类
@@ -72,7 +77,7 @@ def login(
 
 
 
-
+# 刷新 Token 接口
 @router.post("/auth/refresh")
 def refresh(
     request: RefreshRequest,
@@ -88,4 +93,37 @@ def refresh(
         message="Token refreshed",
         code=200,
     )
-    
+
+
+
+#退出当前会话
+@router.post("/auth/logout")
+def logout(
+    request: RefreshRequest,
+    db: Session = Depends(get_db),
+):
+    revoke_current_session(
+        db=db,
+        refresh_token=request.refresh_token,
+    )
+
+    return success(
+        message="Logged out successfully",
+    )
+
+
+
+#退出全部会话
+@router.post("/auth/logout-all")
+def logout_all(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    revoke_all_sessions(
+        db=db,
+        user_id=current_user["id"],
+    )
+
+    return success(
+        message="All sessions logged out successfully",
+    )
