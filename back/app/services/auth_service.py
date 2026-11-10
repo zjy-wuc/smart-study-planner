@@ -118,7 +118,6 @@ def issue_token_pair(db: Session, user_id: int) -> dict:
 
     return token_data["token_pair"]
 
-
 def rotate_refresh_token(
     db: Session,
     refresh_token: str,
@@ -126,11 +125,11 @@ def rotate_refresh_token(
     """
     使用旧 Refresh Token 换取新 Token Pair。
 
-    通过数据库事务、行锁和条件更新，
-    保证同一个旧 Token 只能成功轮换一次。
+    如果检测到已经轮换过的 Token 被再次使用，
+    则撤销整个 family。
     """
 
-    # 1. 验证 JWT 签名、exp 和 Token 类型
+    # 1. 验证 JWT
     payload = decode_refresh_token(refresh_token)
 
     if payload is None:
@@ -148,15 +147,27 @@ def rotate_refresh_token(
             detail="Invalid refresh token payload",
         )
 
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user id",
+        )
+
     token_hash = hash_refresh_token(refresh_token)
 
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    # 标记是否检测到了重放
+    replay_detected = False
 
-    # 2. 开启事务
+    # 正常轮换时保存新 Token
+    token_pair = None
+
     try:
+        # 2. 开启数据库事务
         with db.begin():
 
-            # 3. 锁定旧 Token 对应的数据库记录
+            # 3. 锁定当前 Refresh Token
             select_sql = text("""
                 SELECT
                     id,
@@ -183,9 +194,9 @@ def rotate_refresh_token(
                     detail="Refresh token not found",
                 )
 
-            # 4. 检查数据库记录与 JWT 是否一致
+            # 4. 验证 JWT 和数据库记录是否匹配
             if (
-                str(old_token["user_id"]) != str(user_id)
+                old_token["user_id"] != user_id
                 or old_token["family_id"] != family_id
             ):
                 raise HTTPException(
@@ -193,68 +204,102 @@ def rotate_refresh_token(
                     detail="Refresh token mismatch",
                 )
 
-            # 5. 检查旧 Token 是否已经失效
-            if (
+            # 获取锁之后再获取当前时间
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+            # 5. 检测 Token 重放
+            if old_token["replaced_by"] is not None:
+
+                replay_detected = True
+
+                # 撤销整个 family 中所有尚未撤销的 Token
+                revoke_sql = text("""
+                    UPDATE tb_refresh_token
+                    SET revoked_at = :now
+                    WHERE
+                        user_id = :user_id
+                        AND family_id = :family_id
+                        AND revoked_at IS NULL
+                """)
+
+                db.execute(
+                    revoke_sql,
+                    {
+                        "now": now,
+                        "user_id": user_id,
+                        "family_id": family_id,
+                    },
+                )
+
+            # 6. 普通失效检查
+            elif (
                 old_token["revoked_at"] is not None
-                or old_token["replaced_by"] is not None
                 or old_token["expires_at"] <= now
             ):
                 raise HTTPException(
                     status_code=401,
-                    detail="Refresh token already used or expired",
+                    detail="Refresh token already revoked or expired",
                 )
 
-            # 6. 在原 family 下生成新 Token
-            token_data = _build_token_pair(
-                user_id=int(user_id),
-                family_id=family_id,
-            )
-
-            new_token_hash = token_data["token_hash"]
-
-            # 7. 条件更新旧 Token
-            update_sql = text("""
-                UPDATE tb_refresh_token
-                SET
-                    revoked_at = :now,
-                    replaced_by = :new_token_hash
-                WHERE
-                    id = :id
-                    AND revoked_at IS NULL
-                    AND replaced_by IS NULL
-                    AND expires_at > :now
-            """)
-
-            update_result = db.execute(
-                update_sql,
-                {
-                    "now": now,
-                    "new_token_hash": new_token_hash,
-                    "id": old_token["id"],
-                },
-            )
-
-            # 必须恰好更新一条记录
-            if update_result.rowcount != 1:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Refresh token has already been used",
+            else:
+                # 7. 正常轮换：生成新 Token
+                token_data = _build_token_pair(
+                    user_id=user_id,
+                    family_id=family_id,
                 )
 
-            # 8. 保存新 Token 摘要
-            _insert_refresh_token(
-                db=db,
-                user_id=int(user_id),
-                family_id=family_id,
-                token_hash=new_token_hash,
-                expires_at=token_data["expires_at"],
-            )
+                new_token_hash = token_data["token_hash"]
 
-        # 离开 with db.begin() 且没有异常，事务自动提交
-        return token_data["token_pair"]
+                # 8. 条件更新旧 Token
+                update_sql = text("""
+                    UPDATE tb_refresh_token
+                    SET
+                        revoked_at = :now,
+                        replaced_by = :new_token_hash
+                    WHERE
+                        id = :id
+                        AND revoked_at IS NULL
+                        AND replaced_by IS NULL
+                        AND expires_at > :now
+                """)
+
+                update_result = db.execute(
+                    update_sql,
+                    {
+                        "now": now,
+                        "new_token_hash": new_token_hash,
+                        "id": old_token["id"],
+                    },
+                )
+
+                if update_result.rowcount != 1:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Refresh token has already been used",
+                    )
+
+                # 9. 保存新 Token
+                _insert_refresh_token(
+                    db=db,
+                    user_id=user_id,
+                    family_id=family_id,
+                    token_hash=new_token_hash,
+                    expires_at=token_data["expires_at"],
+                )
+
+                token_pair = token_data["token_pair"]
+
+        # 到这里，事务已经正常提交
 
     except Exception:
-        # with db.begin() 会在异常时回滚事务
-        # 这里确保 Session 不残留失败事务状态
         db.rollback()
         raise
+
+    # 10. 必须在事务提交之后返回 401
+    if replay_detected:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token replay detected; session revoked",
+        )
+
+    return token_pair
