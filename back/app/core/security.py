@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from jwt.exceptions import InvalidTokenError
+from jwt.exceptions import InvalidTokenError,ExpiredSignatureError
 
 from app.config import settings
 JWT_ALGORITHM = "HS256"
@@ -120,6 +120,29 @@ def decode_access_token(token: str) -> dict | None:
         return None
 
     return payload
+
+
+def decode_access_token_detailed(token: str) -> tuple[dict | None, str | None]:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[JWT_ALGORITHM],
+            options={
+                "require": ["sub", "iat", "exp", "type"],
+            },
+        )
+
+    except ExpiredSignatureError:
+        return None, "ACCESS_EXPIRED"
+
+    except InvalidTokenError:
+        return None, "INVALID_TOKEN"
+
+    if payload.get("type") != "access":
+        return None, "TOKEN_TYPE_INVALID"
+
+    return payload, None
 
 
 def decode_refresh_token(token: str) -> dict | None:

@@ -13,7 +13,7 @@ export default function UserProfile() {
 
   const [user, setUser] = useState<User | null>(null);
   const [message, setMessage] = useState("正在获取用户信息...");
-
+//在挂载时执行一次，获取当前登录用户的信息
   useEffect(() => {
     async function loadUser() {
       try {
@@ -30,14 +30,14 @@ export default function UserProfile() {
       }
     }
 
-    loadUser();
-  }, []);
+    loadUser();//执行函数
+  }, []);//在挂载时执行一次，获取当前登录用户的信息
 
   // 退出登录
   function handleLogout() {
     removeAccessToken();
 
-    router.replace("/login");
+    router.replace("/login");//路由到登录页
   }
 
   return (

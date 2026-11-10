@@ -12,7 +12,7 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/health")
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/health`)
       .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP 错误：${response.status}`);
@@ -26,7 +26,7 @@ export default function Home() {
         setError(err.message);
         setStatus("连接失败");
       });
-  }, []);
+  }, []);//组件挂载时执行一次
 
   return (
     <main style={{ maxWidth: 700, margin: "80px auto", padding: 24 }}>

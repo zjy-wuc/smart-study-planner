@@ -4,8 +4,10 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.router import api_router
-from app.response import error
+from app.response import error,success
 
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI(
     title="智能学习计划管理系统",
@@ -34,17 +36,28 @@ async def http_exception_handler(
     request: Request,
     exc: StarletteHTTPException,
 ):
-    response = error(
-        code=exc.status_code,
-        message=str(exc.detail),
-    )
+        detail = exc.detail
 
-    # 保留认证相关响应头
-    if exc.headers:
-        response.headers.update(exc.headers)
+        # 保留原始 detail，特别是认证错误中的业务 code
+        response = JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "code": exc.status_code,
+                "message": (
+                    detail.get("message", "Request failed")
+                    if isinstance(detail, dict)
+                    else str(detail)
+                ),
+                "detail": jsonable_encoder(detail),
+                "data": None,
+            },
+        )
 
-    return response
+        # 保留认证相关响应头
+        if exc.headers:
+            response.headers.update(exc.headers)
 
+        return response
 
 # 统一处理请求参数验证异常
 @app.exception_handler(RequestValidationError)

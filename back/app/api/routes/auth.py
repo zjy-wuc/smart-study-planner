@@ -32,7 +32,7 @@ def login(
 ):
     #  查询用户
     sql = text("""
-        SELECT id, username, password_hash, nickname
+        SELECT id, username, password_hash, nickname, is_active
         FROM users
         WHERE username = :username
     """)
@@ -55,13 +55,22 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if not user["is_active"]:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "ACCOUNT_DISABLED",
+                "message": "Account is disabled",
+            },
+        )   
+
     # 创建双 Token，并登记 Refresh Token 摘要
     token_pair = issue_token_pair(
         db=db,
         user_id=user["id"],
     )
 
-    # 返回 Token 和用户信息
+    # 返回 Token 和用户信息 
     return success(
         data={
             **token_pair,

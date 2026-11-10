@@ -205,6 +205,39 @@ def rotate_refresh_token(
                     detail="Refresh token mismatch",
                 )
 
+            # 4.1 检查用户账号状态
+            user_sql = text("""
+                SELECT is_active
+                FROM users
+                WHERE id = :user_id
+                FOR UPDATE
+            """)
+
+            user_result = db.execute(
+                user_sql,
+                {"user_id": user_id},
+            )
+
+            user = user_result.mappings().first()
+
+            if user is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={
+                        "code": "USER_NOT_FOUND",
+                        "message": "User not found",
+                    },
+                )
+
+            if not user["is_active"]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "code": "ACCOUNT_DISABLED",
+                        "message": "Account is disabled",
+                    },
+                )
+
             # 获取锁之后再获取当前时间
             now = datetime.now(timezone.utc).replace(tzinfo=None)
 
