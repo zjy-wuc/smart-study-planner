@@ -5,6 +5,7 @@ import hmac
 import secrets
 ALGORITHM = "pbkdf2_sha256"
 ITERATIONS = 600000
+import uuid
 
 # jwt
 from datetime import datetime, timedelta, timezone
@@ -13,7 +14,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 
 from app.config import settings
-
+JWT_ALGORITHM = "HS256"
 
 # 密码哈希函数
 def hash_password(password: str) -> str:
@@ -43,29 +44,101 @@ def verify_password(password: str, stored_hash: str) -> bool:
     return hmac.compare_digest(computed, digest)
 
 
-# 创建令牌
-def create_access_token(data: dict) -> str:
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    
-    token = jwt.encode(
-        to_encode,
+# 创建JWT令牌
+
+
+def _create_token(
+    data: dict,
+    expires_delta: timedelta,
+    token_type: str,
+) -> str:
+    now = datetime.now(timezone.utc)
+
+    payload = data.copy()
+
+    payload.update({
+        "iat": now,
+        "exp": now + expires_delta,
+        "type": token_type,
+    })
+
+    return jwt.encode(
+        payload,
         settings.SECRET_KEY,
-        algorithm="HS256"
+        algorithm=JWT_ALGORITHM,
     )
-    return token
+
+
+#access token
+def create_access_token(data: dict) -> str:
+    return _create_token(
+        data=data,
+        expires_delta=timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        ),
+        token_type="access",
+    )
+
+
+#refresh token
+def create_refresh_token(data: dict) -> str:
+    return _create_token(
+        data=data,
+        expires_delta=timedelta(
+            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+        ),
+        token_type="refresh",
+    )
+
+
 
 # 解码令牌
-def decode_access_token(token: str) -> dict | None:
+
+def decode_token(token: str) -> dict | None:
     try:
-        payload = jwt.decode(
+        return jwt.decode(
             token,
             settings.SECRET_KEY,
-            algorithms=["HS256"],
+            algorithms=[JWT_ALGORITHM],
+            options={
+                "require": ["sub", "iat", "exp", "type"],
+            },
         )
-
-        return payload
-
     except InvalidTokenError:
         return None
+
+
+def decode_access_token(token: str) -> dict | None:
+    payload = decode_token(token)
+
+    if payload is None:
+        return None
+
+    if payload.get("type") != "access":
+        return None
+
+    return payload
+
+
+def decode_refresh_token(token: str) -> dict | None:
+    payload = decode_token(token)
+
+    if payload is None:
+        return None
+
+    if payload.get("type") != "refresh":
+        return None
+
+    return payload
+
+
+#refresh token 摘要
+def hash_refresh_token(token: str) -> str:
+    return hashlib.sha256(
+        token.encode("utf-8")
+    ).hexdigest()
+
+#登录会话id
+
+def create_family_id() -> str:
+    return str(uuid.uuid4())
