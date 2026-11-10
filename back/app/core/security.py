@@ -60,6 +60,8 @@ def _create_token(
         "iat": now,
         "exp": now + expires_delta,
         "type": token_type,
+        # jti 保证即使同一秒内重复签发，token 也互不相同
+        "jti": str(uuid.uuid4()),
     })
 
     return jwt.encode(

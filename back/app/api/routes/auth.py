@@ -11,6 +11,12 @@ from app.core.security import verify_password
 from app.services.auth_service import issue_token_pair
 from app.response import success
 
+from app.schemas.auth import RefreshRequest
+from app.services.auth_service import (
+    issue_token_pair,
+    rotate_refresh_token,
+)
+
 router = APIRouter()
 #登录接口,返回令牌和token种类
 
@@ -65,29 +71,21 @@ def login(
     )
 
 
-# ==================== 登录限流配置 ====================
-MAX_FAILED_ATTEMPTS = 5          # 窗口期内最多失败次数
-RATE_LIMIT_WINDOW = 60           # 窗口期（秒），即 1 分钟内
-failed_login_attempts: dict[str, list[float]] = defaultdict(list)
 
 
-def _is_rate_limited(client_ip: str) -> bool:
-    """检查该 IP 是否在窗口期内失败次数超限"""
-    now = time.time()
-    # 只保留窗口期内的失败记录
-    failed_login_attempts[client_ip] = [
-        ts for ts in failed_login_attempts[client_ip]
-        if now - ts < RATE_LIMIT_WINDOW
-    ]
-    return len(failed_login_attempts[client_ip]) >= MAX_FAILED_ATTEMPTS
+@router.post("/auth/refresh")
+def refresh(
+    request: RefreshRequest,
+    db: Session = Depends(get_db),
+):
+    token_pair = rotate_refresh_token(
+        db=db,
+        refresh_token=request.refresh_token,
+    )
 
-
-def _record_failed_attempt(client_ip: str) -> None:
-    """记录一次失败登录的时间戳"""
-    failed_login_attempts[client_ip].append(time.time())
-
-
-def _clear_failed_attempts(client_ip: str) -> None:
-    """登录成功后清空该 IP 的失败记录"""
-    failed_login_attempts.pop(client_ip, None)
-# =====================================================
+    return success(
+        data=token_pair,
+        message="Token refreshed",
+        code=200,
+    )
+    
