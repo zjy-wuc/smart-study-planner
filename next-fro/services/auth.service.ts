@@ -62,7 +62,7 @@ export async function logoutUser(): Promise<void> {
           method: "POST",
           body: JSON.stringify({
             refresh_token: refreshToken,
-          } satisfies RefreshRequest),
+          } satisfies RefreshRequest),/*check type*/
         },
       );
     }
@@ -71,3 +71,21 @@ export async function logoutUser(): Promise<void> {
     removeTokenPair();
   }
 }
+
+
+// 调用后端 POST /auth/logout-all
+// 撤销当前用户的所有登录会话
+export async function logoutAllSessions(): Promise<void> {
+  try {
+    await apiFetch<ApiResponse<null>>(
+      "/auth/logout-all",
+      {
+        method: "POST",
+      },
+    );
+  } finally {
+    // 无论请求成功还是失败，都清理当前设备的双 Token
+    removeTokenPair();
+  }
+}
+

@@ -2,11 +2,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { loginUser } from "@/services/auth.service";
 import type { LoginRequest } from "@/types/auth";
 import { setTokenPair } from "@/lib/auth/token";
 
 export default function LoginForm() {
+  const router = useRouter();
+
   const [formData, setFormData] = useState<LoginRequest>({
     username: "",
     password: "",
@@ -34,6 +37,9 @@ setTokenPair(accessToken, refreshToken);
 
 // 3. 更新页面提示
 setMessage("登录成功！");
+
+// 4. 跳转到个人中心
+router.replace("/profile");
 
   
 } catch (error) {

@@ -10,7 +10,19 @@ import type {
   TokenPair,
 } from "@/types/auth";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+
+// 携带 HTTP 状态码的请求错误，便于调用方按状态处理
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
 
 // 保存当前正在进行的刷新任务
 // 多个请求可以共享同一个 Promise
@@ -100,19 +112,32 @@ async function sendRequest(
 }
 
 
+// API 请求的额外配置，用于控制是否跳过刷新
+// 默认不跳过刷新
+interface ApiFetchOptions extends RequestInit {
+  skipAuthRefresh?: boolean;
+}
+
+
+
 // 统一 API 请求入口
 export async function apiFetch<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiFetchOptions = {},
 ): Promise<T> {
 
   // 记录第一次请求使用的 Token
   const originalToken = getAccessToken();
 
+
+  const {
+  skipAuthRefresh = false,
+  ...requestOptions
+} = options;
   // 第一次请求
   let response = await sendRequest(
     path,
-    options,
+    requestOptions,
     originalToken,
   );
 
@@ -123,7 +148,7 @@ export async function apiFetch<T>(
     response.status === 401 &&
     body?.detail?.code === "ACCESS_EXPIRED";
 
-  if (accessExpired) {
+  if (accessExpired && !skipAuthRefresh) {
     const currentToken = getAccessToken();
 
     let newAccessToken: string | null = null;
@@ -147,7 +172,7 @@ export async function apiFetch<T>(
       // 使用新 Token 重试一次
       response = await sendRequest(
         path,
-        options,
+        requestOptions,
         newAccessToken,
       );
 
@@ -161,10 +186,11 @@ export async function apiFetch<T>(
 
   // 最终响应仍然失败，就抛出错误
   if (!response.ok) {
-    throw new Error(
+    throw new ApiError(
       body?.message ??
       body?.detail?.message ??
       `请求失败（${response.status}）`,
+      response.status,
     );
   }
 
