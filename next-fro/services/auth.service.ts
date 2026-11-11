@@ -1,10 +1,12 @@
 import { apiFetch } from "@/lib/api/client";
+import { getRefreshToken, removeTokenPair } from "@/lib/auth/token";
 import type {
   ApiResponse,
   RegisterData,
   RegisterRequest,
   LoginRequest,
   LoginResponse,
+  RefreshRequest,
   User,
 } from "@/types/auth";
 
@@ -43,4 +45,29 @@ export async function loginUser(
 // 获取当前登录用户的信息
 export async function getCurrentUser(): Promise<ApiResponse<User>> {
   return apiFetch<ApiResponse<User>>("/users/me");
+}
+
+
+
+// 调用后端 POST /auth/logout 退出当前会话
+export async function logoutUser(): Promise<void> {
+  const refreshToken = getRefreshToken();
+
+  try {
+    // 有 Refresh Token 才请求后端撤销会话
+    if (refreshToken) {
+      await apiFetch<ApiResponse<null>>(
+        "/auth/logout",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            refresh_token: refreshToken,
+          } satisfies RefreshRequest),
+        },
+      );
+    }
+  } finally {
+    // 无论后端请求成功还是失败，都清理本地双 Token
+    removeTokenPair();
+  }
 }

@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { loginUser } from "@/services/auth.service";
 import type { LoginRequest } from "@/types/auth";
-import { setAccessToken } from "@/lib/auth/token";
+import { setTokenPair } from "@/lib/auth/token";
 
 export default function LoginForm() {
   const [formData, setFormData] = useState<LoginRequest>({
@@ -25,18 +25,17 @@ export default function LoginForm() {
 
     try {
   const result = await loginUser(formData);
+// 1. 获取后端返回的双 Token
+const accessToken = result.data.access_token;
+const refreshToken = result.data.refresh_token;
 
-  // 1. 获取后端返回的 Access Token
-  const accessToken = result.data.access_token;
+// 2. 同时保存双 Token
+setTokenPair(accessToken, refreshToken);
 
-  // 2. 保存 Token
-  setAccessToken(accessToken);
+// 3. 更新页面提示
+setMessage("登录成功！");
 
-  // 3. 更新页面提示
-  setMessage("登录成功！");
-
-  console.log("登录响应：", result);
-  console.log("Access Token 已保存");
+  
 } catch (error) {
   setMessage(
     error instanceof Error

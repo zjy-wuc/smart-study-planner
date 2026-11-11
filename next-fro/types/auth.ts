@@ -3,8 +3,11 @@ export interface ApiResponse<T> {
   code: number;
   message: string;
   data: T;
+  detail?: {
+    code?: string;
+    message?: string;
+  };
 }
-
 // 注册请求体
 export interface RegisterRequest {
   username: string;
@@ -31,12 +34,10 @@ export interface LoginRequest {
   password: string;
 }
 
-//
- //用户登录成功返回的数据
+
  
-export interface LoginResponse {
-  access_token: string;
-  token_type: string;
+export interface LoginResponse extends TokenPair {
+  user: User;
 }
 
 // 当前登录用户信息（GET /users/me 返回）
@@ -48,3 +49,23 @@ export interface User {
 
 
 
+
+//用户登录成功返回的数据
+ 
+export interface LoginResponse extends TokenPair {
+  user: User;
+}
+
+
+// 双 Token 响应数据
+export interface TokenPair {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+// Refresh Token 请求体
+export interface RefreshRequest {
+  refresh_token: string;
+}

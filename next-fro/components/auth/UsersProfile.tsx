@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { getCurrentUser } from "@/services/auth.service";
-import { removeAccessToken } from "@/lib/auth/token";
-
+import { logoutUser } from "@/services/auth.service";
 import type { User } from "@/types/auth";
 
 export default function UserProfile() {
@@ -34,12 +33,15 @@ export default function UserProfile() {
   }, []);//在挂载时执行一次，获取当前登录用户的信息
 
   // 退出登录
-  function handleLogout() {
-    removeAccessToken();
-
-    router.replace("/login");//路由到登录页
+  async function handleLogout() {
+  try {
+    await logoutUser();
+  } catch {
+    // 即使后端请求失败，也允许用户退出当前页面
+  } finally {
+    router.replace("/login");
   }
-
+}
   return (
     <main>
       <h2>当前用户信息</h2>
