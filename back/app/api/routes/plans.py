@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-
+from app.services import plan_activation_service
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.response import success
@@ -97,4 +97,23 @@ def delete_plan(
 
     return success(
         message="计划删除成功",
+    )
+
+
+
+@router.post("/{plan_id}/start")
+def start_plan(
+    plan_id: int,
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    result = plan_activation_service.start_plan(
+        db=db,
+        plan_id=plan_id,
+        user_id=user["id"],
+    )
+
+    return success(
+        data=result,
+        message="计划正式开始，已生成每日任务",
     )
