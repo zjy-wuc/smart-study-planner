@@ -55,6 +55,7 @@ export default function UserProfile() {
     } catch {
       // 服务不可用时也清理本地登录状态。
     } finally {
+      setLoggingOut(false);
       router.replace("/login");
     }
   }

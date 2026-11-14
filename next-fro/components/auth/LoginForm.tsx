@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/services/auth.service";
 import type { LoginRequest } from "@/types/auth";
@@ -19,6 +19,12 @@ export default function LoginForm() {
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useLayoutEffect(() => {
+    return () => {
+      setMessage((current) => current === "登录成功！" ? "" : current);
+    };
+  }, []);
 
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
