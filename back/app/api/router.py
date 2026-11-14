@@ -7,6 +7,7 @@ from app.api.routes import (
     users,
     plans,
     steps,
+    tasks,
 )
 from app.api.routes import schedules, daily_tasks
 
@@ -22,3 +23,4 @@ api_router.include_router(steps.router)
 
 api_router.include_router(schedules.router)
 api_router.include_router(daily_tasks.router)
+api_router.include_router(tasks.router)
