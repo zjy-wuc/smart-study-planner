@@ -1,9 +1,6 @@
 import LoginForm from "@/components/auth/LoginForm";
+import "@/components/css/LoginForm.css";
 
 export default function LoginPage() {
-  return (
-    <main>
-      <LoginForm />
-    </main>
-  );
+  return <main className="login-page"><LoginForm /></main>;
 }

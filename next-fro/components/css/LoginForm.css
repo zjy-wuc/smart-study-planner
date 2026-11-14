@@ -1,0 +1,122 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  color: #fff;
+  background: linear-gradient(rgba(35,48,72,.55), rgba(30,42,65,.67)), url('/login-background.png') center center / cover no-repeat;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+.login-form {
+  width: min(100%, 470px);
+}
+
+.login-formHeading {
+  margin-bottom: 52px;
+  text-align: center;
+}
+
+.login-book {
+  display: block;
+  width: 70px;
+  height: 58px;
+  margin: 0 auto 24px;
+}
+
+.login-formHeading h1 {
+  margin: 0;
+  font-size: clamp(28px, 3vw, 39px);
+  font-weight: 500;
+  letter-spacing: .08em;
+}
+
+.login-field {
+  margin-bottom: 16px;
+}
+
+.login-field label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.login-field input {
+  width: 100%;
+  height: 62px;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(255,255,255,.7);
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font-size: 17px;
+  transition: border-color .2s, background .2s;
+}
+
+.login-field input::placeholder {
+  color: rgba(255,255,255,.82);
+}
+
+.login-field input:focus {
+  border-bottom-color: #25c0f2;
+  background: rgba(255,255,255,.06);
+}
+
+.login-message {
+  margin: 15px 0 0;
+  color: #fff;
+  background: rgba(117,29,40,.8);
+  border-radius: 4px;
+  padding: 9px 12px;
+  font-size: 14px;
+}
+
+.login-message-success {
+  background: rgba(25, 100, 77, .85);
+}
+
+.login-submit {
+  width: 100%;
+  height: 58px;
+  margin-top: 35px;
+  border: 0;
+  border-radius: 4px;
+  background: #13b6ea;
+  color: white;
+  font-size: 20px;
+  letter-spacing: .3em;
+  text-indent: .3em;
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.login-submit:hover:not(:disabled) {
+  background: #079fd3;
+}
+
+.login-submit:focus-visible, .login-register a:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 4px;
+}
+
+.login-submit:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+.login-register {
+  margin: 28px 0 0;
+  text-align: center;
+  font-size: 14px;
+}
+
+.login-register a {
+  color: #fff;
+  text-underline-offset: 4px;
+}
