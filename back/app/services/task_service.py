@@ -63,9 +63,37 @@ def _format_task(task: dict, today: date) -> dict:
         else task["status"]
     )
 
+    # 向前端返回 NUMERIC 的有效目标及剩余数量
+    if task["task_type"] == "NUMERIC":
+        target = task["target_quantity"] or 0
+        actual = task["actual_quantity"]
+        already_out = task["rollover_out_quantity"]
+
+        effective_target = max(
+            0,
+            target - already_out,
+        )
+
+        result["effective_target_quantity"] = (
+            effective_target
+        )
+
+        result["remaining_quantity"] = max(
+            0,
+            effective_target - actual,
+        )
+
+        result["is_rolled_over"] = already_out > 0
+
+    else:
+        result["effective_target_quantity"] = None
+        result["remaining_quantity"] = None
+        result["is_rolled_over"] = bool(task["has_rollover"])
+
+
     return result
 
-
+#阻止不合法的操作继续执行。
 def _validate_checkin(
     task: dict,
     today: date,
@@ -86,6 +114,12 @@ def _validate_checkin(
         raise HTTPException(
             status_code=409,
             detail="当前不在计划执行周期内",
+        )
+
+    if task["task_type"] == "BOOLEAN" and task["has_rollover"]:
+        raise HTTPException(
+            status_code=409,
+            detail="该任务已经顺延，不能再次打卡",
         )
 
     if task["status"] == "COMPLETED":
@@ -112,6 +146,18 @@ def _validate_checkin(
             status_code=409,
             detail="未来任务不能提前打卡",
         )
+
+    # NUMERIC 来源任务一旦顺延，禁止继续打卡。
+    # 防止已经转移到未来的数量被重复完成。
+    if (
+        task["task_type"] == "NUMERIC"
+        and task["rollover_out_quantity"] > 0
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="该任务的剩余数量已经顺延，不能继续打卡",
+        )
+
 
 
 def get_task(

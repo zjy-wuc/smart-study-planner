@@ -8,6 +8,7 @@ from app.api.routes import (
     plans,
     steps,
     tasks,
+    rollovers,
 )
 from app.api.routes import schedules, daily_tasks
 
@@ -24,3 +25,4 @@ api_router.include_router(steps.router)
 api_router.include_router(schedules.router)
 api_router.include_router(daily_tasks.router)
 api_router.include_router(tasks.router)
+api_router.include_router(rollovers.router)

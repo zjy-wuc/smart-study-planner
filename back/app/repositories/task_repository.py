@@ -21,7 +21,9 @@ TASK_COLUMNS = """
     t.updated_at,
     p.status AS plan_status,
     p.start_date AS plan_start_date,
-    p.end_date AS plan_end_date
+    p.end_date AS plan_end_date,
+    EXISTS (SELECT 1 FROM task_rollovers AS r
+            WHERE r.source_task_id = t.id) AS has_rollover
 """
 
 
@@ -63,7 +65,18 @@ def find_owned_task(
 
     row = result.mappings().first()
 
-    return dict(row) if row is not None else None
+    if row is None:
+        return None
+
+    task = dict(row)
+    if for_update:
+        # 锁定读避免使用此前认证查询建立的旧事务快照。
+        task["has_rollover"] = db.scalar(text("""
+            SELECT id FROM task_rollovers
+            WHERE source_task_id = :task_id
+            LIMIT 1 FOR UPDATE
+        """), {"task_id": task_id}) is not None
+    return task
 
 
 def find_today_tasks(
@@ -115,6 +128,10 @@ def mark_boolean_completed(
             completed_at = UTC_TIMESTAMP()
         WHERE id = :task_id
           AND task_type = 'BOOLEAN'
+          AND NOT EXISTS (
+              SELECT 1 FROM task_rollovers AS r
+              WHERE r.source_task_id = :task_id
+          )
           AND status IN (
               'PENDING',
               'IN_PROGRESS',
@@ -150,6 +167,7 @@ def update_numeric_progress(
             END
         WHERE id = :task_id
           AND task_type = 'NUMERIC'
+          AND rollover_out_quantity = 0
           AND status IN (
               'PENDING',
               'IN_PROGRESS',
