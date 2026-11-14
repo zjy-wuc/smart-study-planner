@@ -9,6 +9,10 @@
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
 }
 
+.login-page--signin {
+  background-position: center, 85% center;
+}
+
 .login-form {
   width: min(100%, 470px);
 }
@@ -119,4 +123,12 @@
 .login-register a {
   color: #fff;
   text-underline-offset: 4px;
+}
+
+.login-motto {
+  margin: 30px 0 0;
+  color: rgba(255, 255, 255, .8);
+  font-size: 13px;
+  letter-spacing: .06em;
+  text-align: center;
 }

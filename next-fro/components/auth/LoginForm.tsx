@@ -107,11 +107,19 @@ router.replace("/profile");
         />
       </div>
 
-      {message && <p className="login-message" role="alert">{message}</p>}
+      {message && (
+        <p
+          className={message === "登录成功！" ? "login-message login-message-success" : "login-message"}
+          role={message === "登录成功！" ? "status" : "alert"}
+        >
+          {message}
+        </p>
+      )}
       <button className="login-submit" type="submit" disabled={loading}>
         {loading ? "登录中..." : "登录"}
       </button>
       <p className="login-register"><Link href="/register">新用户注册</Link></p>
+      <p className="login-motto">把目标写下来，让每一天的努力都有方向。</p>
     </form>
   );
 }
