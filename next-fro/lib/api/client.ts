@@ -10,17 +10,27 @@ import type {
   TokenPair,
 } from "@/types/auth";
 
+import type { ValidationIssue } from "@/types/api";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 
 // 携带 HTTP 状态码的请求错误，便于调用方按状态处理
+
 export class ApiError extends Error {
   status: number;
+  validationIssues: ValidationIssue[];
 
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    status: number,
+    validationIssues: ValidationIssue[] = [],
+  ) {
     super(message);
+
     this.name = "ApiError";
     this.status = status;
+    this.validationIssues = validationIssues;
   }
 }
 
@@ -185,14 +195,28 @@ export async function apiFetch<T>(
   }
 
   // 最终响应仍然失败，就抛出错误
-  if (!response.ok) {
-    throw new ApiError(
-      body?.message ??
-      body?.detail?.message ??
-      `请求失败（${response.status}）`,
-      response.status,
-    );
-  }
+  
+if (!response.ok) {
+  const validationIssues: ValidationIssue[] =
+    response.status === 422 && Array.isArray(body?.data)
+      ? body.data
+      : [];
+
+  const message =
+    typeof body?.message === "string"
+      ? body.message
+      : typeof body?.detail === "string"
+        ? body.detail
+        : typeof body?.detail?.message === "string"
+          ? body.detail.message
+          : `请求失败（${response.status}）`;
+
+  throw new ApiError(
+    message,
+    response.status,
+    validationIssues,
+  );
+}
 
   return body as T;
 }

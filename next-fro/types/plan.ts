@@ -1,0 +1,17 @@
+
+export type PlanStatus = "DRAFT" | "ACTIVE" | "ENDED";
+
+export type Plan = {
+  id: number;
+  user_id: number;
+  name: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  status: PlanStatus;
+  started_at: string | null;
+  ended_at: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
