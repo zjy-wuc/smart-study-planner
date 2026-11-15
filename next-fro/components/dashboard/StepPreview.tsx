@@ -14,9 +14,9 @@ function StepBranch({
   node: StepNode;
 }) {
   return (
-    <li className="my-2">
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-500">
+    <li className="workspace-step-branch my-2">
+      <div className="workspace-step-row flex items-center gap-2">
+        <span className="workspace-step-kind text-xs text-slate-500">
           {node.node_type === "GROUP" ? "分类" : "任务"}
         </span>
 
@@ -77,7 +77,7 @@ function StepTree({ planId }: { planId: number }) {
   if (nodes.length === 0) return <p className="mt-4 text-sm text-slate-500">当前计划还没有学习步骤</p>;
 
   return (
-    <ul className="mt-4">
+    <ul className="workspace-step-tree mt-4">
       {nodes.map((node) => <StepBranch key={node.id} node={node} />)}
     </ul>
   );
@@ -112,7 +112,7 @@ export function StepPreview({ plans }: { plans: Plan[] }) {
         onChange={(event) => {
           setSelectedPlanId(Number(event.target.value));
         }}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2"
+        className="workspace-select w-full rounded-lg border border-slate-300 px-3 py-2"
       >
         {plans.map((plan) => (
           <option key={plan.id} value={plan.id}>

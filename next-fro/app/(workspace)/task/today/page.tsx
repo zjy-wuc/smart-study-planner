@@ -16,13 +16,13 @@ export default function TodayTasksPage() {
   } = useDashboardData();
 
   return (
-    <section className="space-y-5">
-      <div className="flex items-center justify-between">
+    <section className="workspace-page space-y-5">
+      <div className="workspace-page-heading flex items-center justify-between">
         <h1 className="text-2xl font-bold">
           今日任务
         </h1>
 
-        <button type="button" onClick={reload}>
+        <button type="button" onClick={reload} className="workspace-button workspace-button--secondary">
           刷新
         </button>
       </div>
@@ -34,12 +34,12 @@ export default function TodayTasksPage() {
           {tasksError}
         </p>
       ) : (
-        <div className="rounded-xl border bg-white p-5">
+        <div className="workspace-panel rounded-xl border bg-white p-5">
           <TodayTaskList tasks={tasks} />
         </div>
       )}
 
-      <Link href="/" className="text-blue-700">
+      <Link href="/" className="workspace-text-link text-blue-700">
         返回首页
       </Link>
     </section>

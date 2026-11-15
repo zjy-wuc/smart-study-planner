@@ -1,6 +1,8 @@
 
 import type { TaskType } from "@/types/task";
 
+
+
 export type NodeType = "GROUP" | "LEAF";
 
 export type ScheduleMode =
@@ -28,4 +30,25 @@ export type StepNode = {
   updated_at: string;
 
   children: StepNode[];
+};
+
+export type StepRule = {
+  task_type: TaskType;
+  schedule_mode: ScheduleMode;
+  repeat_content?: string | null;
+  total_target?: number | null;
+};
+
+export type StepCreate = {
+  name: string;
+  description?: string | null;
+  node_type: NodeType;
+  parent_id?: number | null;
+  rule?: StepRule | null;
+  children?: StepCreate[];
+};
+
+export type StepUpdate = {
+  name?: string;
+  description?: string | null;
 };

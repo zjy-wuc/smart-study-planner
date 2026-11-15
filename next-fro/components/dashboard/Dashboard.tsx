@@ -40,8 +40,8 @@ export default function Dashboard() {
   const featuredPlans = filteredPlans.slice(0, 3);
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4">
+    <div className="workspace-dashboard">
+      <div className="workspace-page-heading flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">
             首页工作台
@@ -55,88 +55,88 @@ export default function Dashboard() {
         <button
           type="button"
           onClick={reload}
-          className="rounded-lg border border-blue-600 px-4 py-2 text-blue-700"
+          className="workspace-button workspace-button--secondary rounded-lg border border-blue-600 px-4 py-2 text-blue-700"
         >
           刷新数据
         </button>
       </div>
 
-      <section aria-labelledby="plans-heading">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 id="plans-heading" className="text-xl font-semibold">
-            我的计划
+      <section aria-labelledby="today-heading" className="workspace-panel workspace-dashboard-today">
+        <div className="workspace-section-heading mb-4 flex items-center justify-between">
+          <h2 id="today-heading" className="text-xl font-semibold">
+            今日任务
           </h2>
 
-          <Link href="/plans" className="text-blue-700">
-            查看全部计划
+          <Link href="/task/today" className="workspace-text-link text-blue-700">
+            查看全部
           </Link>
         </div>
 
         {loading ? (
-          <p>正在获取计划...</p>
-        ) : plansError ? (
+          <p>正在获取今日任务...</p>
+        ) : tasksError ? (
           <p role="alert" className="text-red-600">
-            计划加载失败：{plansError}
-          </p>
-        ) : filteredPlans.length === 0 ? (
-          <p className="rounded-xl border bg-white p-6 text-slate-500">
-            {search.trim()
-              ? "没有匹配的学习计划"
-              : "还没有学习计划"}
+            今日任务加载失败：{tasksError}
           </p>
         ) : (
-          <>
-            <div className="grid gap-4 lg:grid-cols-3">
-              {featuredPlans.map((plan) => (
-                <PlanCard key={plan.id} plan={plan} />
-              ))}
-            </div>
-
-            {filteredPlans.length > 3 && (
-              <p className="mt-3 text-sm text-slate-500">
-                匹配 {filteredPlans.length} 个计划，
-                首页显示前 3 个。
-              </p>
-            )}
-          </>
+          <TodayTaskList tasks={tasks.slice(0, 5)} />
         )}
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="workspace-dashboard-grid">
         <section
-          aria-labelledby="today-heading"
-          className="rounded-xl border border-slate-200 bg-white p-5"
+          aria-labelledby="plans-heading"
+          className="workspace-panel workspace-dashboard-plans"
         >
-          <div className="mb-4 flex items-center justify-between">
+          <div className="workspace-section-heading mb-4 flex items-center justify-between">
             <h2
-              id="today-heading"
+              id="plans-heading"
               className="text-xl font-semibold"
             >
-              今日任务
+              我的计划
             </h2>
 
             <Link
-              href="/task/today"
-              className="text-blue-700"
+              href="/plans"
+              className="workspace-text-link text-blue-700"
             >
-              查看全部
+              查看全部计划
             </Link>
           </div>
 
           {loading ? (
-            <p>正在获取今日任务...</p>
-          ) : tasksError ? (
+            <p>正在获取计划...</p>
+          ) : plansError ? (
             <p role="alert" className="text-red-600">
-              今日任务加载失败：{tasksError}
+              计划加载失败：{plansError}
+            </p>
+          ) : filteredPlans.length === 0 ? (
+            <p className="workspace-empty-state rounded-xl border bg-white p-6 text-slate-500">
+              {search.trim()
+                ? "没有匹配的学习计划"
+                : "还没有学习计划"}
             </p>
           ) : (
-            <TodayTaskList tasks={tasks.slice(0, 5)} />
+            <>
+              <div className="workspace-plan-grid">
+                {featuredPlans.map((plan) => (
+                  <PlanCard key={plan.id} plan={plan} />
+                ))}
+              </div>
+
+              {filteredPlans.length > 3 && (
+                <p className="mt-3 text-sm text-slate-500">
+                  匹配 {filteredPlans.length} 个计划，
+                  首页显示前 3 个。
+                </p>
+              )}
+            </>
           )}
         </section>
 
         <section
           aria-labelledby="steps-heading"
-          className="rounded-xl border border-slate-200 bg-white p-5"
+          className="workspace-panel rounded-xl border border-slate-200 bg-white p-5"
         >
           <h2
             id="steps-heading"

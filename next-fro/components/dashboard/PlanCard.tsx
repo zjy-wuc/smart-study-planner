@@ -53,7 +53,7 @@ function PlanProgressView({ plan }: { plan: Plan }) {
   const percent = progress?.progress_percent ?? null;
 
   return (
-    <div className="mt-4">
+    <div className="workspace-plan-progress mt-4">
       {progressLoading ? (
         <p className="text-sm text-slate-500">正在加载完成率...</p>
       ) : progressError ? (
@@ -64,14 +64,14 @@ function PlanProgressView({ plan }: { plan: Plan }) {
         <>
           <p className="text-sm">当前可统计进度：{percent}%</p>
           <div
-            className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"
+            className="workspace-progress-track mt-2 h-2 overflow-hidden rounded-full bg-slate-200"
             role="progressbar"
             aria-label={`${plan.name}的可统计进度`}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent}
           >
-            <div className="h-full rounded-full bg-blue-600" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
+            <div className="workspace-progress-fill h-full rounded-full bg-blue-600" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
           </div>
           <p className="mt-2 text-xs text-slate-500">
             {progress?.computable_leaf_count}/{progress?.leaf_count} 个叶子参与计算
@@ -84,23 +84,23 @@ function PlanProgressView({ plan }: { plan: Plan }) {
 
 export function PlanCard({ plan }: { plan: Plan }) {
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="flex items-start justify-between gap-3">
+    <article className="workspace-plan-card rounded-xl border border-slate-200 bg-white p-5">
+      <div className="workspace-plan-card-heading flex items-start justify-between gap-3">
         <h3 className="font-semibold">
   <Link
     href={`/plans/${plan.id}`}
-    className="hover:text-blue-700 hover:underline"
+    className="workspace-plan-link hover:text-blue-700 hover:underline"
   >
     {plan.name}
   </Link>
 </h3>
 
-        <span className="rounded-md bg-slate-100 px-2 py-1 text-xs">
+        <span className="workspace-plan-status rounded-md bg-slate-100 px-2 py-1 text-xs">
           {statusLabels[plan.status]}
         </span>
       </div>
 
-      <p className="mt-3 text-sm text-slate-500">
+      <p className="workspace-plan-date mt-3 text-sm text-slate-500">
         {plan.start_date} ～ {plan.end_date}
       </p>
 

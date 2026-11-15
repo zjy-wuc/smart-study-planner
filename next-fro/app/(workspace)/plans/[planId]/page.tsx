@@ -7,7 +7,7 @@ import Link from "next/link";
 
 import { PlanForm } from "@/components/plans/PlanForm";
 import { ApiError } from "@/lib/api/client";
-
+import { StepTreeEditor } from "@/components/plans/StepTreeEditor";
 import {
   getPlan,
   updatePlan,
@@ -252,17 +252,12 @@ export default function PlanDetailPage() {
         </>
       )}
 
-      <section className="rounded-xl border bg-white p-6">
-        <h2 className="font-semibold">
-          学习步骤
-        </h2>
-
-        <p className="mt-2 text-sm text-slate-500">
-          下一阶段将在这里接入 GROUP / LEAF
-          树形编辑器、执行规则和开始计划操作。
-        </p>
-      </section>
-
+    <section className="rounded-xl border bg-white p-6">
+  <StepTreeEditor
+    planId={plan.id}
+    status={plan.status}
+  />
+</section>
       <section className="rounded-xl border border-red-200 bg-white p-6">
         <h2 className="font-semibold text-red-700">
           删除计划

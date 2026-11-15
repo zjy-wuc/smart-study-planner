@@ -4,11 +4,13 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/auth/token";
+import "@/components/css/Workspace.css";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   createContext,
+  Fragment,
   useContext,
   useState,
   type ReactNode,
@@ -32,11 +34,29 @@ export function useWorkspaceSearch() {
   return context;
 }
 
-const navigation = [
-  { href: "/", label: "首页" },
-  { href: "/plans", label: "我的计划" },
-  { href: "/task/today", label: "今日任务" },
-  { href: "/profile", label: "个人中心" },
+type WorkspaceIconName = "book" | "home" | "calendar" | "tasks" | "user";
+
+function WorkspaceIcon({ name }: { name: WorkspaceIconName }) {
+  const paths: Record<WorkspaceIconName, ReactNode> = {
+    book: <><path d="M12 6C9 3.5 5.5 3.5 3 5v13c3-1.5 6-1.5 9 1.5M12 6c3-2.5 6.5-2.5 9-1v13c-3-1.5-6-1.5-9 1.5M12 6v13.5" /></>,
+    home: <><path d="m3 10 9-7 9 7v10H3z" /><path d="M9 20v-7h6v7" /></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2" /></>,
+    tasks: <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="m8 9 1 1 2-2M14 9h3m-9 6 1 1 2-2M14 15h3" /></>,
+    user: <><circle cx="12" cy="7.5" r="3.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2z" /></>,
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
+
+const navigation: { href: string; label: string; icon: WorkspaceIconName }[] = [
+  { href: "/", label: "首页", icon: "home" },
+  { href: "/plans", label: "我的计划", icon: "calendar" },
+  { href: "/task/today", label: "今日任务", icon: "tasks" },
+  { href: "/profile", label: "个人中心", icon: "user" },
 ];
 
 export function WorkspaceShell({
@@ -66,11 +86,13 @@ if (!authChecked) {
     <WorkspaceSearchContext.Provider
       value={{ search, setSearch }}
     >
-      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-        <header className="flex min-h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white px-6">
-          <Link href="/" className="font-semibold text-blue-700">
-            学习计划管理系统
-          </Link>
+      <div className="workspace-app">
+        <header className="workspace-header">
+          <div className="workspace-brand">
+            <span className="workspace-brand-icon"><WorkspaceIcon name="book" /></span>
+            <strong>学习计划管理系统</strong>
+            <span className="workspace-brand-tagline">让学习更有计划</span>
+          </div>
 
           <div className="flex items-center gap-4">
             {pathname === "/" && (
@@ -80,19 +102,17 @@ if (!authChecked) {
                 placeholder="搜索计划名称..."
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="w-48 rounded-lg border border-slate-300 px-3 py-2 sm:w-64"
+                className="workspace-search"
               />
             )}
 
-            <Link href="/profile" className="font-medium">
-              个人中心
-            </Link>
           </div>
         </header>
 
-        <div className="flex flex-1">
-          <aside className="w-48 shrink-0 border-r border-slate-200 bg-white p-4 sm:w-56">
-            <nav aria-label="主导航" className="space-y-2">
+        <div className="workspace-layout">
+          <aside className="workspace-sidebar">
+            <nav aria-label="主导航" className="workspace-nav">
+              <div className="workspace-sidebar-label">学习空间</div>
               {navigation.map((item) => {
                 const active =
                   pathname === item.href ||
@@ -102,25 +122,29 @@ if (!authChecked) {
                   );
 
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={[
-                      "block rounded-lg px-3 py-3",
-                      active
-                        ? "bg-blue-50 font-medium text-blue-700"
-                        : "text-slate-700 hover:bg-slate-100",
-                    ].join(" ")}
-                  >
-                    {item.label}
-                  </Link>
+                  <Fragment key={item.href}>
+                    {item.href === "/profile" && (
+                      <>
+                        <div className="workspace-nav-divider" />
+                        <div className="workspace-sidebar-label">账户</div>
+                      </>
+                    )}
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className="workspace-nav-link"
+                    >
+                      <WorkspaceIcon name={item.icon} />
+                      {item.label}
+                    </Link>
+                  </Fragment>
                 );
               })}
             </nav>
+            <p className="workspace-sidebar-note">每一天的努力，<br />都在带你靠近目标。<span aria-hidden="true">✦</span></p>
           </aside>
 
-          <main className="min-w-0 flex-1 p-5 sm:p-8">
+          <main className="workspace-main">
             {children}
           </main>
         </div>

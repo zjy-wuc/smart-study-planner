@@ -18,18 +18,18 @@ export function TodayTaskList({
 }) {
   if (tasks.length === 0) {
     return (
-      <p className="py-6 text-sm text-slate-500">
+      <p className="workspace-task-empty py-6 text-sm text-slate-500">
         今天暂无安排的任务
       </p>
     );
   }
 
   return (
-    <ul className="divide-y divide-slate-200">
+    <ul className="workspace-task-list divide-y divide-slate-200">
       {tasks.map((task) => (
         <li
           key={task.id}
-          className="flex items-start justify-between gap-4 py-4"
+          className="workspace-task-item flex items-start justify-between gap-4 py-4"
         >
           <div>
             <p className="font-medium">
@@ -57,7 +57,7 @@ export function TodayTaskList({
             )}
           </div>
 
-          <span className="shrink-0 text-sm text-slate-600">
+          <span className="workspace-task-status shrink-0 text-sm text-slate-600">
             {taskStatusLabels[task.display_status]}
           </span>
         </li>
