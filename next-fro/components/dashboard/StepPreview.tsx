@@ -35,52 +35,17 @@ function StepBranch({
 }
 
 
-export function StepPreview({
-  plans,
-}: {
-  plans: Plan[];
-}) {
-  const [selectedPlanId, setSelectedPlanId] =
-    useState<number | null>(null);
-
+function StepTree({ planId }: { planId: number }) {
   const [nodes, setNodes] = useState<StepNode[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 计划列表改变时，保证当前选中的计划依然存在
   useEffect(() => {
-    setSelectedPlanId((current) => {
-      if (plans.length === 0) {
-        return null;
-      }
-
-      if (
-        current !== null &&
-        plans.some((plan) => plan.id === current)
-      ) {
-        return current;
-      }
-
-      return plans[0].id;
-    });
-  }, [plans]);
-
-  useEffect(() => {
-    if (selectedPlanId === null) {
-      setNodes([]);
-      setError(null);
-      return;
-    }
-
     let cancelled = false;
 
     async function loadSteps() {
-      setLoading(true);
-      setError(null);
-      setNodes([]);
-
       try {
-        const result = await getPlanSteps(selectedPlanId!);
+        const result = await getPlanSteps(planId);
 
         if (!cancelled) {
           setNodes(result);
@@ -105,7 +70,24 @@ export function StepPreview({
     return () => {
       cancelled = true;
     };
-  }, [selectedPlanId]);
+  }, [planId]);
+
+  if (loading) return <p className="mt-4 text-sm">正在加载步骤...</p>;
+  if (error) return <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>;
+  if (nodes.length === 0) return <p className="mt-4 text-sm text-slate-500">当前计划还没有学习步骤</p>;
+
+  return (
+    <ul className="mt-4">
+      {nodes.map((node) => <StepBranch key={node.id} node={node} />)}
+    </ul>
+  );
+}
+
+export function StepPreview({ plans }: { plans: Plan[] }) {
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const activePlanId = plans.some((plan) => plan.id === selectedPlanId)
+    ? selectedPlanId
+    : plans[0]?.id ?? null;
 
   if (plans.length === 0) {
     return (
@@ -126,7 +108,7 @@ export function StepPreview({
 
       <select
         id="preview-plan"
-        value={selectedPlanId ?? ""}
+        value={activePlanId ?? ""}
         onChange={(event) => {
           setSelectedPlanId(Number(event.target.value));
         }}
@@ -139,23 +121,7 @@ export function StepPreview({
         ))}
       </select>
 
-      {loading ? (
-        <p className="mt-4 text-sm">正在加载步骤...</p>
-      ) : error ? (
-        <p role="alert" className="mt-4 text-sm text-red-600">
-          {error}
-        </p>
-      ) : nodes.length === 0 ? (
-        <p className="mt-4 text-sm text-slate-500">
-          当前计划还没有学习步骤
-        </p>
-      ) : (
-        <ul className="mt-4">
-          {nodes.map((node) => (
-            <StepBranch key={node.id} node={node} />
-          ))}
-        </ul>
-      )}
+      {activePlanId !== null && <StepTree key={activePlanId} planId={activePlanId} />}
     </div>
   );
 }

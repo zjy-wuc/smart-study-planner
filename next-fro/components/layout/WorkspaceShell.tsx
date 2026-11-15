@@ -31,7 +31,7 @@ export function useWorkspaceSearch() {
 const navigation = [
   { href: "/", label: "首页" },
   { href: "/plans", label: "我的计划" },
-  { href: "/tasks/today", label: "今日任务" },
+  { href: "/task/today", label: "今日任务" },
   { href: "/profile", label: "个人中心" },
 ];
 

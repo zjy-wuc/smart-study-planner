@@ -15,3 +15,17 @@ export type Plan = {
   created_at: string;
   updated_at: string;
 };
+
+export type PlanCreate = {
+  name: string;
+  description?: string | null;
+  start_date: string;
+  end_date: string;
+};
+
+export type PlanUpdate = {
+  name?: string;
+  description?: string | null;
+  start_date?: string;
+  end_date?: string;
+};

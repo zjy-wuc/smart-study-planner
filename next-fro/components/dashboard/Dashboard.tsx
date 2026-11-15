@@ -12,7 +12,7 @@ import { TodayTaskList } from "@/components/dashboard/TodayTaskList";
 import { StepPreview } from "@/components/dashboard/StepPreview";
 
 
-export default function HomePage() {
+export default function Dashboard() {
   const {
     plans,
     tasks,
@@ -116,7 +116,7 @@ export default function HomePage() {
             </h2>
 
             <Link
-              href="/tasks/today"
+              href="/task/today"
               className="text-blue-700"
             >
               查看全部

@@ -1,49 +1,10 @@
+import Dashboard from "@/components/dashboard/Dashboard";
+import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 
-"use client";
-
-import { useEffect, useState } from "react";
-
-type HealthResponse = {
-  status: string;
-};
-
-export default function Home() {
-  const [status, setStatus] = useState("正在连接后端...");
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/health`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP 错误：${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data: HealthResponse) => {
-        setStatus(data.status);
-      })
-      .catch((err: Error) => {
-        setError(err.message);
-        setStatus("连接失败");
-      });
-  }, []);//组件挂载时执行一次
-
+export default function HomePage() {
   return (
-    <main style={{ maxWidth: 700, margin: "80px auto", padding: 24 }}>
-      <h1>智能学习计划管理系统</h1>
-      <p>前端：Next.js</p>
-      <p>后端：Python + FastAPI</p>
-
-      <hr />
-
-      <h2>后端连接测试</h2>
-      <p>连接状态：{status}</p>
-
-      {error && (
-        <p style={{ color: "red" }}>
-          错误信息：{error}
-        </p>
-      )}
-    </main>
+    <WorkspaceShell>
+      <Dashboard />
+    </WorkspaceShell>
   );
 }
