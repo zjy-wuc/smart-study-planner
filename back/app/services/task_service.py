@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.clock import business_today
 from app.repositories import task_repository
-
+from app.repositories import active_task_repository
 
 # 允许继续打卡的任务状态
 CHECKIN_ALLOWED_STATUSES = {
@@ -353,7 +353,7 @@ def delete_task(
     """逻辑删除任务，保留打卡历史"""
 
     try:
-        _require_task(
+        task = _require_task(
             db,
             task_id,
             user_id,
@@ -364,7 +364,13 @@ def delete_task(
             db=db,
             task_id=task_id,
         )
-
+        
+        if task["task_type"] == "NUMERIC":
+            active_task_repository.recalculate_numeric_leaf_total(
+                db=db,
+                plan_id=task["plan_id"],
+                step_id=task["step_id"],
+            )
         db.commit()
 
     except Exception:
