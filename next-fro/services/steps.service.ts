@@ -5,7 +5,12 @@ import type { StepNode,
   StepCreate,
   StepRule,
   StepUpdate,
+   ActiveStepTreeCreate,
+  ActiveStepCreateResult,
  } from "@/types/step";
+
+
+
 
 export async function getPlanSteps(
   planId: number,
@@ -71,6 +76,37 @@ export async function deleteStep(
 ): Promise<void> {
   await apiFetch<ApiResponse<unknown>>(
     `/plans/${planId}/steps/${stepId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+
+
+export async function createActiveStep(
+  planId: number,
+  data: ActiveStepTreeCreate,
+): Promise<ActiveStepCreateResult> {
+  const response = await apiFetch<
+    ApiResponse<ActiveStepCreateResult>
+  >(
+    `/plans/${planId}/active-steps`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+  );
+
+  return response.data;
+}
+
+export async function deleteActiveStep(
+  planId: number,
+  stepId: number,
+): Promise<void> {
+  await apiFetch<ApiResponse<unknown>>(
+    `/plans/${planId}/active-steps/${stepId}`,
     {
       method: "DELETE",
     },

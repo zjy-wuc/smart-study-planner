@@ -3,6 +3,15 @@ import { apiFetch } from "@/lib/api/client";
 import type { ApiResponse } from "@/types/api";
 import type { DailyTask } from "@/types/task";
 
+
+import type {
+  PlanTask,
+  TaskType,
+  TaskStatus,
+  ActiveTaskUpdate,
+} from "@/types/task";
+
+
 export async function listTodayTasks(): Promise<DailyTask[]> {
   const result =
     await apiFetch<ApiResponse<DailyTask[]>>(
@@ -95,5 +104,57 @@ export async function getTaskRecords(
 
   throw new Error(
     "打卡历史响应格式不符合预期，请核对后端接口",
+  );
+}
+
+
+
+// 查询指定计划的全部有效任务
+export async function listPlanTasks(
+  planId: number,
+): Promise<PlanTask[]> {
+  const response =
+    await apiFetch<ApiResponse<PlanTask[]>>(
+      `/plans/${planId}/tasks`,
+    );
+
+  return response.data;
+}
+
+// 读取完整任务详情
+export async function getTask(
+  taskId: number,
+): Promise<DailyTask> {
+  const response =
+    await apiFetch<ApiResponse<DailyTask>>(
+      `/tasks/${taskId}`,
+    );
+
+  return response.data;
+}
+
+// 修改符合条件的未来任务
+export async function updateFutureTask(
+  taskId: number,
+  data: ActiveTaskUpdate,
+): Promise<void> {
+  await apiFetch<ApiResponse<unknown>>(
+    `/tasks/${taskId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+// 逻辑删除任务
+export async function deleteTask(
+  taskId: number,
+): Promise<void> {
+  await apiFetch<ApiResponse<unknown>>(
+    `/tasks/${taskId}`,
+    {
+      method: "DELETE",
+    },
   );
 }

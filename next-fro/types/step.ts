@@ -1,7 +1,7 @@
 
 import type { TaskType } from "@/types/task";
 
-
+import type { ScheduleEntryInput } from "@/types/schedule";
 
 export type NodeType = "GROUP" | "LEAF";
 
@@ -51,4 +51,30 @@ export type StepCreate = {
 export type StepUpdate = {
   name?: string;
   description?: string | null;
+};
+
+export type ActiveStepNode = {
+  name: string;
+  description?: string | null;
+  node_type: NodeType;
+  rule?: StepRule | null;
+  entries?: ScheduleEntryInput[];
+  children?: ActiveStepNode[];
+};
+
+/**
+ * ACTIVE 计划新增节点时提交的请求体
+ */
+export type ActiveStepTreeCreate = {
+  parent_id?: number | null;
+  node: ActiveStepNode;
+};
+
+/**
+ * ACTIVE 计划新增节点成功后的响应数据
+ */
+export type ActiveStepCreateResult = {
+  created_step_ids: number[];
+  generated_task_count: number;
+  tree: StepNode[];
 };

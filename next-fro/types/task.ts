@@ -69,3 +69,23 @@ export type RolloverResult = {
   merged: boolean;
   source_remaining_quantity?: number;
 };
+
+
+
+export type PlanTask = {
+  id: number;
+  plan_id: number;
+  step_id: number;
+  step_name: string;
+  task_date: string;
+  task_type: TaskType;
+  content: string | null;
+  target_quantity: number | null;
+  actual_quantity: number;
+  status: TaskStatus;
+  completed_at: string | null;
+};
+
+export type ActiveTaskUpdate =
+  | { content: string; target_quantity?: never }
+  | { target_quantity: number; content?: never };

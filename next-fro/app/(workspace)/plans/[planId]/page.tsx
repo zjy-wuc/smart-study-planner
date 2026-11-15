@@ -26,6 +26,13 @@ import type {
 } from "@/types/plan";
 
 
+import { PlanTasksPanel } from
+  "@/components/tasks/PlanTasksPanel";
+
+import { ActiveStepManager } from
+  "@/components/plans/ActiveStepManager";
+
+
 const statusLabels = {
   DRAFT: "草稿",
   ACTIVE: "进行中",
@@ -326,15 +333,26 @@ async function handleStartPlan() {
       )}
 
     
-<section className="rounded-xl border bg-white p-6">
-  <StepTreeEditor
-    planId={plan.id}
-    status={plan.status}
-    onChanged={() => {
-      setTreeRevision((value) => value + 1);
-    }}
+
+{plan.status === "ACTIVE" ? (
+  <ActiveStepManager
+    plan={plan}
+    onChanged={() =>
+      setTreeRevision((value) => value + 1)
+    }
   />
-</section>
+) : (
+  <section className="rounded-xl border bg-white p-6">
+    <StepTreeEditor
+      planId={plan.id}
+      status={plan.status}
+      onChanged={() =>
+        setTreeRevision((value) => value + 1)
+      }
+    />
+  </section>
+)}
+
 
 {plan.status === "DRAFT" && (
   <>
@@ -373,6 +391,15 @@ async function handleStartPlan() {
     </section>
   </>
 )}
+
+{plan.status !== "DRAFT" && (
+  <PlanTasksPanel
+    key={`${plan.id}-${treeRevision}`}
+    planId={plan.id}
+    planStatus={plan.status}
+  />
+)}
+
 
       <section className="rounded-xl border border-red-200 bg-white p-6">
         <h2 className="font-semibold text-red-700">
