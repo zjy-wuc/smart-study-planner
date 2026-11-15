@@ -29,3 +29,19 @@ export type PlanUpdate = {
   start_date?: string;
   end_date?: string;
 };
+
+
+
+export type EndPlanResult = {
+  plan_id: number;
+  status: "ENDED";
+
+  end_mode: "EARLY" | "NORMAL_EXPIRED";
+
+  ended_task_count: number;
+  deleted_task_count: number;
+};
+
+
+
+

@@ -1,7 +1,7 @@
 //curd 操作
 import { apiFetch } from "@/lib/api/client";
 import type { ApiResponse } from "@/types/api";
-import type { Plan } from "@/types/plan";
+import type { Plan, EndPlanResult } from "@/types/plan";
 
 export type StartPlanResult = {
   plan_id: number;
@@ -98,4 +98,27 @@ export async function startPlan(
     );
 
   return result.data;
+}
+
+/**
+ * 结束执行中的学习计划。
+ *
+ * 后端负责：
+ * 1. 校验计划归属和 ACTIVE 状态
+ * 2. 区分 EARLY / NORMAL_EXPIRED
+ * 3. 处理任务状态或逻辑删除
+ * 4. 在事务内更新计划状态
+ */
+export async function endPlan(
+  planId: number,
+): Promise<EndPlanResult> {
+  const response =
+    await apiFetch<ApiResponse<EndPlanResult>>(
+      `/plans/${planId}/end`,
+      {
+        method: "POST",
+      },
+    );
+
+  return response.data;
 }

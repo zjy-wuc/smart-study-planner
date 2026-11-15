@@ -32,7 +32,10 @@ import { PlanTasksPanel } from
 import { ActiveStepManager } from
   "@/components/plans/ActiveStepManager";
 
+import { PlanLifecyclePanel } from
+  "@/components/plans/PlanLifecyclePanel";
 
+import type { EndPlanResult } from "@/types/plan";
 const statusLabels = {
   DRAFT: "草稿",
   ACTIVE: "进行中",
@@ -174,6 +177,41 @@ async function handleStartPlan() {
       cancelled = true;
     };
   }, [planId, router]);
+
+
+
+function handlePlanEnded(result: EndPlanResult) {
+  // POST /end 已成功，使用后端确认的状态更新页面
+  setPlan((current) =>
+    current
+      ? { ...current, status: result.status }
+      : current,
+  );
+
+  // 让计划任务列表重新加载
+  setTreeRevision((current) => current + 1);
+
+  const message =
+    result.end_mode === "EARLY"
+      ? `计划已提前结束：${result.ended_task_count} 条任务停止，${result.deleted_task_count} 条任务被逻辑删除。`
+      : "计划已正常到期结束，原有任务执行记录予以保留。";
+
+  setNotice(message);
+  setError(null);
+
+  // 从后端重新读取最新计划详情
+  void getPlan(result.plan_id)
+    .then((updated) => {
+      setPlan((current) =>
+        current?.id === updated.id ? updated : current,
+      );
+    })
+    .catch(() => {
+      setNotice(
+        `${message} 最新详情读取失败，请刷新页面。`,
+      );
+    });
+}
 
 
   // 修改计划
@@ -397,6 +435,14 @@ async function handleStartPlan() {
     key={`${plan.id}-${treeRevision}`}
     planId={plan.id}
     planStatus={plan.status}
+  />
+)}
+
+
+{plan.status === "ACTIVE" && (
+  <PlanLifecyclePanel
+    plan={plan}
+    onEnded={handlePlanEnded}
   />
 )}
 

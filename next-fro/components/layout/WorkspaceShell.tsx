@@ -4,6 +4,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/auth/token";
+import { WorkspaceIcon, type WorkspaceIconName } from "@/components/ui/WorkspaceIcon";
 import "@/components/css/Workspace.css";
 
 import Link from "next/link";
@@ -32,24 +33,6 @@ export function useWorkspaceSearch() {
   }
 
   return context;
-}
-
-type WorkspaceIconName = "book" | "home" | "calendar" | "tasks" | "user";
-
-function WorkspaceIcon({ name }: { name: WorkspaceIconName }) {
-  const paths: Record<WorkspaceIconName, ReactNode> = {
-    book: <><path d="M12 6C9 3.5 5.5 3.5 3 5v13c3-1.5 6-1.5 9 1.5M12 6c3-2.5 6.5-2.5 9-1v13c-3-1.5-6-1.5-9 1.5M12 6v13.5" /></>,
-    home: <><path d="m3 10 9-7 9 7v10H3z" /><path d="M9 20v-7h6v7" /></>,
-    calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2" /></>,
-    tasks: <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="m8 9 1 1 2-2M14 9h3m-9 6 1 1 2-2M14 15h3" /></>,
-    user: <><circle cx="12" cy="7.5" r="3.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2z" /></>,
-  };
-
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {paths[name]}
-    </svg>
-  );
 }
 
 const navigation: { href: string; label: string; icon: WorkspaceIconName }[] = [
@@ -94,8 +77,10 @@ if (!authChecked) {
             <span className="workspace-brand-tagline">让学习更有计划</span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div>
             {pathname === "/" && (
+              <div className="workspace-search-field">
+                <WorkspaceIcon name="search" />
               <input
                 type="search"
                 aria-label="搜索学习计划"
@@ -104,6 +89,7 @@ if (!authChecked) {
                 onChange={(event) => setSearch(event.target.value)}
                 className="workspace-search"
               />
+              </div>
             )}
 
           </div>
