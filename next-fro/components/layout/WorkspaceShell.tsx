@@ -1,6 +1,10 @@
 
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { getAccessToken } from "@/lib/auth/token";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -40,10 +44,24 @@ export function WorkspaceShell({
 }: {
   children: ReactNode;
 }) {
+    const router = useRouter();
+const [authChecked, setAuthChecked] = useState(false);
+
+useEffect(() => {
+  if (!getAccessToken()) {
+    router.replace("/login");
+    
+    return;
+  }
+
+  setAuthChecked(true);
+}, [router]);
   const pathname = usePathname();
 
   const [search, setSearch] = useState("");
-
+if (!authChecked) {
+  return <p role="status">正在检查登录状态...</p>;
+}
   return (
     <WorkspaceSearchContext.Provider
       value={{ search, setSearch }}

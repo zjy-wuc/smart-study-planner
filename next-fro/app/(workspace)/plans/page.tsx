@@ -20,6 +20,12 @@ export default function PlansPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">我的计划</h1>
+          <Link
+  href="/plans/new"
+  className="rounded-lg bg-blue-600 px-4 py-2 text-white"
+>
+  创建计划
+</Link>
           <p className="mt-2 text-slate-500">
             查看全部学习计划
           </p>

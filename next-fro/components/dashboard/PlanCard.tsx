@@ -1,6 +1,6 @@
 
 "use client";
-
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { getPlanProgress } from "@/services/progress.service";
@@ -87,8 +87,13 @@ export function PlanCard({ plan }: { plan: Plan }) {
     <article className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-semibold">
-          {plan.name}
-        </h3>
+  <Link
+    href={`/plans/${plan.id}`}
+    className="hover:text-blue-700 hover:underline"
+  >
+    {plan.name}
+  </Link>
+</h3>
 
         <span className="rounded-md bg-slate-100 px-2 py-1 text-xs">
           {statusLabels[plan.status]}
