@@ -3,6 +3,16 @@ import { apiFetch } from "@/lib/api/client";
 import type { ApiResponse } from "@/types/api";
 import type { Plan } from "@/types/plan";
 
+export type StartPlanResult = {
+  plan_id: number;
+  status: "ACTIVE";
+  generated_count: number;
+  start_date: string;
+  end_date: string;
+};
+
+
+
 import type {
   PlanCreate,
   PlanUpdate,
@@ -73,4 +83,19 @@ export async function deletePlan(
       method: "DELETE",
     },
   );
+}
+
+// 启动草稿，并让后端生成全周期每日任务
+export async function startPlan(
+  planId: number,
+): Promise<StartPlanResult> {
+  const result =
+    await apiFetch<ApiResponse<StartPlanResult>>(
+      `/plans/${planId}/start`,
+      {
+        method: "POST",
+      },
+    );
+
+  return result.data;
 }

@@ -34,6 +34,7 @@ import type {
 type Props = {
   planId: number;
   status: PlanStatus;
+  onChanged?: () => void;
 };
 
 type GroupOption = {
@@ -175,6 +176,7 @@ function TreeItem({
 export function StepTreeEditor({
   planId,
   status,
+  onChanged,
 }: Props) {
   const canEdit = status === "DRAFT";
 
@@ -267,6 +269,7 @@ export function StepTreeEditor({
 
       setNotice(successMessage);
       setRevision((value) => value + 1);
+      onChanged?.();
 
       return true;
     } catch (err) {

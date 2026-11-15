@@ -41,3 +41,31 @@ export type DailyTask = {
   effective_target_quantity: number | null;
   remaining_quantity: number | null;
 };
+
+
+export type NumericProgressUpdate = {
+  actual_quantity: number;
+};
+
+export type RolloverRequest = {
+  target_date: string;
+};
+
+export type StudyRecord = {
+  id: number;
+  task_id: number;
+  event_type: "BOOLEAN_COMPLETE" | "NUMERIC_PROGRESS";
+  recorded_value: number | null;
+  task_date: string;
+  recorded_at: string;
+};
+
+export type RolloverResult = {
+  source_task_id: number;
+  target_task_id: number;
+  task_type: "BOOLEAN" | "NUMERIC";
+  target_date: string;
+  rollover_quantity: number | null;
+  merged: boolean;
+  source_remaining_quantity?: number;
+};

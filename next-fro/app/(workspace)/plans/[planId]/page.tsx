@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
+import { DraftScheduleEditor } from
+  "@/components/plans/DraftScheduleEditor";
+
+import { startPlan } from "@/services/plans.service";
+
 import { PlanForm } from "@/components/plans/PlanForm";
 import { ApiError } from "@/lib/api/client";
 import { StepTreeEditor } from "@/components/plans/StepTreeEditor";
@@ -40,6 +45,74 @@ export default function PlanDetailPage() {
 
   const [notice, setNotice] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+
+const [treeRevision, setTreeRevision] = useState(0);
+const [starting, setStarting] = useState(false);
+
+
+// 启动计划：从 DRAFT 进入 ACTIVE
+async function handleStartPlan() {
+  if (!plan || plan.status !== "DRAFT" || starting) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `确定开始「${plan.name}」吗？\n\n` +
+    "后端将生成整个计划周期的每日任务。\n" +
+    "开始后不能再修改计划起止日期，" +
+    "草稿节点编辑规则也将受到限制。",
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  setStarting(true);
+  setError(null);
+  setNotice(null);
+
+  try {
+    const result = await startPlan(plan.id);
+
+    // 后端已确认启动成功，先更新本地状态
+    setPlan((current) =>
+      current
+        ? { ...current, status: "ACTIVE" }
+        : current,
+    );
+
+    setNotice(
+      `计划启动成功，已生成 ${result.generated_count} 条每日任务`,
+    );
+
+    // 再获取数据库的最新计划详情
+    try {
+      const updated = await getPlan(plan.id);
+      setPlan(updated);
+    } catch {
+      setNotice(
+        `计划已经启动，生成了 ${result.generated_count} 条任务。` +
+        "但详情刷新失败，请刷新页面确认最新数据。",
+      );
+    }
+
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      router.replace("/login");
+      return;
+    }
+
+    setError(
+      err instanceof Error
+        ? err.message
+        : "计划启动失败",
+    );
+  } finally {
+    setStarting(false);
+  }
+}
+
 
 
   // 页面打开后获取计划详情
@@ -252,12 +325,55 @@ export default function PlanDetailPage() {
         </>
       )}
 
-    <section className="rounded-xl border bg-white p-6">
+    
+<section className="rounded-xl border bg-white p-6">
   <StepTreeEditor
     planId={plan.id}
     status={plan.status}
+    onChanged={() => {
+      setTreeRevision((value) => value + 1);
+    }}
   />
 </section>
+
+{plan.status === "DRAFT" && (
+  <>
+    <DraftScheduleEditor
+      planId={plan.id}
+      startDate={plan.start_date}
+      endDate={plan.end_date}
+      treeRevision={treeRevision}
+    />
+
+    <section className="space-y-4 rounded-xl border p-6">
+      <h2 className="text-xl font-semibold">
+        正式开始计划
+      </h2>
+
+      <p className="text-sm">
+        开始前请检查：
+        树形步骤完整、叶子规则正确，
+        每日自定义安排已经填写完成，
+        NUMERIC 手动安排的数量合计等于总目标。
+      </p>
+
+      <p className="text-sm">
+        点击开始后，FastAPI 会再次完成全部校验。
+        如果有缺失或冲突，计划不会进入 ACTIVE。
+      </p>
+
+      <button
+        type="button"
+        disabled={starting}
+        onClick={() => void handleStartPlan()}
+        className="rounded bg-blue-600 px-5 py-3 text-white disabled:opacity-50"
+      >
+        {starting ? "正在启动计划..." : "开始执行计划"}
+      </button>
+    </section>
+  </>
+)}
+
       <section className="rounded-xl border border-red-200 bg-white p-6">
         <h2 className="font-semibold text-red-700">
           删除计划
