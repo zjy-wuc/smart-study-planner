@@ -7,20 +7,8 @@ import { getCurrentUser, logoutAllSessions, logoutUser } from "@/services/auth.s
 import { ApiError } from "@/lib/api/client";
 import { removeTokenPair } from "@/lib/auth/token";
 import type { User } from "@/types/auth";
+import { WorkspaceIcon as Icon } from "@/components/ui/WorkspaceIcon";
 import "@/components/css/Profile.css";
-
-function Icon({ name }: { name: "book" | "home" | "calendar" | "user" | "shield" | "screen" | "power" }) {
-  const paths: Record<typeof name, React.ReactNode> = {
-    book: <><path d="M12 6C9 3.5 5.5 3.5 3 5v13c3-1.5 6-1.5 9 1.5M12 6c3-2.5 6.5-2.5 9-1v13c-3-1.5-6-1.5-9 1.5M12 6v13.5" /></>,
-    home: <><path d="m3 10 9-7 9 7v10H3z" /><path d="M9 20v-7h6v7" /></>,
-    calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2" /></>,
-    user: <><circle cx="12" cy="7.5" r="3.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2z" /></>,
-    shield: <><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" /><path d="m9 12 2 2 4-4" /></>,
-    screen: <><rect x="3" y="4" width="18" height="13" rx="1.5" /><path d="M8 21h8M12 17v4" /></>,
-    power: <><path d="M12 2v10M7 5a9 9 0 1 0 10 0" /></>,
-  };
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
-}
 
 export default function UserProfile() {
   const router = useRouter();
@@ -66,29 +54,62 @@ export default function UserProfile() {
   return (
     <div className="profile-app">
       <header className="profile-header">
-        <div className="profile-brand"><span className="profile-brand-icon"><Icon name="book" /></span><strong>学习计划管理系统</strong><span className="profile-brand-tagline">让学习更有计划</span></div>
-        <div className="profile-header-user"><span className="profile-avatar-small">{avatar}</span><span>{user ? displayName : "个人中心"}</span></div>
+        <div className="profile-brand">
+          <span className="profile-brand-icon"><Icon name="book" /></span>
+          <strong>学习计划管理系统</strong>
+          <span className="profile-brand-tagline">让学习更有计划</span>
+        </div>
+        <div className="profile-header-user">
+          <span className="profile-avatar-small">{avatar}</span>
+          <span className="profile-header-name" title={user ? displayName : "个人中心"}>
+            {user ? displayName : "个人中心"}
+          </span>
+        </div>
       </header>
       <div className="profile-layout">
-        <aside className="profile-sidebar" aria-label="主导航">
-          <div className="profile-sidebar-label">学习空间</div>
-          <Link className="profile-nav-item" href="/"><Icon name="home" />首页</Link>
-          <span className="profile-nav-item profile-nav-disabled"><Icon name="calendar" />学习计划 <small>即将上线</small></span>
-          <div className="profile-nav-divider" />
-          <div className="profile-sidebar-label">账户</div>
-          <span className="profile-nav-item profile-nav-active" aria-current="page"><Icon name="user" />个人中心</span>
-          <div className="profile-sidebar-note">每一天的努力，<br />都在带你靠近目标。<span>✦</span></div>
+        <aside className="profile-sidebar">
+          <nav aria-label="主导航">
+            <div className="profile-sidebar-label">学习空间</div>
+            <Link className="profile-nav-item" href="/">
+              <Icon name="home" />首页
+            </Link>
+            <Link className="profile-nav-item" href="/plans">
+              <Icon name="calendar" />我的计划
+            </Link>
+            <Link className="profile-nav-item" href="/task/today">
+              <Icon name="tasks" />今日任务
+            </Link>
+            <div className="profile-nav-divider" />
+            <div className="profile-sidebar-label">账户</div>
+            <Link className="profile-nav-item profile-nav-active" href="/profile" aria-current="page">
+              <Icon name="user" />个人中心
+            </Link>
+          </nav>
+          <div className="profile-sidebar-note">
+            每一天的努力，<br />都在带你靠近目标。
+            <span aria-hidden="true">✦</span>
+          </div>
         </aside>
         <main className="profile-main">
-          <div className="profile-heading"><div><p>MY ACCOUNT</p><h1>个人中心</h1><span>管理你的账户信息和登录状态</span></div></div>
+          <div className="profile-heading">
+            <h1>个人中心</h1>
+            <p>管理你的账户信息和登录状态</p>
+          </div>
           <section className="profile-banner" aria-label="个人资料概览">
             <div className="profile-avatar">{avatar}</div>
-            <div className="profile-welcome"><span>欢迎回来</span><h2>{user ? displayName : "你的学习空间"}</h2><p>每一步，都算数。</p></div>
+            <div className="profile-welcome">
+              <span>欢迎回来</span>
+              <h2>{user ? displayName : "你的学习空间"}</h2>
+              <p>每一步，都算数。</p>
+            </div>
           </section>
           {message && <p className="profile-status" role="status">{message}</p>}
           <div className="profile-cards">
             <section className="profile-card">
-              <div className="profile-card-title"><span className="profile-card-icon"><Icon name="user" /></span><div><h2>基本资料</h2><p>你的账户信息</p></div></div>
+              <div className="profile-card-title">
+                <span className="profile-card-icon"><Icon name="user" /></span>
+                <div><h2>基本资料</h2><p>你的账户信息</p></div>
+              </div>
               <dl className="profile-details">
                 <div><dt>用户名</dt><dd>{user?.username ?? "—"}</dd></div>
                 <div><dt>昵称</dt><dd>{user ? user.nickname || "未设置" : "—"}</dd></div>
@@ -96,10 +117,21 @@ export default function UserProfile() {
               </dl>
             </section>
             <section className="profile-card">
-              <div className="profile-card-title"><span className="profile-card-icon"><Icon name="shield" /></span><div><h2>账户安全</h2><p>管理你的登录状态</p></div></div>
+              <div className="profile-card-title">
+                <span className="profile-card-icon"><Icon name="shield" /></span>
+                <div><h2>账户安全</h2><p>管理你的登录状态</p></div>
+              </div>
               <div className="profile-actions">
-                <button type="button" onClick={() => handleLogout(false)} disabled={loggingOut}><span className="profile-action-icon"><Icon name="screen" /></span><span><strong>退出当前设备</strong><small>仅退出此设备上的登录</small></span><span className="profile-arrow">›</span></button>
-                <button type="button" onClick={() => handleLogout(true)} disabled={loggingOut}><span className="profile-action-icon"><Icon name="power" /></span><span><strong>退出全部设备</strong><small>退出所有设备上的登录</small></span><span className="profile-arrow">›</span></button>
+                <button type="button" onClick={() => handleLogout(false)} disabled={loggingOut}>
+                  <span className="profile-action-icon"><Icon name="screen" /></span>
+                  <span><strong>退出当前设备</strong><small>仅退出此设备上的登录</small></span>
+                  <span className="profile-arrow" aria-hidden="true">›</span>
+                </button>
+                <button type="button" onClick={() => handleLogout(true)} disabled={loggingOut}>
+                  <span className="profile-action-icon"><Icon name="power" /></span>
+                  <span><strong>退出全部设备</strong><small>退出所有设备上的登录</small></span>
+                  <span className="profile-arrow" aria-hidden="true">›</span>
+                </button>
               </div>
             </section>
           </div>

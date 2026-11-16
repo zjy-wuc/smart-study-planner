@@ -1,6 +1,7 @@
 
 from collections import defaultdict
 from datetime import date
+from typing import NoReturn
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -12,7 +13,10 @@ from app.repositories import (
     schedule_repository,
     step_repository,
 )
-from app.schemas.active_step import ActiveStepNode, ActiveStepTreeCreate
+from app.schemas.active_step import (
+    ActiveStepNode,
+    ActiveStepTreeCreate,
+)
 from app.services import plan_service, step_service
 from app.services.plan_rules import (
     distribute_numeric_target,
@@ -20,7 +24,12 @@ from app.services.plan_rules import (
 )
 
 
-def _reject(message: str, status_code: int = 409):
+def _reject(
+    message: str,
+    status_code: int = 409,
+) -> NoReturn:
+    """统一抛出业务异常"""
+
     raise HTTPException(
         status_code=status_code,
         detail=message,
@@ -48,7 +57,9 @@ def _require_active_plan(
     return plan
 
 
-def _remaining_days(plan: dict) -> list[date]:
+def _remaining_days(
+    plan: dict,
+) -> list[date]:
     """计划剩余需要生成任务的日期（含今天）"""
 
     today = business_today()
@@ -75,23 +86,37 @@ def _validate_entries(
     """校验逐日安排，返回可写入 schedule_entries 的数据"""
 
     rule = node.rule
+
+    if rule is None:
+        _reject("叶子节点必须配置执行规则", 422)
+
     mode = rule.schedule_mode
+    node_entries = node.entries or []
 
     if mode not in ("DAILY_CUSTOM", "DAILY_MANUAL"):
 
-        if node.entries:
+        if node_entries:
             _reject("该执行模式不需要填写每日安排", 422)
 
         return []
 
-    if not node.entries:
+    if not node_entries:
         _reject("逐日安排必须填写内容", 422)
 
-    day_set = set(days)
-    by_date = defaultdict(list)
-    entries = []
+    if mode == "DAILY_CUSTOM" and rule.task_type != "BOOLEAN":
+        _reject("DAILY_CUSTOM 只适用于 BOOLEAN 任务", 422)
 
-    for item in node.entries:
+    if mode == "DAILY_MANUAL" and rule.task_type != "NUMERIC":
+        _reject("DAILY_MANUAL 只适用于 NUMERIC 任务", 422)
+
+    day_set = set(days)
+
+    by_date: dict[date, int] = defaultdict(int)
+
+    entries: list[dict] = []
+    total = 0
+
+    for item in node_entries:
 
         if item.task_date not in day_set:
             _reject("安排日期不在剩余执行周期内", 422)
@@ -106,13 +131,17 @@ def _validate_entries(
 
         else:
 
-            if item.target_quantity is None:
+            quantity = item.target_quantity
+
+            if quantity is None:
                 _reject("NUMERIC 每日安排必须填写数量", 422)
 
             if item.content is not None:
                 _reject("NUMERIC 每日安排只需要填写数量", 422)
 
-        by_date[item.task_date].append(item)
+            total += quantity
+
+        by_date[item.task_date] += 1
 
         entries.append({
             "task_date": item.task_date,
@@ -122,17 +151,16 @@ def _validate_entries(
 
     for day in days:
 
-        if not by_date[day]:
+        if by_date[day] == 0:
             _reject(f"{day} 缺少每日安排", 422)
 
-        if mode == "DAILY_MANUAL" and len(by_date[day]) != 1:
+        if mode == "DAILY_MANUAL" and by_date[day] != 1:
             _reject(f"{day} 只能有一条数量安排", 422)
 
     if mode == "DAILY_MANUAL":
-        total = sum(
-            entry["target_quantity"]
-            for entry in entries
-        )
+
+        if rule.total_target is None:
+            _reject("NUMERIC 任务必须设置总目标", 422)
 
         if total != rule.total_target:
             _reject("每日数量合计必须等于总目标", 422)
@@ -149,13 +177,17 @@ def _build_tasks(
     """根据执行规则生成剩余周期的每日任务"""
 
     rule = node.rule
-    tasks = []
+
+    if rule is None:
+        _reject("叶子节点缺少执行规则", 422)
+
+    tasks: list[dict] = []
 
     def add(
         day: date,
         content: str,
         quantity: int | None = None,
-    ):
+    ) -> None:
         tasks.append({
             "step_id": step_id,
             "task_date": day,
@@ -167,32 +199,74 @@ def _build_tasks(
     if rule.task_type == "BOOLEAN":
 
         if rule.schedule_mode == "REPEAT":
+
+            repeat_content = rule.repeat_content
+
+            if not repeat_content:
+                _reject("重复任务必须设置执行内容", 422)
+
             for day in days:
-                add(day, rule.repeat_content)
+                add(day, repeat_content)
+
+        elif rule.schedule_mode == "DAILY_CUSTOM":
+
+            for entry in entries:
+
+                content = entry["content"]
+
+                if not content:
+                    _reject("BOOLEAN 每日任务内容不能为空", 422)
+
+                add(
+                    entry["task_date"],
+                    content,
+                )
 
         else:
-            for entry in entries:
-                add(entry["task_date"], entry["content"])
+            _reject("BOOLEAN 任务执行模式无效", 422)
 
-    else:
+    elif rule.task_type == "NUMERIC":
 
         if rule.schedule_mode == "AUTO_DISTRIBUTE":
+
+            total_target = rule.total_target
+
+            if total_target is None:
+                _reject("NUMERIC 任务必须设置总目标", 422)
+
             distribution = distribute_numeric_target(
-                rule.total_target,
+                total_target,
                 days[0],
                 days[-1],
             )
 
             for day in days:
-                add(day, node.name, distribution[day])
+                add(
+                    day,
+                    node.name,
+                    distribution[day],
+                )
 
-        else:
+        elif rule.schedule_mode == "DAILY_MANUAL":
+
             for entry in entries:
+
+                quantity = entry["target_quantity"]
+
+                if quantity is None:
+                    _reject("NUMERIC 每日数量不能为空", 422)
+
                 add(
                     entry["task_date"],
                     node.name,
-                    entry["target_quantity"],
+                    quantity,
                 )
+
+        else:
+            _reject("NUMERIC 任务执行模式无效", 422)
+
+    else:
+        _reject("不支持的任务类型", 422)
 
     return tasks
 
@@ -207,6 +281,22 @@ def _insert_tree(
     tasks: list[dict],
 ) -> int:
     """递归插入节点，同时收集需要创建的每日任务"""
+
+    if node.node_type == "GROUP":
+
+        children = node.children or []
+
+        if not children:
+            _reject("分类节点必须包含子节点", 422)
+
+    else:
+        children = []
+
+        if node.children:
+            _reject("叶子节点不能包含子节点", 422)
+
+        # 先验证执行规则，避免插入后才发现配置错误
+        entries = _validate_entries(node, days)
 
     sort_order = active_step_repository.next_sort_order(
         db=db,
@@ -226,7 +316,7 @@ def _insert_tree(
 
     if node.node_type == "GROUP":
 
-        for child in node.children:
+        for child in children:
             _insert_tree(
                 db=db,
                 plan_id=plan_id,
@@ -239,23 +329,22 @@ def _insert_tree(
 
         return step_id
 
-    entries = _validate_entries(node, days)
-
     if entries:
+
         schedule_repository.insert_entries(
             db=db,
             step_id=step_id,
             entries=entries,
         )
 
-    tasks.extend(
-        _build_tasks(
-            node=node,
-            step_id=step_id,
-            days=days,
-            entries=entries,
-        )
+    generated_tasks = _build_tasks(
+        node=node,
+        step_id=step_id,
+        days=days,
+        entries=entries,
     )
+
+    tasks.extend(generated_tasks)
 
     return step_id
 
@@ -268,7 +357,11 @@ def create_active_tree(
 ) -> dict:
     """在执行中的计划里新增节点，并补齐剩余周期的任务"""
 
+    created_ids: list[int] = []
+    tasks: list[dict] = []
+
     try:
+
         plan = _require_active_plan(
             db=db,
             plan_id=plan_id,
@@ -292,9 +385,6 @@ def create_active_tree(
 
         days = _remaining_days(plan)
 
-        created_ids: list[int] = []
-        tasks: list[dict] = []
-
         _insert_tree(
             db=db,
             plan_id=plan_id,
@@ -311,6 +401,12 @@ def create_active_tree(
             tasks=tasks,
         )
 
+        tree = step_service.get_step_tree(
+            db=db,
+            plan_id=plan_id,
+            user_id=user_id,
+        )
+
         db.commit()
 
     except Exception:
@@ -320,11 +416,7 @@ def create_active_tree(
     return {
         "created_step_ids": created_ids,
         "generated_task_count": len(tasks),
-        "tree": step_service.get_step_tree(
-            db=db,
-            plan_id=plan_id,
-            user_id=user_id,
-        ),
+        "tree": tree,
     }
 
 
@@ -336,7 +428,10 @@ def delete_active_tree(
 ) -> dict:
     """逻辑删除节点及其后代，并向上清理变空的分类节点"""
 
+    deleted_ids: list[int] = []
+
     try:
+
         _require_active_plan(
             db=db,
             plan_id=plan_id,
@@ -359,17 +454,19 @@ def delete_active_tree(
             step_id=step_id,
         )
 
-        # 删除后计划必须仍然保留至少一个有效叶子节点
         nodes = active_step_repository.list_active_nodes(
             db=db,
             plan_id=plan_id,
         )
 
+        target_id_set = set(target_ids)
+
+        # 删除后必须至少保留一个有效叶子节点
         remaining_leaves = [
             node
             for node in nodes
             if node["node_type"] == "LEAF"
-            and node["id"] not in target_ids
+            and node["id"] not in target_id_set
         ]
 
         if not remaining_leaves:
@@ -389,7 +486,7 @@ def delete_active_tree(
             node_ids=target_ids,
         )
 
-        # 向上清理因为没有子节点而变空的分类节点
+        # 向上清理已经没有子节点的分类节点
         parent_id = step["parent_id"]
 
         while parent_id is not None:
@@ -403,15 +500,12 @@ def delete_active_tree(
             if parent is None:
                 break
 
-            has_children = any(
-                node["parent_id"] == parent_id
-                for node in active_step_repository.list_active_nodes(
-                    db=db,
-                    plan_id=plan_id,
-                )
+            children_count = step_repository.count_active_children(
+                db=db,
+                parent_id=parent_id,
             )
 
-            if has_children:
+            if children_count > 0:
                 break
 
             active_step_repository.soft_delete_nodes(
@@ -421,6 +515,7 @@ def delete_active_tree(
             )
 
             deleted_ids.append(parent_id)
+
             parent_id = parent["parent_id"]
 
         db.commit()

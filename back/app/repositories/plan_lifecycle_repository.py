@@ -1,7 +1,9 @@
 
 from datetime import date
+from typing import Any, cast
 
 from sqlalchemy import text
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
 
@@ -44,12 +46,18 @@ def find_expired_plan_ids(
         LIMIT :limit
     """)
 
-    return list(
-        db.scalars(sql, {
+    result = db.scalars(
+        sql,
+        {
             "today": today,
             "limit": limit,
-        }).all()
+        },
     )
+
+    return [
+        int(plan_id)
+        for plan_id in result.all()
+    ]
 
 
 def end_started_unfinished_tasks(
@@ -86,9 +94,13 @@ def end_started_unfinished_tasks(
           )
     """)
 
-    result = db.execute(sql, {
-        "plan_id": plan_id,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {"plan_id": plan_id},
+        ),
+    )
 
     return result.rowcount
 
@@ -120,9 +132,13 @@ def delete_unstarted_tasks(
           )
     """)
 
-    result = db.execute(sql, {
-        "plan_id": plan_id,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {"plan_id": plan_id},
+        ),
+    )
 
     return result.rowcount
 
@@ -142,8 +158,12 @@ def mark_plan_ended(
           AND deleted_at IS NULL
     """)
 
-    result = db.execute(sql, {
-        "plan_id": plan_id,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {"plan_id": plan_id},
+        ),
+    )
 
     return result.rowcount

@@ -1,4 +1,6 @@
 
+from typing import NoReturn
+
 from fastapi import HTTPException
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -12,7 +14,9 @@ from app.schemas.active_task import ActiveTaskUpdate
 from app.services import task_service
 
 
-def _reject(message: str):
+def _reject(message: str) -> NoReturn:
+    """统一抛出业务异常"""
+
     raise HTTPException(
         status_code=409,
         detail=message,
@@ -31,8 +35,10 @@ def update_active_task(
     NUMERIC 修改成功后，在同一事务中更新叶子总目标。
     """
 
+    result_extra: dict[str, int] = {}
+
     try:
-        # 锁定任务，同时验证所属用户
+        # 1. 锁定任务，同时验证所属用户
         task = task_repository.find_owned_task(
             db=db,
             task_id=task_id,
@@ -48,6 +54,7 @@ def update_active_task(
 
         today = business_today()
 
+        # 2. 校验计划和任务状态
         if task["plan_status"] != "ACTIVE":
             _reject("只有 ACTIVE 计划允许修改任务")
 
@@ -57,37 +64,46 @@ def update_active_task(
         if task["status"] != "PENDING":
             _reject("任务已经开始或完成，不能修改")
 
+        # 3. 检查是否存在打卡历史
         if active_task_repository.has_study_history(
             db=db,
             task_id=task_id,
         ):
             _reject("任务存在打卡历史，不能修改")
 
-        # 只能提交一个字段，不能同时修改内容和数量
+        # 4. 只能提交一个字段
         fields = data.model_fields_set
 
+        # 5. BOOLEAN 任务修改
         if task["task_type"] == "BOOLEAN":
 
             if fields != {"content"}:
-                _reject("BOOLEAN 任务只能修改 content")
+                _reject(
+                    "BOOLEAN 任务只能修改 content"
+                )
 
-            if data.content is None:
-                _reject("BOOLEAN 任务内容不能为空")
+            content = data.content
+
+            if content is None:
+                _reject(
+                    "BOOLEAN 任务内容不能为空"
+                )
 
             changed = (
                 active_task_repository.update_future_boolean(
                     db=db,
                     task_id=task_id,
                     today=today,
-                    content=data.content,
+                    content=content,
                 )
             )
 
             if changed != 1:
-                _reject("任务状态已变化，修改失败")
+                _reject(
+                    "任务状态已变化，修改失败"
+                )
 
-            result_extra = {}
-
+        # 6. NUMERIC 任务修改
         elif task["task_type"] == "NUMERIC":
 
             if fields != {"target_quantity"}:
@@ -95,9 +111,14 @@ def update_active_task(
                     "NUMERIC 任务只能修改 target_quantity"
                 )
 
-            if data.target_quantity is None:
-                _reject("NUMERIC 目标数量不能为空")
+            target_quantity = data.target_quantity
 
+            if target_quantity is None:
+                _reject(
+                    "NUMERIC 目标数量不能为空"
+                )
+
+            # 查询当前任务累计承接的顺延数量
             incoming = (
                 active_task_repository.get_incoming_quantity(
                     db=db,
@@ -105,24 +126,28 @@ def update_active_task(
                 )
             )
 
-            if data.target_quantity < incoming:
+            if target_quantity < incoming:
                 _reject(
                     "新目标不能低于已经承接的顺延数量"
                 )
 
+            # 修改每日任务目标
             changed = (
                 active_task_repository.update_future_numeric(
                     db=db,
                     task_id=task_id,
                     today=today,
-                    target_quantity=data.target_quantity,
+                    target_quantity=target_quantity,
                 )
             )
 
             if changed != 1:
-                _reject("任务状态或顺延关系已变化")
+                _reject(
+                    "任务状态或顺延关系已变化"
+                )
 
-            # 关键：和每日任务修改保持同一个事务
+            # 重新计算 NUMERIC 叶子节点总目标
+            # 与每日任务修改保持在同一个事务中
             new_total = (
                 active_task_repository
                 .recalculate_numeric_leaf_total(
@@ -139,15 +164,27 @@ def update_active_task(
         else:
             _reject("不支持的任务类型")
 
+        # 7. 所有操作成功后统一提交
         db.commit()
 
     except OperationalError as exc:
         db.rollback()
 
-        error_code = getattr(
-            exc.orig, "args", (None,)
-        )[0]
+        # 安全提取数据库原始错误码
+        original_args = getattr(
+            exc.orig,
+            "args",
+            (),
+        )
 
+        error_code = (
+            original_args[0]
+            if original_args
+            else None
+        )
+
+        # MySQL 1205: 锁等待超时
+        # MySQL 1213: 检测到死锁
         if error_code in (1205, 1213):
             raise HTTPException(
                 status_code=409,
@@ -160,14 +197,14 @@ def update_active_task(
         db.rollback()
         raise
 
-    # 提交成功后再查询最新任务
-    task = task_service.get_task(
+    # 8. 提交成功后查询最新任务
+    updated_task = task_service.get_task(
         db=db,
         task_id=task_id,
         user_id=user_id,
     )
 
     return {
-        "task": task,
+        "task": updated_task,
         **result_extra,
     }

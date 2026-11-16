@@ -1,8 +1,10 @@
 
 from datetime import date
+from typing import Any, cast
 
 from fastapi import HTTPException
 from sqlalchemy import text
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
 
@@ -23,7 +25,12 @@ def has_study_history(
         )
     """)
 
-    return bool(db.scalar(sql, {"task_id": task_id}))
+    result = db.scalar(
+        sql,
+        {"task_id": task_id},
+    )
+
+    return bool(result)
 
 
 def get_incoming_quantity(
@@ -42,7 +49,12 @@ def get_incoming_quantity(
         WHERE target_task_id = :task_id
     """)
 
-    return int(db.scalar(sql, {"task_id": task_id}) or 0)
+    result = db.scalar(
+        sql,
+        {"task_id": task_id},
+    )
+
+    return int(result or 0)
 
 
 def update_future_boolean(
@@ -73,11 +85,17 @@ def update_future_boolean(
           )
     """)
 
-    result = db.execute(sql, {
-        "task_id": task_id,
-        "today": today,
-        "content": content,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {
+                "task_id": task_id,
+                "today": today,
+                "content": content,
+            },
+        ),
+    )
 
     return result.rowcount
 
@@ -117,11 +135,17 @@ def update_future_numeric(
           )
     """)
 
-    result = db.execute(sql, {
-        "task_id": task_id,
-        "today": today,
-        "new_target": target_quantity,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {
+                "task_id": task_id,
+                "today": today,
+                "new_target": target_quantity,
+            },
+        ),
+    )
 
     return result.rowcount
 
@@ -167,10 +191,13 @@ def recalculate_numeric_leaf_total(
           AND deleted_at IS NULL
     """)
 
-    row = db.execute(sql, {
-        "plan_id": plan_id,
-        "step_id": step_id,
-    }).mappings().one()
+    row = db.execute(
+        sql,
+        {
+            "plan_id": plan_id,
+            "step_id": step_id,
+        },
+    ).mappings().one()
 
     if row["invalid_count"]:
         raise HTTPException(
@@ -180,7 +207,7 @@ def recalculate_numeric_leaf_total(
 
     total = int(row["effective_total"])
 
-    if total > MAX_UINT64:
+    if total < 0 or total > MAX_UINT64:
         raise HTTPException(
             status_code=409,
             detail="叶子节点总目标超出数据库范围",
@@ -196,13 +223,21 @@ def recalculate_numeric_leaf_total(
           AND deleted_at IS NULL
     """)
 
-    result = db.execute(update_sql, {
-        "total": total,
-        "step_id": step_id,
-        "plan_id": plan_id,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            update_sql,
+            {
+                "total": total,
+                "step_id": step_id,
+                "plan_id": plan_id,
+            },
+        ),
+    )
 
     if result.rowcount != 1:
-        raise RuntimeError("NUMERIC 叶子节点目标更新失败")
+        raise RuntimeError(
+            "NUMERIC 叶子节点目标更新失败"
+        )
 
     return total

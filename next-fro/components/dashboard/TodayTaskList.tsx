@@ -18,32 +18,33 @@ export function TodayTaskList({
 }) {
   if (tasks.length === 0) {
     return (
-      <p className="workspace-task-empty py-6 text-sm text-slate-500">
+      <p className="workspace-empty-state">
         今天暂无安排的任务
       </p>
     );
   }
 
   return (
-    <ul className="workspace-task-list divide-y divide-slate-200">
+    <ul className="workspace-task-list">
       {tasks.map((task) => (
         <li
           key={task.id}
-          className="workspace-task-item flex items-start justify-between gap-4 py-4"
+          className="workspace-task-item"
+          data-status={task.display_status}
         >
           <div>
-            <p className="font-medium">
+            <p className="workspace-task-title">
               {task.content || task.step_name}
             </p>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="workspace-task-meta">
               {task.step_name}
               {" · "}
               {task.task_date}
             </p>
 
             {task.task_type === "NUMERIC" && (
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="workspace-task-quantity">
                 累计完成 {task.actual_quantity}
                 {" / "}
                 目标 {task.target_quantity ?? 0}
@@ -51,13 +52,13 @@ export function TodayTaskList({
             )}
 
             {task.is_rolled_over && (
-              <p className="mt-1 text-xs text-blue-700">
+              <p className="workspace-rollover-label">
                 已发生顺延
               </p>
             )}
           </div>
 
-          <span className="workspace-task-status shrink-0 text-sm text-slate-600">
+          <span className="workspace-task-status" data-status={task.display_status}>
             {taskStatusLabels[task.display_status]}
           </span>
         </li>

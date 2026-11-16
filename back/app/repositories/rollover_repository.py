@@ -1,7 +1,9 @@
 
 from datetime import date
+from typing import Any, cast
 
 from sqlalchemy import text
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
 
@@ -19,9 +21,10 @@ def has_rollover_from_source(
         FOR UPDATE
     """)
 
-    result = db.scalar(sql, {
-        "source_id": source_task_id,
-    })
+    result = db.scalar(
+        sql,
+        {"source_id": source_task_id},
+    )
 
     return result is not None
 
@@ -50,22 +53,37 @@ def find_numeric_target(
         FOR UPDATE
     """)
 
-    row = db.execute(sql, {
-        "plan_id": plan_id,
-        "step_id": step_id,
-        "target_date": target_date,
-    }).mappings().first()
+    row = db.execute(
+        sql,
+        {
+            "plan_id": plan_id,
+            "step_id": step_id,
+            "target_date": target_date,
+        },
+    ).mappings().first()
 
     if row is None:
         return None
 
     target = dict(row)
-    # 使用锁定读获取最新的打卡历史，避免事务快照过期。
-    target["has_study_records"] = db.scalar(text("""
-        SELECT id FROM study_records
+
+    # 使用锁定读获取最新的打卡历史
+    # 避免事务快照过期
+    history_sql = text("""
+        SELECT id
+        FROM study_records
         WHERE task_id = :target_id
-        LIMIT 1 FOR UPDATE
-    """), {"target_id": target["id"]}) is not None
+        LIMIT 1
+        FOR UPDATE
+    """)
+
+    history = db.scalar(
+        history_sql,
+        {"target_id": target["id"]},
+    )
+
+    target["has_study_records"] = history is not None
+
     return target
 
 
@@ -98,16 +116,29 @@ def insert_rollover_target(
         )
     """)
 
-    result = db.execute(sql, {
-        "plan_id": source["plan_id"],
-        "step_id": source["step_id"],
-        "task_date": target_date,
-        "task_type": source["task_type"],
-        "content": source["content"],
-        "target_quantity": quantity,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {
+                "plan_id": source["plan_id"],
+                "step_id": source["step_id"],
+                "task_date": target_date,
+                "task_type": source["task_type"],
+                "content": source["content"],
+                "target_quantity": quantity,
+            },
+        ),
+    )
 
-    return result.lastrowid
+    inserted_id = result.lastrowid
+
+    if inserted_id is None:
+        raise RuntimeError(
+            "创建顺延目标任务失败：未获取到任务 ID"
+        )
+
+    return int(inserted_id)
 
 
 def add_quantity_to_target(
@@ -126,16 +157,23 @@ def add_quantity_to_target(
           AND actual_quantity = 0
           AND rollover_out_quantity = 0
           AND NOT EXISTS (
-              SELECT 1 FROM study_records AS r
+              SELECT 1
+              FROM study_records AS r
               WHERE r.task_id = :target_id
           )
           AND deleted_at IS NULL
     """)
 
-    result = db.execute(sql, {
-        "target_id": target_task_id,
-        "quantity": quantity,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {
+                "target_id": target_task_id,
+                "quantity": quantity,
+            },
+        ),
+    )
 
     return result.rowcount
 
@@ -152,27 +190,41 @@ def add_source_rollover_quantity(
 
     sql = text("""
         UPDATE daily_tasks
-        SET rollover_out_quantity = rollover_out_quantity + :quantity,
+        SET
+            rollover_out_quantity =
+                rollover_out_quantity + :quantity,
             status = 'COMPLETED',
             completed_at = UTC_TIMESTAMP()
         WHERE id = :source_id
           AND task_type = 'NUMERIC'
-          AND status IN ('PENDING', 'IN_PROGRESS', 'OVERDUE')
+          AND status IN (
+              'PENDING',
+              'IN_PROGRESS',
+              'OVERDUE'
+          )
           AND actual_quantity = :expected_actual
           AND target_quantity = :expected_target
           AND rollover_out_quantity = :expected_out
           AND :quantity > 0
-          AND actual_quantity + rollover_out_quantity + :quantity = target_quantity
+          AND actual_quantity
+              + rollover_out_quantity
+              + :quantity = target_quantity
           AND deleted_at IS NULL
     """)
 
-    result = db.execute(sql, {
-        "source_id": source_task_id,
-        "quantity": quantity,
-        "expected_out": expected_out,
-        "expected_actual": expected_actual,
-        "expected_target": expected_target,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {
+                "source_id": source_task_id,
+                "quantity": quantity,
+                "expected_out": expected_out,
+                "expected_actual": expected_actual,
+                "expected_target": expected_target,
+            },
+        ),
+    )
 
     return result.rowcount
 
@@ -198,10 +250,23 @@ def insert_rollover_relation(
         )
     """)
 
-    result = db.execute(sql, {
-        "source_id": source_task_id,
-        "target_id": target_task_id,
-        "quantity": quantity,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {
+                "source_id": source_task_id,
+                "target_id": target_task_id,
+                "quantity": quantity,
+            },
+        ),
+    )
 
-    return result.lastrowid
+    inserted_id = result.lastrowid
+
+    if inserted_id is None:
+        raise RuntimeError(
+            "创建顺延关系失败：未获取到关系 ID"
+        )
+
+    return int(inserted_id)

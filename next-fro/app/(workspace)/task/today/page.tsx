@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { useTodayTasks } from "@/hooks/useTodayTasks";
 import { TaskActionCard } from "@/components/tasks/TaskActionCard";
+import { WorkspaceIcon } from "@/components/ui/WorkspaceIcon";
 
 
 export default function TodayTasksPage() {
@@ -16,8 +17,8 @@ export default function TodayTasksPage() {
   } = useTodayTasks();
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="workspace-page">
+      <div className="workspace-page-heading">
         <div>
           <h1 className="text-2xl font-bold">
             今日任务
@@ -32,16 +33,17 @@ export default function TodayTasksPage() {
           type="button"
           onClick={reload}
           disabled={loading}
-          className="rounded border px-4 py-2 disabled:opacity-50"
+          className="workspace-button workspace-button--secondary"
         >
+          <WorkspaceIcon name="refresh" />
           刷新任务
         </button>
       </div>
 
       {loading ? (
-        <p role="status">正在获取今日任务...</p>
+        <p role="status" className="workspace-loading">正在获取今日任务...</p>
       ) : error ? (
-        <div role="alert" className="space-y-3">
+        <div role="alert" className="workspace-feedback workspace-feedback--error">
           <p className="text-red-700">
             获取任务失败：{error}
           </p>
@@ -49,25 +51,25 @@ export default function TodayTasksPage() {
           <button
             type="button"
             onClick={reload}
-            className="text-blue-700"
+            className="workspace-text-link"
           >
             重新尝试
           </button>
         </div>
       ) : tasks.length === 0 ? (
-        <div className="rounded border bg-white p-6">
+        <div className="workspace-empty-state">
           <p>今天没有需要展示的任务。</p>
 
           <Link
             href="/plans"
-            className="mt-3 inline-block text-blue-700"
+            className="workspace-text-link"
           >
             查看我的学习计划
           </Link>
         </div>
       ) : (
-        <div className="space-y-4">
-          <p className="text-sm text-slate-500">
+        <div className="workspace-task-cards">
+          <p className="workspace-summary-note">
             今天共 {tasks.length} 条任务
           </p>
 
@@ -81,7 +83,7 @@ export default function TodayTasksPage() {
         </div>
       )}
 
-      <Link href="/" className="inline-block text-blue-700">
+      <Link href="/" className="workspace-text-link workspace-back-link">
         返回首页
       </Link>
     </div>

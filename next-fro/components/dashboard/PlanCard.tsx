@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { getPlanProgress } from "@/services/progress.service";
 import type { Plan } from "@/types/plan";
 import type { PlanProgress } from "@/types/progress";
+import { WorkspaceIcon } from "@/components/ui/WorkspaceIcon";
 
 
 const statusLabels = {
@@ -53,27 +54,27 @@ function PlanProgressView({ plan }: { plan: Plan }) {
   const percent = progress?.progress_percent ?? null;
 
   return (
-    <div className="workspace-plan-progress mt-4">
+    <div className="workspace-plan-progress">
       {progressLoading ? (
-        <p className="text-sm text-slate-500">正在加载完成率...</p>
+        <p className="workspace-muted">正在加载完成率...</p>
       ) : progressError ? (
-        <p className="text-sm text-red-600">进度暂时无法获取</p>
+        <p className="workspace-inline-error">进度暂时无法获取</p>
       ) : percent === null ? (
-        <p className="text-sm text-slate-500">暂无可计算进度</p>
+        <p className="workspace-muted">暂无可计算进度</p>
       ) : (
         <>
-          <p className="text-sm">当前可统计进度：{percent}%</p>
+          <p className="workspace-progress-label"><span>当前可统计进度</span><strong>{percent}%</strong></p>
           <div
-            className="workspace-progress-track mt-2 h-2 overflow-hidden rounded-full bg-slate-200"
+            className="workspace-progress-track"
             role="progressbar"
             aria-label={`${plan.name}的可统计进度`}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent}
           >
-            <div className="workspace-progress-fill h-full rounded-full bg-blue-600" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
+            <div className="workspace-progress-fill" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="workspace-progress-caption">
             {progress?.computable_leaf_count}/{progress?.leaf_count} 个叶子参与计算
           </p>
         </>
@@ -84,23 +85,21 @@ function PlanProgressView({ plan }: { plan: Plan }) {
 
 export function PlanCard({ plan }: { plan: Plan }) {
   return (
-    <article className="workspace-plan-card rounded-xl border border-slate-200 bg-white p-5">
-      <div className="workspace-plan-card-heading flex items-start justify-between gap-3">
-        <h3 className="font-semibold">
-  <Link
-    href={`/plans/${plan.id}`}
-    className="workspace-plan-link hover:text-blue-700 hover:underline"
-  >
-    {plan.name}
-  </Link>
-</h3>
+    <article className="workspace-plan-card" data-status={plan.status}>
+      <div className="workspace-plan-card-heading">
+        <h3>
+          <Link href={`/plans/${plan.id}`} className="workspace-plan-link">
+            {plan.name}
+          </Link>
+        </h3>
 
-        <span className="workspace-plan-status rounded-md bg-slate-100 px-2 py-1 text-xs">
+        <span className="workspace-plan-status" data-status={plan.status}>
           {statusLabels[plan.status]}
         </span>
       </div>
 
-      <p className="workspace-plan-date mt-3 text-sm text-slate-500">
+      <p className="workspace-plan-date">
+        <WorkspaceIcon name="calendar" />
         {plan.start_date} ～ {plan.end_date}
       </p>
 
@@ -109,13 +108,13 @@ export function PlanCard({ plan }: { plan: Plan }) {
       )}
 
       {plan.status === "DRAFT" && (
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="workspace-plan-note">
           计划尚未开始
         </p>
       )}
 
       {plan.status === "ENDED" && (
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="workspace-plan-note">
           计划已结束
         </p>
       )}

@@ -1,8 +1,9 @@
 
 from datetime import date
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import text
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
 
@@ -60,7 +61,7 @@ def insert_plan(
         "end_date": end_date,
     })
 
-    return result.lastrowid
+    return cast(CursorResult, result).lastrowid
 
 
 def find_plan_by_id(

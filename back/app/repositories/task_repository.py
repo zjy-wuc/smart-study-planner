@@ -1,6 +1,9 @@
+
 from datetime import date
+from typing import Any, cast
 
 from sqlalchemy import text
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
 
@@ -22,8 +25,11 @@ TASK_COLUMNS = """
     p.status AS plan_status,
     p.start_date AS plan_start_date,
     p.end_date AS plan_end_date,
-    EXISTS (SELECT 1 FROM task_rollovers AS r
-            WHERE r.source_task_id = t.id) AS has_rollover
+    EXISTS (
+        SELECT 1
+        FROM task_rollovers AS r
+        WHERE r.source_task_id = t.id
+    ) AS has_rollover
 """
 
 
@@ -46,10 +52,10 @@ def find_owned_task(
         SELECT {TASK_COLUMNS}
         FROM daily_tasks AS t
         JOIN study_plans AS p
-          ON t.plan_id = p.id
+            ON t.plan_id = p.id
         JOIN plan_steps AS s
-          ON t.step_id = s.id
-         AND s.plan_id = p.id
+            ON t.step_id = s.id
+           AND s.plan_id = p.id
         WHERE t.id = :task_id
           AND p.user_id = :user_id
           AND t.deleted_at IS NULL
@@ -58,10 +64,13 @@ def find_owned_task(
         {lock_sql}
     """)
 
-    result = db.execute(sql, {
-        "task_id": task_id,
-        "user_id": user_id,
-    })
+    result = db.execute(
+        sql,
+        {
+            "task_id": task_id,
+            "user_id": user_id,
+        },
+    )
 
     row = result.mappings().first()
 
@@ -69,13 +78,26 @@ def find_owned_task(
         return None
 
     task = dict(row)
+
     if for_update:
-        # 锁定读避免使用此前认证查询建立的旧事务快照。
-        task["has_rollover"] = db.scalar(text("""
-            SELECT id FROM task_rollovers
+        # 锁定读获取最新顺延历史
+        # 避免使用此前事务中的旧快照
+
+        history_sql = text("""
+            SELECT id
+            FROM task_rollovers
             WHERE source_task_id = :task_id
-            LIMIT 1 FOR UPDATE
-        """), {"task_id": task_id}) is not None
+            LIMIT 1
+            FOR UPDATE
+        """)
+
+        history = db.scalar(
+            history_sql,
+            {"task_id": task_id},
+        )
+
+        task["has_rollover"] = history is not None
+
     return task
 
 
@@ -90,10 +112,10 @@ def find_today_tasks(
         SELECT {TASK_COLUMNS}
         FROM daily_tasks AS t
         JOIN study_plans AS p
-          ON t.plan_id = p.id
+            ON t.plan_id = p.id
         JOIN plan_steps AS s
-          ON t.step_id = s.id
-         AND s.plan_id = p.id
+            ON t.step_id = s.id
+           AND s.plan_id = p.id
         WHERE p.user_id = :user_id
           AND p.status = 'ACTIVE'
           AND p.start_date <= :today
@@ -102,13 +124,19 @@ def find_today_tasks(
           AND t.deleted_at IS NULL
           AND p.deleted_at IS NULL
           AND s.deleted_at IS NULL
-        ORDER BY t.plan_id, t.step_id, t.id
+        ORDER BY
+            t.plan_id,
+            t.step_id,
+            t.id
     """)
 
-    result = db.execute(sql, {
-        "user_id": user_id,
-        "today": today,
-    })
+    result = db.execute(
+        sql,
+        {
+            "user_id": user_id,
+            "today": today,
+        },
+    )
 
     return [
         dict(row)
@@ -124,12 +152,14 @@ def mark_boolean_completed(
 
     sql = text("""
         UPDATE daily_tasks
-        SET status = 'COMPLETED',
+        SET
+            status = 'COMPLETED',
             completed_at = UTC_TIMESTAMP()
         WHERE id = :task_id
           AND task_type = 'BOOLEAN'
           AND NOT EXISTS (
-              SELECT 1 FROM task_rollovers AS r
+              SELECT 1
+              FROM task_rollovers AS r
               WHERE r.source_task_id = :task_id
           )
           AND status IN (
@@ -140,12 +170,18 @@ def mark_boolean_completed(
           AND deleted_at IS NULL
     """)
 
-    result = db.execute(sql, {
-        "task_id": task_id,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {"task_id": task_id},
+        ),
+    )
 
     if result.rowcount != 1:
-        raise RuntimeError("BOOLEAN 任务状态更新失败")
+        raise RuntimeError(
+            "BOOLEAN 任务状态更新失败"
+        )
 
 
 def update_numeric_progress(
@@ -158,7 +194,8 @@ def update_numeric_progress(
 
     sql = text("""
         UPDATE daily_tasks
-        SET actual_quantity = :actual_quantity,
+        SET
+            actual_quantity = :actual_quantity,
             status = :new_status,
             completed_at = CASE
                 WHEN :new_status = 'COMPLETED'
@@ -176,14 +213,22 @@ def update_numeric_progress(
           AND deleted_at IS NULL
     """)
 
-    result = db.execute(sql, {
-        "task_id": task_id,
-        "actual_quantity": actual_quantity,
-        "new_status": new_status,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {
+                "task_id": task_id,
+                "actual_quantity": actual_quantity,
+                "new_status": new_status,
+            },
+        ),
+    )
 
     if result.rowcount != 1:
-        raise RuntimeError("NUMERIC 任务数量更新失败")
+        raise RuntimeError(
+            "NUMERIC 任务数量更新失败"
+        )
 
 
 def insert_study_record(
@@ -213,15 +258,28 @@ def insert_study_record(
         )
     """)
 
-    result = db.execute(sql, {
-        "task_id": task_id,
-        "user_id": user_id,
-        "event_type": event_type,
-        "recorded_value": recorded_value,
-        "task_date": task_date,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {
+                "task_id": task_id,
+                "user_id": user_id,
+                "event_type": event_type,
+                "recorded_value": recorded_value,
+                "task_date": task_date,
+            },
+        ),
+    )
 
-    return result.lastrowid
+    inserted_id = result.lastrowid
+
+    if inserted_id is None:
+        raise RuntimeError(
+            "创建打卡记录失败：未获取到记录 ID"
+        )
+
+    return int(inserted_id)
 
 
 def find_study_records(
@@ -240,12 +298,15 @@ def find_study_records(
             recorded_at
         FROM study_records
         WHERE task_id = :task_id
-        ORDER BY recorded_at, id
+        ORDER BY
+            recorded_at,
+            id
     """)
 
-    result = db.execute(sql, {
-        "task_id": task_id,
-    })
+    result = db.execute(
+        sql,
+        {"task_id": task_id},
+    )
 
     return [
         dict(row)
@@ -266,9 +327,15 @@ def soft_delete_task(
           AND deleted_at IS NULL
     """)
 
-    result = db.execute(sql, {
-        "task_id": task_id,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {"task_id": task_id},
+        ),
+    )
 
     if result.rowcount != 1:
-        raise RuntimeError("任务删除失败")
+        raise RuntimeError(
+            "任务删除失败"
+        )

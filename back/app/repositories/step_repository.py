@@ -1,7 +1,8 @@
 
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import bindparam, text
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
 
@@ -29,10 +30,13 @@ def find_step(
           AND deleted_at IS NULL
     """)
 
-    row = db.execute(sql, {
-        "step_id": step_id,
-        "plan_id": plan_id,
-    }).mappings().first()
+    row = db.execute(
+        sql,
+        {
+            "step_id": step_id,
+            "plan_id": plan_id,
+        },
+    ).mappings().first()
 
     return dict(row) if row else None
 
@@ -51,9 +55,10 @@ def find_all_steps(
         ORDER BY sort_order, id
     """)
 
-    result = db.execute(sql, {
-        "plan_id": plan_id,
-    })
+    result = db.execute(
+        sql,
+        {"plan_id": plan_id},
+    )
 
     return [
         dict(row)
@@ -94,24 +99,40 @@ def insert_step(
         )
     """)
 
-    result = db.execute(sql, {
-        "plan_id": plan_id,
-        "parent_id": parent_id,
-        **values,
-    })
+    result = cast(
+        CursorResult[Any],
+        db.execute(
+            sql,
+            {
+                **values,
+                "plan_id": plan_id,
+                "parent_id": parent_id,
+            },
+        ),
+    )
 
-    return result.lastrowid
+    inserted_id = result.lastrowid
+
+    if inserted_id is None:
+        raise RuntimeError(
+            "创建学习步骤失败：未获取到节点 ID"
+        )
+
+    return int(inserted_id)
 
 
 def update_step_fields(
     db: Session,
     plan_id: int,
     step_id: int,
-    changes: dict,
-):
+    changes: dict[str, Any],
+) -> None:
     """修改节点名称或描述"""
 
-    allowed_fields = {"name", "description"}
+    allowed_fields = {
+        "name",
+        "description",
+    }
 
     if not changes:
         raise ValueError("没有需要修改的字段")
@@ -132,24 +153,28 @@ def update_step_fields(
           AND deleted_at IS NULL
     """)
 
-    db.execute(sql, {
-        **changes,
-        "step_id": step_id,
-        "plan_id": plan_id,
-    })
+    db.execute(
+        sql,
+        {
+            **changes,
+            "step_id": step_id,
+            "plan_id": plan_id,
+        },
+    )
 
 
 def update_step_rule(
     db: Session,
     plan_id: int,
     step_id: int,
-    values: dict,
-):
+    values: dict[str, Any],
+) -> None:
     """替换叶子节点的执行规则"""
 
     sql = text("""
         UPDATE plan_steps
-        SET task_type = :task_type,
+        SET
+            task_type = :task_type,
             schedule_mode = :schedule_mode,
             repeat_content = :repeat_content,
             total_target = :total_target
@@ -159,17 +184,20 @@ def update_step_rule(
           AND deleted_at IS NULL
     """)
 
-    db.execute(sql, {
-        **values,
-        "step_id": step_id,
-        "plan_id": plan_id,
-    })
+    db.execute(
+        sql,
+        {
+            **values,
+            "step_id": step_id,
+            "plan_id": plan_id,
+        },
+    )
 
 
 def clear_draft_schedule(
     db: Session,
     step_id: int,
-):
+) -> None:
     """执行规则变化时清除旧的草稿每日安排"""
 
     sql = text("""
@@ -179,9 +207,10 @@ def clear_draft_schedule(
           AND deleted_at IS NULL
     """)
 
-    db.execute(sql, {
-        "step_id": step_id,
-    })
+    db.execute(
+        sql,
+        {"step_id": step_id},
+    )
 
 
 def find_descendant_ids(
@@ -204,26 +233,33 @@ def find_descendant_ids(
             SELECT child.id
             FROM plan_steps AS child
             JOIN descendants AS d
-              ON child.parent_id = d.id
+                ON child.parent_id = d.id
             WHERE child.plan_id = :plan_id
               AND child.deleted_at IS NULL
         )
-        SELECT id FROM descendants
+        SELECT id
+        FROM descendants
     """)
 
-    rows = db.execute(sql, {
-        "plan_id": plan_id,
-        "step_id": step_id,
-    }).scalars().all()
+    result = db.execute(
+        sql,
+        {
+            "plan_id": plan_id,
+            "step_id": step_id,
+        },
+    )
 
-    return list(rows)
+    return [
+        int(node_id)
+        for node_id in result.scalars().all()
+    ]
 
 
 def soft_delete_steps(
     db: Session,
     plan_id: int,
     step_ids: list[int],
-):
+) -> None:
     """批量逻辑删除节点"""
 
     if not step_ids:
@@ -236,13 +272,19 @@ def soft_delete_steps(
           AND id IN :step_ids
           AND deleted_at IS NULL
     """).bindparams(
-        bindparam("step_ids", expanding=True)
+        bindparam(
+            "step_ids",
+            expanding=True,
+        )
     )
 
-    db.execute(sql, {
-        "plan_id": plan_id,
-        "step_ids": step_ids,
-    })
+    db.execute(
+        sql,
+        {
+            "plan_id": plan_id,
+            "step_ids": step_ids,
+        },
+    )
 
 
 def count_active_children(
@@ -258,6 +300,9 @@ def count_active_children(
           AND deleted_at IS NULL
     """)
 
-    return db.scalar(sql, {
-        "parent_id": parent_id,
-    })
+    result = db.scalar(
+        sql,
+        {"parent_id": parent_id},
+    )
+
+    return int(result or 0)

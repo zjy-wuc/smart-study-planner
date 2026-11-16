@@ -1,11 +1,25 @@
-/* 工作台共享布局：与个人中心保持一致的蓝白配色。 */
+/* 1. 主题：仅作用于工作台，避免影响登录、注册和个人中心。 */
 .workspace-app {
+  --workspace-ink: #203b53;
+  --workspace-muted: #71889b;
+  --workspace-border: #deebf4;
+  --workspace-accent: #0baee2;
   min-height: 100vh;
+  color-scheme: light;
   color: #203047;
   background: #f1f7fc;
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
+.workspace-app .workspace-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+/* 2. 顶栏、搜索与侧栏。 */
 .workspace-app * {
   box-sizing: border-box;
 }
@@ -55,15 +69,33 @@
   font-size: 12px;
 }
 
+.workspace-app .workspace-search-field {
+  position: relative;
+  width: 300px;
+}
+
+.workspace-app .workspace-search-field > svg {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  width: 18px;
+  height: 18px;
+  color: #7c99ac;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 .workspace-app .workspace-search {
-  width: 260px;
-  min-height: 40px;
-  padding: 9px 14px;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 14px 9px 40px;
   color: #203047;
   background: #f7fbfe;
   border: 1px solid #dceaf3;
   border-radius: 9px;
   outline: none;
+  font: inherit;
+  font-size: 13px;
 }
 
 .workspace-app .workspace-search:focus,
@@ -91,7 +123,7 @@
 .workspace-app .workspace-sidebar-label {
   margin: 0 0 15px;
   padding: 0 15px;
-  color: #8ba1b4;
+  color: #6f8ba0;
   font-size: 11px;
   letter-spacing: 0.12em;
 }
@@ -156,9 +188,10 @@
 .workspace-app .workspace-main {
   flex: 1;
   min-width: 0;
-  padding: 38px 48px 56px;
+  padding: 36px 42px 48px;
 }
 
+/* 3. 页面标题、操作按钮及通用反馈。 */
 .workspace-app .workspace-dashboard,
 .workspace-app .workspace-page {
   max-width: 1500px;
@@ -170,22 +203,29 @@
   align-items: center;
   justify-content: space-between;
   min-height: 66px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
   gap: 20px;
 }
 
 .workspace-app .workspace-page-heading h1 {
   margin: 0;
   color: #1d3043;
-  font-size: 30px;
+  font-size: 27px;
   font-weight: 700;
   line-height: 1.3;
 }
 
 .workspace-app .workspace-page-heading p {
   margin: 8px 0 0;
-  color: #8ca2b5;
-  font-size: 14px;
+  color: var(--workspace-muted);
+  font-size: 13px;
+}
+
+.workspace-app .workspace-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
 .workspace-app .workspace-button {
@@ -193,10 +233,12 @@
   min-height: 40px;
   align-items: center;
   justify-content: center;
+  gap: 7px;
   padding: 8px 17px;
   border: 1px solid transparent;
   border-radius: 8px;
-  font-size: 14px;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
   text-decoration: none;
@@ -205,41 +247,43 @@
 }
 
 .workspace-app .workspace-button--secondary {
-  color: #168fbb;
+  color: #147fa6;
   border-color: #cce5f1;
   background: #fff;
 }
 
-.workspace-app .workspace-button--secondary:hover {
+.workspace-app .workspace-button--secondary:hover:not(:disabled) {
   background: #eaf8fd;
 }
 
 .workspace-app .workspace-button--primary {
   color: #fff;
   background: #0baee2;
+  box-shadow: 0 4px 10px rgb(11 174 226 / 12%);
 }
 
-.workspace-app .workspace-button--primary:hover {
+.workspace-app .workspace-button--primary:hover:not(:disabled) {
   background: #089bc9;
 }
 
-.workspace-app .workspace-plans-heading > div {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 18px;
+.workspace-app button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.workspace-app .workspace-plans-heading p {
-  width: 100%;
-  margin-top: 0;
+.workspace-app .workspace-button svg {
+  width: 17px;
+  height: 17px;
 }
 
+/* 4. 白色面板与小标题，视觉层级沿用 Profile。 */
 .workspace-app .workspace-section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #edf2f6;
   gap: 16px;
 }
 
@@ -247,17 +291,59 @@
 .workspace-app .workspace-panel > h2 {
   margin: 0;
   color: #1d3043;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 600;
 }
 
-.workspace-app .workspace-text-link {
-  color: #079cca;
-  font-size: 14px;
-  white-space: nowrap;
+.workspace-app .workspace-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
-.workspace-app .workspace-text-link:hover,
+.workspace-app .workspace-section-title p {
+  margin: 3px 0 0;
+  color: var(--workspace-muted);
+  font-size: 12px;
+}
+
+.workspace-app .workspace-section-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: #08a7d9;
+  background: #e7f8fe;
+}
+
+.workspace-app .workspace-text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: #087fa8;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.workspace-app .workspace-text-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+.workspace-app .workspace-back-link {
+  margin-top: 24px;
+}
+
+.workspace-app .workspace-text-link:hover:not(:disabled),
 .workspace-app .workspace-plan-link:hover {
   color: #087fa8;
   text-decoration: underline;
@@ -281,13 +367,33 @@
 .workspace-app .workspace-plan-card {
   min-height: 165px;
   padding: 24px;
+  border-top: 3px solid #cae9f6;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.workspace-app .workspace-plan-card:hover,
+.workspace-app .workspace-plan-card:focus-within {
+  border-color: #acdced;
+  box-shadow: 0 6px 18px rgb(42 115 153 / 8%);
+}
+
+.workspace-app .workspace-plan-card[data-status="ACTIVE"] {
+  border-top-color: #28b6df;
 }
 
 .workspace-app .workspace-plan-card-heading h3 {
   min-width: 0;
+  margin: 0;
   color: #203b53;
   font-size: 17px;
+  font-weight: 600;
+  line-height: 1.6;
   overflow-wrap: anywhere;
+}
+
+.workspace-app .workspace-plan-link {
+  color: inherit;
+  text-decoration: none;
 }
 
 .workspace-app .workspace-plan-card-heading {
@@ -299,28 +405,92 @@
 
 .workspace-app .workspace-plan-status,
 .workspace-app .workspace-task-status {
-  padding: 5px 10px;
-  color: #168fb8;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 6px;
+  padding: 4px 9px;
+  color: #087fa8;
   border-radius: 6px;
   background: #eaf8fd;
   font-size: 12px;
   white-space: nowrap;
 }
 
+/* 状态颜色只映射已有字段，不改变任务状态或完成率计算。 */
+.workspace-app .workspace-task-status::before {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.workspace-app .workspace-plan-status[data-status="DRAFT"],
+.workspace-app .workspace-plan-status[data-status="ENDED"],
+.workspace-app .workspace-task-status[data-status="PENDING"],
+.workspace-app .workspace-task-status[data-status="ENDED"] {
+  color: #64788a;
+  background: #eff4f7;
+}
+
+.workspace-app .workspace-task-status[data-status="COMPLETED"] {
+  color: #2c8167;
+  background: #eaf6ef;
+}
+
+.workspace-app .workspace-task-status[data-status="OVERDUE"] {
+  color: #a26520;
+  background: #fff4e5;
+}
+
 .workspace-app .workspace-plan-date {
-  margin-top: 15px;
-  color: #91a5b7;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 14px 0 0;
+  color: var(--workspace-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .workspace-plan-date svg {
+  width: 15px;
+  height: 15px;
+}
+
+.workspace-app .workspace-plan-note {
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid #edf3f7;
+  color: var(--workspace-muted);
   font-size: 13px;
 }
 
 .workspace-app .workspace-plan-progress {
   margin-top: 20px;
   color: #688197;
+  font-size: 13px;
+}
+
+.workspace-app .workspace-progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+}
+
+.workspace-app .workspace-progress-label strong {
+  color: #168db7;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
 }
 
 .workspace-app .workspace-progress-track {
   overflow: hidden;
   height: 7px;
+  margin-top: 10px;
   border-radius: 999px;
   background: #e7f0f5;
 }
@@ -331,7 +501,13 @@
   background: #18b0df;
 }
 
-/* 网页版固定两列：窗口变窄时仍保持计划在左、步骤在右。 */
+.workspace-app .workspace-progress-caption {
+  margin: 9px 0 0;
+  color: var(--workspace-muted);
+  font-size: 11px;
+}
+
+/* 5. 首页固定两列：不得在媒体查询中把计划与步骤改成上下排列。 */
 .workspace-app .workspace-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -362,26 +538,56 @@
 
 .workspace-app .workspace-panel {
   min-width: 0;
-  padding: 25px;
+  padding: 24px;
 }
 
 .workspace-app .workspace-empty-state {
-  padding: 28px;
-  color: #8ca2b5;
-  font-size: 14px;
+  margin: 0;
+  padding: 38px 24px;
+  color: var(--workspace-muted);
+  font-size: 13px;
+  text-align: center;
 }
 
-.workspace-app .workspace-task-empty {
-  color: #91a5b7;
+.workspace-app .workspace-panel .workspace-empty-state {
+  border: 1px dashed #dce9f1;
+  border-radius: 9px;
+  background: #f9fcfe;
+  box-shadow: none;
 }
 
+/* 6. 首页任务摘要：标题、元信息、状态各自保持清晰层级。 */
 .workspace-app .workspace-task-item {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 17px 0;
+  position: relative;
+  padding: 18px 12px 18px 28px;
   border-bottom: 1px solid #eaf1f6;
+}
+
+.workspace-app .workspace-task-item::before {
+  position: absolute;
+  top: 25px;
+  left: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b6d1e0;
+  content: "";
+}
+
+.workspace-app .workspace-task-item[data-status="IN_PROGRESS"]::before {
+  background: #18b0df;
+}
+
+.workspace-app .workspace-task-item[data-status="COMPLETED"]::before {
+  background: #66ad90;
+}
+
+.workspace-app .workspace-task-item[data-status="OVERDUE"]::before {
+  background: #d9a256;
 }
 
 .workspace-app .workspace-task-list {
@@ -403,39 +609,171 @@
   flex: none;
 }
 
-.workspace-app .workspace-task-item p:first-child {
+.workspace-app .workspace-task-title {
+  margin: 0;
   color: #27435b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.workspace-app .workspace-task-meta {
+  margin: 5px 0 0;
+  color: var(--workspace-muted);
+  font-size: 12px;
+}
+
+.workspace-app .workspace-task-quantity {
+  margin: 7px 0 0;
+  color: #526e85;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .workspace-rollover-label {
+  margin: 6px 0 0;
+  color: #177fa6;
+  font-size: 12px;
+}
+
+/* 7. 步骤树与表单控件。 */
+.workspace-app .workspace-field-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #5b758a;
+  font-size: 13px;
 }
 
 .workspace-app .workspace-select {
   width: 100%;
   min-height: 42px;
+  max-width: 100%;
+  padding: 9px 12px;
   color: #35556d;
   border: 1px solid #dceaf3;
   background: #f9fcfe;
+  border-radius: 8px;
   outline: none;
+  font: inherit;
+  font-size: 13px;
 }
 
-.workspace-app .workspace-panel > h2 {
-  margin-bottom: 18px;
+.workspace-app .workspace-step-tree,
+.workspace-app .workspace-step-children {
+  list-style: none;
+}
+
+.workspace-app .workspace-step-tree {
+  margin: 20px 0 0;
+  padding: 0;
+}
+
+.workspace-app .workspace-step-children {
+  margin: 4px 0 4px 14px;
+  padding: 0 0 0 16px;
+  border-left: 1px solid #d9e8f1;
+}
+
+.workspace-app .workspace-step-branch {
+  margin: 7px 0;
 }
 
 .workspace-app .workspace-step-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 30px;
+  min-height: 38px;
+  padding: 7px 8px;
+  border-radius: 7px;
   color: #35556d;
   font-size: 14px;
 }
 
+.workspace-app .workspace-step-row[data-kind="GROUP"] {
+  background: #f4f9fc;
+  font-weight: 500;
+}
+
+.workspace-app .workspace-step-row > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .workspace-app .workspace-step-kind {
+  flex: none;
   padding: 3px 7px;
   color: #188fb7;
   border-radius: 5px;
   background: #ecf8fc;
+  font-size: 11px;
 }
 
+/* 8. 加载、空内容、成功与失败反馈。 */
+.workspace-app .workspace-summary-note,
+.workspace-app .workspace-muted {
+  margin: 12px 0;
+  color: var(--workspace-muted);
+  font-size: 13px;
+}
+
+.workspace-app .workspace-inline-error {
+  margin: 12px 0;
+  color: #b14646;
+  font-size: 13px;
+}
+
+.workspace-app .workspace-loading {
+  margin: 0;
+  padding: 28px 16px;
+  border: 1px solid #e2edf5;
+  border-radius: 10px;
+  color: var(--workspace-muted);
+  background: #f9fcfe;
+  font-size: 13px;
+  text-align: center;
+}
+
+.workspace-app .workspace-feedback {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.workspace-app .workspace-feedback p {
+  margin: 0;
+}
+
+.workspace-app .workspace-feedback--error {
+  border-color: #f4dede;
+  color: #a84747;
+  background: #fff3f3;
+}
+
+.workspace-app .workspace-feedback--success {
+  border-color: #d6ebdf;
+  color: #2c7d5c;
+  background: #edf8f1;
+}
+
+.workspace-app .workspace-feedback--warning {
+  border-color: #f1e5ce;
+  color: #936b28;
+  background: #fff9ee;
+}
+
+.workspace-app .workspace-task-cards {
+  display: grid;
+  gap: 18px;
+}
+
+.workspace-app .workspace-task-cards > .workspace-summary-note {
+  margin: 0;
+}
+
+/* 9. 小窗口缩减留白，首页下方始终保留两列。 */
 @media (max-width: 1000px) {
   .workspace-app .workspace-main {
     padding: 32px;
@@ -455,6 +793,13 @@
     width: 180px;
   }
 
+  .workspace-app .workspace-panel {
+    padding: 18px;
+  }
+
+  .workspace-app .workspace-dashboard-grid {
+    gap: 14px;
+  }
 }
 
 @media (max-width: 700px) {
@@ -482,6 +827,10 @@
 
   .workspace-app .workspace-page-heading {
     flex-wrap: wrap;
+  }
+
+  .workspace-app .workspace-search-field {
+    width: 240px;
   }
 
   .workspace-app .workspace-plan-grid {

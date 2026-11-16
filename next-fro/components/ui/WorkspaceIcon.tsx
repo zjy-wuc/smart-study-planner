@@ -10,7 +10,10 @@ export type WorkspaceIconName =
   | "refresh"
   | "steps"
   | "arrow"
-  | "plus";
+  | "plus"
+  | "shield"
+  | "screen"
+  | "power";
 
 const paths: Record<WorkspaceIconName, ReactNode> = {
   book: <path d="M12 6C9 3.5 5.5 3.5 3 5v13c3-1.5 6-1.5 9 1.5M12 6c3-2.5 6.5-2.5 9-1v13c-3-1.5-6-1.5-9 1.5M12 6v13.5" />,
@@ -23,6 +26,9 @@ const paths: Record<WorkspaceIconName, ReactNode> = {
   steps: <><rect x="3" y="3" width="7" height="6" rx="1.5" /><rect x="14" y="15" width="7" height="6" rx="1.5" /><path d="M6.5 9v9H14M10 6h7.5v9" /></>,
   arrow: <path d="m9 5 7 7-7 7" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  shield: <><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" /><path d="m9 12 2 2 4-4" /></>,
+  screen: <><rect x="3" y="4" width="18" height="13" rx="1.5" /><path d="M8 21h8M12 17v4" /></>,
+  power: <path d="M12 2v10M7 5a9 9 0 1 0 10 0" />,
 };
 
 /** 仅用于展示，沿用个人中心的线性图标风格。 */

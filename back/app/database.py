@@ -15,9 +15,15 @@ DATABASE_URL = URL.create(
     query={"charset": "utf8mb4"},
 )
 
+
+
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
+#北京时区，保证now是+8
+    connect_args={
+        "init_command": "SET time_zone = '+08:00'",
+    },
 )
 
 SessionLocal = sessionmaker(

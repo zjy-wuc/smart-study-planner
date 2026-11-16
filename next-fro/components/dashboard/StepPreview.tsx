@@ -14,9 +14,9 @@ function StepBranch({
   node: StepNode;
 }) {
   return (
-    <li className="workspace-step-branch my-2">
-      <div className="workspace-step-row flex items-center gap-2">
-        <span className="workspace-step-kind text-xs text-slate-500">
+    <li className="workspace-step-branch">
+      <div className="workspace-step-row" data-kind={node.node_type}>
+        <span className="workspace-step-kind">
           {node.node_type === "GROUP" ? "分类" : "任务"}
         </span>
 
@@ -24,7 +24,7 @@ function StepBranch({
       </div>
 
       {node.children.length > 0 && (
-        <ul className="ml-4 border-l border-slate-200 pl-3">
+        <ul className="workspace-step-children">
           {node.children.map((child) => (
             <StepBranch key={child.id} node={child} />
           ))}
@@ -72,12 +72,12 @@ function StepTree({ planId }: { planId: number }) {
     };
   }, [planId]);
 
-  if (loading) return <p className="mt-4 text-sm">正在加载步骤...</p>;
-  if (error) return <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>;
-  if (nodes.length === 0) return <p className="mt-4 text-sm text-slate-500">当前计划还没有学习步骤</p>;
+  if (loading) return <p role="status" className="workspace-loading">正在加载步骤...</p>;
+  if (error) return <p role="alert" className="workspace-feedback workspace-feedback--error">{error}</p>;
+  if (nodes.length === 0) return <p className="workspace-empty-state">当前计划还没有学习步骤</p>;
 
   return (
-    <ul className="workspace-step-tree mt-4">
+    <ul className="workspace-step-tree">
       {nodes.map((node) => <StepBranch key={node.id} node={node} />)}
     </ul>
   );
@@ -91,17 +91,17 @@ export function StepPreview({ plans }: { plans: Plan[] }) {
 
   if (plans.length === 0) {
     return (
-      <p className="py-6 text-sm text-slate-500">
+      <p className="workspace-empty-state">
         创建计划后，这里将显示学习步骤。
       </p>
     );
   }
 
   return (
-    <div>
+    <div className="workspace-step-preview">
       <label
         htmlFor="preview-plan"
-        className="mb-2 block text-sm text-slate-600"
+        className="workspace-field-label"
       >
         选择学习计划
       </label>
@@ -112,7 +112,7 @@ export function StepPreview({ plans }: { plans: Plan[] }) {
         onChange={(event) => {
           setSelectedPlanId(Number(event.target.value));
         }}
-        className="workspace-select w-full rounded-lg border border-slate-300 px-3 py-2"
+        className="workspace-select"
       >
         {plans.map((plan) => (
           <option key={plan.id} value={plan.id}>

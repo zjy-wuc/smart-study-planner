@@ -1,5 +1,9 @@
-#把用户创建的树形草稿计划，经过完整校验后，一次性生成整个计划周期的每日任务，并将计划状态从 DRAFT 改为 ACTIVE。
+# 把用户创建的树形草稿计划，经过完整校验后，
+# 一次性生成整个计划周期的每日任务，
+# 并将计划状态从 DRAFT 改为 ACTIVE。
+
 from collections import defaultdict
+from typing import NoReturn
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -16,7 +20,7 @@ from app.services.plan_rules import (
 )
 
 
-def _reject(message: str):
+def _reject(message: str) -> NoReturn:
     """统一拒绝无法开始的计划"""
     raise HTTPException(
         status_code=409,
@@ -34,6 +38,7 @@ def _validate_tree(steps: list[dict]) -> list[dict]:
     children_count = defaultdict(int)
     leaf_steps = []
 
+    # 第一轮：检查父子关系
     for step in steps:
         parent_id = step["parent_id"]
 
@@ -48,6 +53,7 @@ def _validate_tree(steps: list[dict]) -> list[dict]:
 
             children_count[parent_id] += 1
 
+    # 第二轮：检查节点类型和子节点数量
     for step in steps:
         if step["node_type"] == "GROUP":
             if children_count[step["id"]] == 0:
@@ -90,8 +96,12 @@ def _build_leaf_tasks(
             "target_quantity": quantity,
         })
 
+    # ============================
+    # BOOLEAN 类型任务
+    # ============================
     if task_type == "BOOLEAN":
 
+        # 模式一：每天重复相同内容
         if mode == "REPEAT":
             content = (step["repeat_content"] or "").strip()
 
@@ -103,6 +113,7 @@ def _build_leaf_tasks(
             for day in days:
                 add_task(day, content)
 
+        # 模式二：每天自定义内容
         elif mode == "DAILY_CUSTOM":
             by_date = defaultdict(list)
 
@@ -132,6 +143,9 @@ def _build_leaf_tasks(
         else:
             _reject("BOOLEAN 执行模式不合法")
 
+    # ============================
+    # NUMERIC 类型任务
+    # ============================
     elif task_type == "NUMERIC":
 
         total = step["total_target"]
@@ -141,6 +155,7 @@ def _build_leaf_tasks(
                 f"{step['name']} 总目标数量不合法"
             )
 
+        # 模式一：自动平均分配
         if mode == "AUTO_DISTRIBUTE":
             distribution = distribute_numeric_target(
                 total,
@@ -155,6 +170,7 @@ def _build_leaf_tasks(
                     distribution[day],
                 )
 
+        # 模式二：手动设置每日数量
         elif mode == "DAILY_MANUAL":
             by_date = defaultdict(list)
 

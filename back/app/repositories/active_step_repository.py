@@ -1,5 +1,8 @@
 
+from typing import cast
+
 from sqlalchemy import bindparam, text
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
 
 from app.schemas.active_step import ActiveStepNode
@@ -109,7 +112,7 @@ def insert_node(
         "sort_order": sort_order,
     })
 
-    return result.lastrowid
+    return cast(CursorResult, result).lastrowid
 
 
 def soft_delete_nodes(
