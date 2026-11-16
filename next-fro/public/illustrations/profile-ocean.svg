@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 760" fill="none">
+  <!-- 手绘浅海、远岸与泡沫；不依赖远程图片。 -->
+  <defs>
+    <linearGradient id="sea" x2="0" y2="1">
+      <stop stop-color="#9dcde4" stop-opacity=".6"/>
+      <stop offset=".48" stop-color="#b2e0ec"/>
+      <stop offset="1" stop-color="#d5eef4"/>
+    </linearGradient>
+    <linearGradient id="shore" x2="0" y2="1">
+      <stop stop-color="#ecf7fa"/>
+      <stop offset="1" stop-color="#f6f9f7"/>
+    </linearGradient>
+  </defs>
+  <path d="M0 242q164-7 320 0t320 0 320 0 320 0 320 0v518H0Z" fill="url(#sea)"/>
+  <path d="M0 238q74-20 123-45 17-7 34 0 65 34 174 48Z" fill="#9cbfd5" opacity=".65"/>
+  <path d="M0 249Q800 239 1600 249" stroke="#f7fcff" stroke-width="3" opacity=".75"/>
+  <g stroke="#f6fcff" stroke-linecap="round">
+    <path d="M34 291h100m55 0h53m690 12h134m120-22h100m67 31h95M85 361h78m198-20h106m699 18h168m79-17h108M15 418h92m26 5h56m290-28h110m489 18h96m210-4h144" stroke-width="2" opacity=".65"/>
+    <path d="M0 491q104-20 210 0t230 0 240 0m265 24q95-18 205 0t450-8M-30 591q140-32 280-6t290-2 265 6m266-21q149-28 240-8t319 0" stroke-width="3" opacity=".7"/>
+  </g>
+  <path d="M0 656Q229 591 435 660T872 681Q1094 645 1279 699T1600 713V760H0Z" fill="url(#shore)"/>
+  <path d="M0 642Q229 577 435 646T872 667Q1094 631 1279 685T1600 699" stroke="white" stroke-width="5" opacity=".9"/>
+  <path d="M0 627Q213 570 424 632T868 652Q1100 615 1281 670T1600 683" stroke="white" stroke-width="2" stroke-dasharray="44 16 8 20" opacity=".55"/>
+  <g stroke="#7cabc6" stroke-width="2" stroke-linecap="round" opacity=".7">
+    <path d="M1280 141q13-12 26 0 13-12 26 0M1380 114q9-8 18 0 9-8 18 0M1223 163q7-6 14 0 7-6 14 0"/>
+  </g>
+</svg>

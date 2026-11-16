@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 760" fill="none">
+  <!-- 手绘矢量；参考层叠远山构图，配色与学习统计页统一。 -->
+  <defs>
+    <linearGradient id="distant" x2="0" y2="1">
+      <stop stop-color="#b6d8ec"/>
+      <stop offset="1" stop-color="#e3f1fa"/>
+    </linearGradient>
+    <linearGradient id="middle" x2="0" y2="1">
+      <stop stop-color="#9fc6df"/>
+      <stop offset="1" stop-color="#c9e2f1"/>
+    </linearGradient>
+    <linearGradient id="near" x2="0" y2="1">
+      <stop stop-color="#84b3ce"/>
+      <stop offset="1" stop-color="#b2d3e5"/>
+    </linearGradient>
+  </defs>
+  <path d="M0 340 128 270Q144 260 163 274L270 347 430 177Q442 164 456 178L550 260 644 226Q655 222 667 233L790 338 942 191Q956 174 974 190L1100 292 1254 150Q1270 135 1286 153L1410 280 1510 232 1600 290V760H0Z" fill="url(#distant)"/>
+  <path d="m386 224 44-47q12-13 26 1l46 42-37-12-20 12-16-20Z" fill="#f1f8fd" opacity=".7"/>
+  <path d="m1208 192 46-42q16-15 32 3l43 47-36-14-20 8-16-22Z" fill="#f1f8fd" opacity=".65"/>
+  <path d="M0 442 148 362Q166 350 186 366L347 467 511 334Q528 321 545 335L698 448 818 384Q837 374 857 389L1060 486 1220 329Q1240 310 1260 328L1420 412 1600 352V760H0Z" fill="url(#middle)"/>
+  <path d="M0 562Q130 504 265 566T525 583Q698 503 858 559T1146 596Q1368 432 1600 486V760H0Z" fill="#b9d8e9"/>
+  <path d="M0 645Q160 547 329 649T670 679Q817 586 1014 637T1320 609Q1452 552 1600 567V760H0Z" fill="url(#near)"/>
+  <!-- 由近及远逐渐收窄的山间小径。 -->
+  <path d="M1390 760C1270 706 1072 705 1152 664S1338 626 1234 601C1320 625 1184 646 1116 665S1110 716 1274 760Z" fill="#eff7fb" opacity=".85"/>
+  <g stroke="#759eb9" stroke-width="2" stroke-linecap="round" opacity=".65">
+    <path d="M1150 110q12-10 24 0 12-10 24 0M1210 83q8-7 16 0 8-7 16 0"/>
+  </g>
+</svg>

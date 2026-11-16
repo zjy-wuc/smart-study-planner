@@ -7,7 +7,12 @@
   min-height: 100vh;
   color-scheme: light;
   color: #203047;
-  background: #f1f7fc;
+  /* 暖白纸面与低对比度纤维颗粒，保留卡片的清晰边界。 */
+  background-color: #f8f7f2;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgb(125 111 84 / 3%) 0.55px, transparent 0.8px),
+    radial-gradient(circle at 2px 3px, rgb(255 255 255 / 65%) 0.65px, transparent 0.9px);
+  background-size: 13px 13px, 19px 19px;
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
   font-size: 14px;
   line-height: 1.6;
@@ -116,8 +121,8 @@
   flex: none;
   width: 232px;
   padding: 38px 18px;
-  border-right: 1px solid #dcebf5;
-  background: #e5f2fa;
+  border-right: 1px solid #e9e6df;
+  background: #f4f3ed;
 }
 
 .workspace-app .workspace-sidebar-label {
@@ -190,6 +195,35 @@
   min-width: 0;
   padding: 36px 42px 48px;
 }
+
+/* 首页快速打卡和任务历史。 */
+.workspace-app .dashboard-count {
+  display: inline-block;
+  margin-left: 8px;
+  color: #64879b;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.workspace-app .dashboard-task { gap: 16px; flex-wrap: wrap; }
+.workspace-app .dashboard-task-main { flex: 1 1 220px; }
+.workspace-app .dashboard-task-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.workspace-app .dashboard-checkin { display: flex; align-items: center; gap: 8px; }
+.workspace-app .dashboard-checkin input { width: 90px; padding: 7px 9px; border: 1px solid #cee1ee; border-radius: 7px; background: #fff; }
+.workspace-app .dashboard-checkin button { padding: 7px 12px; border: 0; border-radius: 7px; color: #fff; background: #0baee2; cursor: pointer; }
+.workspace-app .dashboard-checkin button:disabled { opacity: .6; cursor: wait; }
+.workspace-app .checkin-success-text {
+  color: #4b94ad;
+  font-size: 13px;
+  font-weight: 500;
+}
+.workspace-app .dashboard-checkin-error { margin-top: 5px; color: #bd3f47; font-size: 12px; }
+.workspace-app .dashboard-history { margin-top: 24px; }
+.workspace-app .dashboard-history-item { padding: 12px 0; border-top: 1px solid #e7f0f6; }
+.workspace-app .dashboard-history-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.workspace-app .dashboard-history-heading small, .workspace-app .dashboard-history-records span { color: #829aab; }
+.workspace-app .dashboard-history-records { padding: 8px 0 0; color: #526c80; font-size: 13px; }
+.workspace-app .dashboard-history-records li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; }
 
 /* 3. 页面标题、操作按钮及通用反馈。 */
 .workspace-app .workspace-dashboard,

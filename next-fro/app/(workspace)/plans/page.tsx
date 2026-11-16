@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { PlanCard } from "@/components/dashboard/PlanCard";
 import { WorkspaceIcon } from "@/components/ui/WorkspaceIcon";
+import { LandscapeScene } from "@/components/common/LandscapeScene";
 
 
 export default function PlansPage() {
@@ -17,7 +18,8 @@ export default function PlansPage() {
   } = useDashboardData();
 
   return (
-    <section className="workspace-page">
+    <section className="workspace-page plans-landscape-page">
+      <LandscapeScene variant="mountains" />
       <div className="workspace-page-heading">
         <div>
           <h1 className="text-2xl font-bold">我的计划</h1>

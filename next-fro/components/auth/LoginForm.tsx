@@ -46,8 +46,8 @@ setTokenPair(accessToken, refreshToken);
 // 3. 更新页面提示
 setMessage("登录成功！");
 
-// 4. 跳转到个人中心
-router.replace("/profile");
+// 4. 跳转到首页
+router.replace("/");
 
   
 } catch (error) {

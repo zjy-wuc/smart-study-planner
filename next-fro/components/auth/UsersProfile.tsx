@@ -8,6 +8,8 @@ import { ApiError } from "@/lib/api/client";
 import { removeTokenPair } from "@/lib/auth/token";
 import type { User } from "@/types/auth";
 import { WorkspaceIcon as Icon } from "@/components/ui/WorkspaceIcon";
+import { ScrollPositionManager } from "@/components/common/ScrollPositionManager";
+import { LandscapeScene } from "@/components/common/LandscapeScene";
 import "@/components/css/Profile.css";
 
 export default function UserProfile() {
@@ -53,6 +55,7 @@ export default function UserProfile() {
 
   return (
     <div className="profile-app">
+      <ScrollPositionManager />
       <header className="profile-header">
         <div className="profile-brand">
           <span className="profile-brand-icon"><Icon name="book" /></span>
@@ -79,6 +82,12 @@ export default function UserProfile() {
             <Link className="profile-nav-item" href="/task/today">
               <Icon name="tasks" />今日任务
             </Link>
+            <Link className="profile-nav-item" href="/history">
+              <Icon name="book" />打卡历史
+            </Link>
+            <Link className="profile-nav-item" href="/statistics">
+              <Icon name="calendar" />学习统计
+            </Link>
             <div className="profile-nav-divider" />
             <div className="profile-sidebar-label">账户</div>
             <Link className="profile-nav-item profile-nav-active" href="/profile" aria-current="page">
@@ -91,6 +100,7 @@ export default function UserProfile() {
           </div>
         </aside>
         <main className="profile-main">
+          <LandscapeScene variant="ocean" />
           <div className="profile-heading">
             <h1>个人中心</h1>
             <p>管理你的账户信息和登录状态</p>

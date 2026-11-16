@@ -1,0 +1,160 @@
+/* 共用场景：天空、柔光与装饰图层，所有规则仅作用于已接入的两页。 */
+.landscape-scene {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 76% 8%, #f8fcff, transparent 45%),
+    linear-gradient(160deg, #c4e1f5, #edf7fc 62%, #d8edf8);
+}
+
+.landscape-scene-light {
+  position: absolute;
+  top: 24px;
+  right: 18%;
+  width: 110px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffef4 25%, rgb(255 255 255 / 65%) 42%, transparent 71%);
+  box-shadow: 0 0 90px 30px rgb(255 255 255 / 35%);
+}
+
+.landscape-scene-cloud {
+  position: absolute;
+  top: 20px;
+  left: -80px;
+  width: 560px;
+  height: 190px;
+  background:
+    radial-gradient(ellipse at 30% 60%, rgb(255 255 255 / 90%), transparent 55%),
+    radial-gradient(ellipse at 60% 40%, rgb(255 255 255 / 80%), transparent 55%);
+  animation: landscape-cloud-drift 55s ease-in-out infinite alternate;
+}
+
+.landscape-scene-art {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: clamp(460px, 54vw, 850px);
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: 100% 100%;
+}
+
+/* 我的计划：山峰留在卡片外围，下方小径延伸向远处。 */
+.landscape-scene--mountains .landscape-scene-art {
+  background-image: url("/illustrations/plan-mountains.svg");
+}
+
+.workspace-app:has(.plans-landscape-page) {
+  background: #e7f3fc;
+}
+
+.workspace-app:has(.plans-landscape-page) .workspace-sidebar {
+  border-right-color: #d5e8f5;
+  background: linear-gradient(180deg, #f3faff, #e7f3fc);
+}
+
+.workspace-app .workspace-main:has(.plans-landscape-page) {
+  position: relative;
+  isolation: isolate;
+  padding-bottom: 150px;
+}
+
+.workspace-app .plans-landscape-page .workspace-plan-card {
+  background: #fff;
+  box-shadow: 0 14px 32px -16px rgb(37 88 126 / 28%);
+}
+
+.plans-landscape-page > :not(.landscape-scene),
+.profile-main:has(.landscape-scene--ocean) > :not(.landscape-scene) {
+  position: relative;
+  z-index: 1;
+}
+
+.workspace-app .plans-landscape-page .workspace-page-heading p {
+  color: #52758c;
+}
+
+.workspace-app .plans-landscape-page .workspace-back-link {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 88%);
+}
+
+/* 个人中心：海景填满内容背景，照片、资料和账户按钮保留原布局。 */
+.profile-app:has(.landscape-scene--ocean) {
+  background: #e8f5fb;
+}
+
+.profile-app:has(.landscape-scene--ocean) .profile-sidebar {
+  border-right-color: #d5e8f5;
+  background: linear-gradient(180deg, #f3faff, #e7f3fc);
+}
+
+.profile-main:has(.landscape-scene--ocean) {
+  position: relative;
+  isolation: isolate;
+  max-width: none;
+  padding-bottom: 100px;
+}
+
+.profile-main:has(.landscape-scene--ocean) > :not(.landscape-scene) {
+  max-width: 1500px;
+  margin-inline: auto;
+}
+
+.landscape-scene--ocean {
+  background:
+    radial-gradient(ellipse at 75% 5%, #fcfefd, transparent 40%),
+    linear-gradient(170deg, #c4e4f6, #e9f6fc 53%, #c9e8f2);
+}
+
+.landscape-scene--ocean .landscape-scene-art {
+  right: -30px;
+  left: -30px;
+  animation: landscape-tide 24s ease-in-out infinite alternate;
+  background-image: url("/illustrations/profile-ocean.svg");
+}
+
+.profile-main:has(.landscape-scene--ocean) .profile-card {
+  border-color: rgb(255 255 255 / 90%);
+  box-shadow: 0 14px 32px -16px rgb(37 88 126 / 26%);
+}
+
+.profile-main:has(.landscape-scene--ocean) .profile-heading p,
+.profile-main:has(.landscape-scene--ocean) .profile-bottom {
+  color: #52758c;
+}
+
+@keyframes landscape-cloud-drift {
+  from { transform: translateX(-15px); }
+  to { transform: translateX(40px); }
+}
+
+@keyframes landscape-tide {
+  from { transform: translateX(-12px); }
+  to { transform: translateX(12px); }
+}
+
+/* 较窄窗口维持景物比例；系统减少动态效果时停止全部装饰动画。 */
+@media (max-width: 900px) {
+  .landscape-scene-art {
+    background-size: auto 100%;
+  }
+
+  .landscape-scene-light {
+    right: 10%;
+    width: 80px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landscape-scene-cloud,
+  .landscape-scene--ocean .landscape-scene-art {
+    animation: none;
+  }
+}

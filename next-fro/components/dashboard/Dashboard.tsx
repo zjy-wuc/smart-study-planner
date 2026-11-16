@@ -39,6 +39,11 @@ export default function Dashboard() {
 
   // 首页只展示最多 3 个，完整列表在 /plans
   const featuredPlans = filteredPlans.slice(0, 3);
+  const pendingTasks = tasks.filter((task) =>
+    task.status !== "COMPLETED" && task.status !== "ENDED" &&
+    !task.is_rolled_over && !task.has_rollover && task.rollover_out_quantity === 0,
+  ).length;
+  const activePlans = plans.filter((plan) => plan.status === "ACTIVE").length;
 
   return (
     <div className="workspace-dashboard">
@@ -68,7 +73,7 @@ export default function Dashboard() {
           <div className="workspace-section-title">
             <span className="workspace-section-icon"><WorkspaceIcon name="tasks" /></span>
             <div>
-              <h2 id="today-heading">今日任务</h2>
+              <h2 id="today-heading">今日任务 {!loading && !tasksError && <span className="dashboard-count">{pendingTasks} 项待完成</span>}</h2>
               <p>从今天的安排开始</p>
             </div>
           </div>
@@ -86,7 +91,7 @@ export default function Dashboard() {
             今日任务加载失败：{tasksError}
           </p>
         ) : (
-          <TodayTaskList tasks={tasks.slice(0, 5)} />
+          <TodayTaskList tasks={tasks.slice(0, 5)} onChanged={reload} />
         )}
       </section>
 
@@ -99,7 +104,7 @@ export default function Dashboard() {
             <div className="workspace-section-title">
               <span className="workspace-section-icon"><WorkspaceIcon name="calendar" /></span>
               <div>
-                <h2 id="plans-heading">我的计划</h2>
+              <h2 id="plans-heading">我的计划 {!loading && !plansError && <span className="dashboard-count">{activePlans} 个进行中</span>}</h2>
                 <p>查看计划与完成进度</p>
               </div>
             </div>

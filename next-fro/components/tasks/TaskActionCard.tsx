@@ -9,6 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/api/client";
+import { useDailyCheckin } from "@/hooks/useDailyCheckin";
 import "@/components/css/Tasks.css";
 
 import {
@@ -95,6 +96,7 @@ export function TaskActionCard({
       task.status === "OVERDUE"
     ) &&
     !isRolledOver;
+  const daily = useDailyCheckin(task.id, task.task_type === "NUMERIC" && canOperate);
 
 
   async function refreshRecords() {
@@ -167,7 +169,7 @@ export function TaskActionCard({
 
 
   function handleNumericProgress() {
-    if (!canOperate || busy) {
+    if (!canOperate || busy || daily.state !== "available") {
       return;
     }
 
@@ -186,7 +188,7 @@ export function TaskActionCard({
     }
 
     void runAction(
-      () => updateNumericTask(task.id, quantity),
+      async () => { await updateNumericTask(task.id, quantity); daily.markDone(); },
       "累计完成数量已更新",
     );
   }
@@ -257,7 +259,7 @@ export function TaskActionCard({
         </div>
 
         <span className="workspace-task-status" data-status={task.display_status}>
-          {statusLabels[task.display_status]}
+          {task.task_type === "NUMERIC" && ["PENDING", "IN_PROGRESS"].includes(task.display_status) ? "未完成" : statusLabels[task.display_status]}
         </span>
       </div>
 
@@ -311,8 +313,10 @@ export function TaskActionCard({
               disabled={busy}
               className="workspace-button workspace-button--primary"
             >
-              {busy ? "处理中..." : "完成任务"}
+              {busy ? "处理中..." : "打卡"}
             </button>
+          ) : daily.state === "done" ? (
+            <span className="checkin-success-text">坚持就是胜利</span>
           ) : (
             <div className="task-progress-form">
               <div>
@@ -331,7 +335,7 @@ export function TaskActionCard({
                   onChange={(event) =>
                     setActualText(event.target.value)
                   }
-                  disabled={busy}
+                  disabled={busy || daily.state !== "available"}
                   className="task-action-input"
                 />
               </div>
@@ -339,11 +343,12 @@ export function TaskActionCard({
               <button
                 type="button"
                 onClick={handleNumericProgress}
-                disabled={busy}
+                disabled={busy || daily.state !== "available"}
                 className="workspace-button workspace-button--primary"
               >
-                {busy ? "保存中..." : "保存累计数量"}
+                {busy ? "保存中..." : daily.state === "loading" ? "正在确认…" : "打卡"}
               </button>
+              {daily.state === "error" && <button type="button" onClick={daily.retry} className="workspace-text-link">确认失败，重试</button>}
             </div>
           )}
 
@@ -399,6 +404,8 @@ export function TaskActionCard({
         </div>
       )}
 
+      {!canOperate && !isRolledOver && task.status === "COMPLETED" && <span className="checkin-success-text">坚持就是胜利</span>}
+
       <div className="task-records">
         <button
           type="button"
@@ -429,8 +436,8 @@ export function TaskActionCard({
                   >
                     <p>
                       {record.event_type === "BOOLEAN_COMPLETE"
-                        ? "BOOLEAN 完成打卡"
-                        : `NUMERIC 累计：${record.recorded_value ?? 0}`}
+                        ? "完成打卡"
+                        : `累计完成：${record.recorded_value ?? 0}`}
                     </p>
 
                     <p className="task-record-time">

@@ -1,0 +1,211 @@
+/* 1. 只在学习统计页启用，离开此页后不改变其他工作台页面。 */
+.workspace-app:has(.statistics-page) {
+  background: #e8f4fc;
+}
+
+.workspace-app:has(.statistics-page) .workspace-sidebar {
+  border-right-color: #d5e8f5;
+  background: linear-gradient(180deg, #f3faff, #e7f3fc);
+}
+
+.workspace-app .workspace-main:has(.statistics-page) {
+  position: relative;
+  isolation: isolate;
+}
+
+.statistics-page {
+  position: relative;
+  z-index: 1;
+  color: #23455f;
+}
+
+/* 2. 完整天空：上方更蓝，远处渐亮；装饰不会挡住页面操作。 */
+.statistics-sky {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 82% 5%, #f5fcff 0%, transparent 38%),
+    linear-gradient(165deg, #abd3f1 0%, #cce5f7 38%, #e6f3fc 75%, #d7eafa 100%);
+}
+
+.statistics-sky::after {
+  position: absolute;
+  inset: 50% 0 0;
+  content: "";
+  background: linear-gradient(180deg, transparent, rgb(255 255 255 / 28%));
+}
+
+.statistics-sky-sun {
+  position: absolute;
+  top: 24px;
+  right: 15%;
+  width: 116px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffef5 0%, #fffef5 30%, rgb(255 255 255 / 12%) 70%, transparent 72%);
+  box-shadow: 0 0 100px 55px rgb(255 255 255 / 32%);
+}
+
+/* 薄薄的高空云丝，与前景云团形成远近层次。 */
+.statistics-sky-wisp {
+  position: absolute;
+  top: 20px;
+  left: 12%;
+  width: 70%;
+  height: 180px;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 38% 40%, rgb(255 255 255 / 60%), transparent 60%),
+    radial-gradient(ellipse at 70% 65%, rgb(255 255 255 / 55%), transparent 50%);
+  transform: rotate(-9deg);
+  filter: blur(12px);
+}
+
+/* 3. 云团由柔边椭圆叠加，动画只移动整层，避免持续重绘大面积模糊。 */
+.statistics-sky-cloud {
+  position: absolute;
+  width: 560px;
+  height: 230px;
+  background:
+    radial-gradient(ellipse 24% 38% at 29% 56%, #fff 42%, rgb(255 255 255 / 80%) 64%, transparent 100%),
+    radial-gradient(ellipse 22% 45% at 47% 40%, #fff 42%, rgb(255 255 255 / 85%) 63%, transparent 100%),
+    radial-gradient(ellipse 25% 35% at 66% 55%, #fff 42%, rgb(255 255 255 / 78%) 64%, transparent 100%),
+    radial-gradient(ellipse 44% 26% at 49% 72%, #fff 45%, rgb(255 255 255 / 65%) 70%, transparent 100%);
+  filter: blur(3px);
+  animation: statistics-cloud-drift 46s ease-in-out infinite alternate;
+}
+
+.statistics-sky-cloud--near {
+  top: 36px;
+  left: -210px;
+  opacity: 0.9;
+  animation-delay: -14s;
+}
+
+.statistics-sky-cloud--high {
+  top: -16px;
+  left: 37%;
+  width: 380px;
+  height: 135px;
+  opacity: 0.85;
+  animation-duration: 70s;
+  animation-delay: -20s;
+}
+
+.statistics-sky-cloud--far {
+  top: 15%;
+  right: -240px;
+  width: 660px;
+  height: 250px;
+  opacity: 0.8;
+  animation-duration: 58s;
+  animation-delay: -30s;
+  animation-direction: alternate-reverse;
+}
+
+.statistics-sky-cloud--middle {
+  top: 43%;
+  left: -265px;
+  width: 720px;
+  height: 280px;
+  opacity: 0.75;
+  animation-duration: 64s;
+  animation-delay: -24s;
+}
+
+.statistics-sky-cloud--low {
+  right: -190px;
+  bottom: 8%;
+  width: 650px;
+  height: 260px;
+  opacity: 0.85;
+  animation-duration: 52s;
+  animation-delay: -18s;
+  animation-direction: alternate-reverse;
+}
+
+/* 4. 白色卡片保持清晰，用柔和阴影呈现浮在天空中的层次。 */
+.statistics-page > header h1 {
+  color: #183d5b;
+}
+
+.statistics-page > header p {
+  color: #4e718b;
+}
+
+.statistics-page .study-calendar,
+.statistics-page .statistics-trend,
+.statistics-page section[aria-labelledby="statistics-summary-title"] article {
+  border: 1px solid rgb(255 255 255 / 90%);
+  background: #fff;
+  box-shadow:
+    0 16px 36px -18px rgb(36 91 137 / 25%),
+    0 2px 6px rgb(36 91 137 / 4%);
+}
+
+.statistics-page .study-calendar-intro {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(135deg, #f5fbff, #e7f4fd);
+}
+
+/* 日历角落的小片云与外部天空呼应，不覆盖文字。 */
+.statistics-page .study-calendar-intro::after {
+  position: absolute;
+  z-index: -1;
+  right: -80px;
+  bottom: -40px;
+  width: 320px;
+  height: 180px;
+  content: "";
+  background:
+    radial-gradient(ellipse at 35% 70%, rgb(255 255 255 / 90%) 30%, transparent 65%),
+    radial-gradient(ellipse at 70% 55%, rgb(255 255 255 / 85%) 28%, transparent 60%);
+  mask-image: radial-gradient(ellipse, #000 30%, transparent 70%);
+  pointer-events: none;
+}
+
+.statistics-page .study-calendar-intro > p,
+.statistics-page .study-calendar-message {
+  color: #5f8198;
+}
+
+.statistics-page > [role="status"],
+.statistics-page > [role="alert"] {
+  padding: 18px 22px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 94%);
+}
+
+@keyframes statistics-cloud-drift {
+  from {
+    transform: translate3d(-18px, 0, 0);
+  }
+
+  to {
+    transform: translate3d(36px, -10px, 0);
+  }
+}
+
+/* 较窄的网页窗口减少云团密度，保留完整背景且不产生横向滚动。 */
+@media (max-width: 900px) {
+  .statistics-sky-cloud--high,
+  .statistics-sky-cloud--middle {
+    display: none;
+  }
+
+  .statistics-sky-sun {
+    right: 5%;
+    width: 90px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statistics-sky-cloud {
+    animation: none;
+  }
+}

@@ -41,8 +41,8 @@ export default function RegisterForm() {
         });
         setTokenPair(result.data.access_token, result.data.refresh_token);
         setSuccess(true);
-        setMessage("注册成功，正在进入个人中心...");
-        router.replace("/profile");
+        setMessage("注册成功，正在进入首页...");
+        router.replace("/");
       } catch {
         setMessage("注册成功，但自动登录失败，请点击下方返回登录。");
       }

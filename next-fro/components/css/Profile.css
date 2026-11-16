@@ -3,7 +3,11 @@
   min-height: 100vh;
   color-scheme: light;
   color: #203047;
-  background: #f1f7fc;
+  background-color: #f8f7f2;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgb(125 111 84 / 3%) 0.55px, transparent 0.8px),
+    radial-gradient(circle at 2px 3px, rgb(255 255 255 / 65%) 0.65px, transparent 0.9px);
+  background-size: 13px 13px, 19px 19px;
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
   font-size: 14px;
   line-height: 1.6;
@@ -100,8 +104,8 @@
   width: 232px;
   flex: none;
   padding: 38px 18px;
-  background: #e5f2fa;
-  border-right: 1px solid #dcebf5;
+  background: #f4f3ed;
+  border-right: 1px solid #e9e6df;
 }
 
 .profile-sidebar-label {
