@@ -20,23 +20,23 @@
 
 ## `daily_tasks`
 
-| 字段 | 类型 | 允许空 | 默认值 | 键 | 附加 |
-| --- | --- | --- | --- | --- | --- |
-| `id` | bigint unsigned | NO | - | PRI | auto_increment |
-| `plan_id` | bigint unsigned | NO | - | MUL | - |
-| `step_id` | bigint unsigned | NO | - | MUL | - |
-| `task_date` | date | NO | - | - | - |
-| `task_type` | enum('BOOLEAN','NUMERIC') | NO | - | - | - |
-| `content` | varchar(255) | NO | - | - | - |
-| `target_quantity` | bigint unsigned | YES | - | - | - |
-| `actual_quantity` | bigint unsigned | NO | 0 | - | - |
-| `rollover_out_quantity` | bigint unsigned | NO | 0 | - | - |
-| `status` | enum('PENDING','IN_PROGRESS','COMPLETED','OVERDUE','ENDED') | NO | PENDING | - | - |
-| `completed_at` | datetime | YES | - | - | - |
-| `deleted_at` | datetime | YES | - | - | - |
-| `created_at` | datetime | NO | CURRENT_TIMESTAMP | - | DEFAULT_GENERATED |
-| `updated_at` | datetime | NO | CURRENT_TIMESTAMP | - | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
-| `numeric_active_date` | date | YES | - | - | STORED GENERATED；生成表达式：`(case when ((`task_type` = _utf8mb4\'NUMERIC\') and (`deleted_at` is null)) then `task_date` else NULL end)` |
+| 字段                      | 类型                                                          | 允许空 | 默认值               | 键   | 附加                                                                                                                                   |
+| ----------------------- | ----------------------------------------------------------- | --- | ----------------- | --- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                    | bigint unsigned                                             | NO  | -                 | PRI | auto_increment                                                                                                                       |
+| `plan_id`               | bigint unsigned                                             | NO  | -                 | MUL | -                                                                                                                                    |
+| `step_id`               | bigint unsigned                                             | NO  | -                 | MUL | -                                                                                                                                    |
+| `task_date`             | date                                                        | NO  | -                 | -   | -                                                                                                                                    |
+| `task_type`             | enum('BOOLEAN','NUMERIC')                                   | NO  | -                 | -   | -                                                                                                                                    |
+| `content`               | varchar(255)                                                | NO  | -                 | -   | -                                                                                                                                    |
+| `target_quantity`       | bigint unsigned                                             | YES | -                 | -   | -                                                                                                                                    |
+| `actual_quantity`       | bigint unsigned                                             | NO  | 0                 | -   | -                                                                                                                                    |
+| `rollover_out_quantity` | bigint unsigned                                             | NO  | 0                 | -   | -                                                                                                                                    |
+| `status`                | enum('PENDING','IN_PROGRESS','COMPLETED','OVERDUE','ENDED') | NO  | PENDING           | -   | -                                                                                                                                    |
+| `completed_at`          | datetime                                                    | YES | -                 | -   | -                                                                                                                                    |
+| `deleted_at`            | datetime                                                    | YES | -                 | -   | -                                                                                                                                    |
+| `created_at`            | datetime                                                    | NO  | CURRENT_TIMESTAMP | -   | DEFAULT_GENERATED                                                                                                                    |
+| `updated_at`            | datetime                                                    | NO  | CURRENT_TIMESTAMP | -   | DEFAULT_GENERATED on update CURRENT_TIMESTAMP                                                                                        |
+| `numeric_active_date`   | date                                                        | YES | -                 | -   | STORED GENERATED；生成表达式：`(case when ((`task_type` = _utf8mb4\'NUMERIC\') and (`deleted_at` is null)) then `task_date` else NULL end)` |
 
 **索引**
 
@@ -90,17 +90,17 @@
 
 ## `schedule_entries`
 
-| 字段 | 类型 | 允许空 | 默认值 | 键 | 附加 |
-| --- | --- | --- | --- | --- | --- |
-| `id` | bigint unsigned | NO | - | PRI | auto_increment |
-| `step_id` | bigint unsigned | NO | - | MUL | - |
-| `task_date` | date | NO | - | - | - |
-| `content` | varchar(255) | YES | - | - | - |
-| `target_quantity` | bigint unsigned | YES | - | - | - |
-| `sort_order` | int unsigned | NO | 0 | - | - |
-| `deleted_at` | datetime | YES | - | - | - |
-| `created_at` | datetime | NO | CURRENT_TIMESTAMP | - | DEFAULT_GENERATED |
-| `updated_at` | datetime | NO | CURRENT_TIMESTAMP | - | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
+| 字段                | 类型              | 允许空 | 默认值               | 键   | 附加                                            |
+| ----------------- | --------------- | --- | ----------------- | --- | --------------------------------------------- |
+| `id`              | bigint unsigned | NO  | -                 | PRI | auto_increment                                |
+| `step_id`         | bigint unsigned | NO  | -                 | MUL | -                                             |
+| `task_date`       | date            | NO  | -                 | -   | -                                             |
+| `content`         | varchar(255)    | YES | -                 | -   | -                                             |
+| `target_quantity` | bigint unsigned | YES | -                 | -   | -                                             |
+| `sort_order`      | int unsigned    | NO  | 0                 | -   | -                                             |
+| `deleted_at`      | datetime        | YES | -                 | -   | -                                             |
+| `created_at`      | datetime        | NO  | CURRENT_TIMESTAMP | -   | DEFAULT_GENERATED                             |
+| `updated_at`      | datetime        | NO  | CURRENT_TIMESTAMP | -   | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
 
 **索引**
 
@@ -178,13 +178,13 @@
 
 ## `task_rollovers`
 
-| 字段 | 类型 | 允许空 | 默认值 | 键 | 附加 |
-| --- | --- | --- | --- | --- | --- |
-| `id` | bigint unsigned | NO | - | PRI | auto_increment |
-| `source_task_id` | bigint unsigned | NO | - | MUL | - |
-| `target_task_id` | bigint unsigned | NO | - | MUL | - |
-| `quantity` | bigint unsigned | YES | - | - | - |
-| `created_at` | datetime | NO | CURRENT_TIMESTAMP | - | DEFAULT_GENERATED |
+| 字段               | 类型              | 允许空 | 默认值               | 键   | 附加                |
+| ---------------- | --------------- | --- | ----------------- | --- | ----------------- |
+| `id`             | bigint unsigned | NO  | -                 | PRI | auto_increment    |
+| `source_task_id` | bigint unsigned | NO  | -                 | MUL | -                 |
+| `target_task_id` | bigint unsigned | NO  | -                 | MUL | -                 |
+| `quantity`       | bigint unsigned | YES | -                 | -   | -                 |
+| `created_at`     | datetime        | NO  | CURRENT_TIMESTAMP | -   | DEFAULT_GENERATED |
 
 **索引**
 
@@ -239,17 +239,17 @@
 
 > 用户表
 
-| 字段 | 类型 | 允许空 | 默认值 | 键 | 附加 |
-| --- | --- | --- | --- | --- | --- |
-| `id` | bigint unsigned | NO | - | PRI | auto_increment |
-| `username` | varchar(50) | NO | - | UNI | - |
-| `password_hash` | varchar(255) | NO | - | - | - |
-| `email` | varchar(100) | YES | - | UNI | - |
-| `nickname` | varchar(50) | YES | - | - | - |
-| `avatar_url` | varchar(255) | YES | - | - | - |
-| `created_at` | datetime | NO | CURRENT_TIMESTAMP | - | DEFAULT_GENERATED |
-| `updated_at` | datetime | NO | CURRENT_TIMESTAMP | - | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
-| `is_active` | tinyint | NO | 1 | - | - |
+| 字段              | 类型              | 允许空 | 默认值               | 键   | 附加                                            |
+| --------------- | --------------- | --- | ----------------- | --- | --------------------------------------------- |
+| `id`            | bigint unsigned | NO  | -                 | PRI | auto_increment                                |
+| `username`      | varchar(50)     | NO  | -                 | UNI | -                                             |
+| `password_hash` | varchar(255)    | NO  | -                 | -   | -                                             |
+| `email`         | varchar(100)    | YES | -                 | UNI | -                                             |
+| `nickname`      | varchar(50)     | YES | -                 | -   | -                                             |
+| `avatar_url`    | varchar(255)    | YES | -                 | -   | -                                             |
+| `created_at`    | datetime        | NO  | CURRENT_TIMESTAMP | -   | DEFAULT_GENERATED                             |
+| `updated_at`    | datetime        | NO  | CURRENT_TIMESTAMP | -   | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
+| `is_active`     | tinyint         | NO  | 1                 | -   | -                                             |
 
 **索引**
 

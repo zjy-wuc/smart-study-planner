@@ -10,6 +10,7 @@ from app.schemas.step import (
 )
 from app.services.plans import plan_service
 
+from app.repositories.knowledge import note_repository
 
 def require_draft_plan(
     db: Session,
@@ -319,63 +320,81 @@ def delete_step(
     plan_id: int,
     step_id: int,
     user_id: int,
-):
-    """删除整棵子树，并自动清理空父节点"""
+) -> None:
+    """删除整棵子树，并自动清理空父节点。"""
 
     try:
+        # 1. 验证计划存在、属于当前用户且处于 DRAFT
         require_draft_plan(
             db, plan_id, user_id
         )
 
+        # 2. 验证要删除的节点存在
         step = require_step(
             db, plan_id, step_id
         )
 
-        # 找到该节点及所有后代
-        descendant_ids = (
-            step_repository.find_descendant_ids(
-                db, plan_id, step_id
-            )
+        # 3. 查询目标节点及其所有后代
+        descendant_ids = step_repository.find_descendant_ids(
+            db=db,
+            plan_id=plan_id,
+            step_id=step_id,
         )
 
+        # 4. 软删除目标节点及其后代
         step_repository.soft_delete_steps(
             db=db,
             plan_id=plan_id,
             step_ids=descendant_ids,
         )
 
-        # 从被删除节点的父节点开始向上检查
+        # 5. 解除关联的知识笔记
+        # 放在 while 外面，确保一定执行
+        note_repository.detach_steps(
+            db=db,
+            step_ids=descendant_ids,
+        )
+
+        # 6. 向上清理没有子节点的 GROUP
         parent_id = step["parent_id"]
 
         while parent_id is not None:
 
+            # 每次循环都重新查询父节点
             parent = step_repository.find_step(
-                db, plan_id, parent_id
+                db=db,
+                plan_id=plan_id,
+                step_id=parent_id,
             )
 
+            # 父节点不存在，停止清理
             if parent is None:
                 break
 
-            remaining = (
-                step_repository.count_active_children(
-                    db, parent_id
-                )
+            # 检查父节点还剩多少有效子节点
+            remaining = step_repository.count_active_children(
+                db=db,
+                parent_id=parent_id,
             )
 
+            # 还有其他子节点，不能删除父节点
             if remaining > 0:
                 break
 
-            # 父节点没有子节点，自动逻辑删除
+            # 父节点已经为空，自动软删除
             step_repository.soft_delete_steps(
-                db,
-                plan_id,
-                [parent_id],
+                db=db,
+                plan_id=plan_id,
+                step_ids=[parent_id],
             )
 
+            # 继续检查更上一层
             parent_id = parent["parent_id"]
 
+        # 7. 同一事务统一提交
         db.commit()
 
     except Exception:
         db.rollback()
         raise
+

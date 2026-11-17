@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.repositories.plans import plan_repository
 from app.schemas.plan import PlanCreate, PlanUpdate
-
+from app.repositories.knowledge import note_repository
 
 def get_owned_plan(
     db: Session,
@@ -182,6 +182,13 @@ def delete_plan(
             plan_id=plan_id,
             user_id=user_id,
         )
+
+                # 新增：解除此计划关联的所有知识笔记
+        note_repository.detach_plan(
+            db=db,
+            plan_id=plan_id,
+        )
+                
 
         db.commit()
 

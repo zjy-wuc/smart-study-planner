@@ -15,6 +15,7 @@ from app.api.routes import (
     schedules,
     daily_tasks,
     statistics,
+    knowledge,
 )
 
 
@@ -51,3 +52,6 @@ api_router.include_router(active_steps.router)
 # 进度与统计
 api_router.include_router(progress.router)
 api_router.include_router(statistics.router)
+
+#知识笔记
+api_router.include_router(knowledge.router)

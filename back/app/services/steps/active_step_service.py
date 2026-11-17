@@ -21,6 +21,7 @@ from app.services.plans.plan_rules import (
     get_plan_days,
 )
 
+from app.repositories.knowledge import note_repository
 
 def _reject(
     message: str,
@@ -477,11 +478,17 @@ def delete_active_tree(
             plan_id=plan_id,
             node_ids=target_ids,
         )
-
+        
         active_step_repository.soft_delete_nodes(
             db=db,
             plan_id=plan_id,
             node_ids=target_ids,
+        )
+
+                # 新增：解除被删除节点关联的知识笔记
+        note_repository.detach_steps(
+            db=db,
+            step_ids=target_ids,
         )
 
         # 向上清理已经没有子节点的分类节点
