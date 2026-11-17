@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.api.routes import progress as progress_route
 from app.core.clock import business_today
 from app.database import engine
-from app.services import progress_service
+from app.services.progress import progress_service
 
 
 class ProgressRegression(unittest.TestCase):

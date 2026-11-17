@@ -1,13 +1,13 @@
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.services import plan_activation_service
+from app.services.plans import plan_activation_service
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.response import success
 
 from app.schemas.plan import PlanCreate, PlanUpdate
-from app.services import plan_service
+from app.services.plans import plan_service
 
 
 router = APIRouter(

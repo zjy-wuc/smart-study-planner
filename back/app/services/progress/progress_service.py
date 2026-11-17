@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.repositories import progress_repository
-from app.services import plan_service
+from app.repositories.progress import progress_repository
+from app.services.plans import plan_service
 
 
 REASON_PLAN_NOT_ACTIVE = "PLAN_NOT_ACTIVE"

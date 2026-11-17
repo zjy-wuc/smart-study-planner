@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import {
   useEffect,
@@ -72,7 +73,7 @@ function errorMessage(error: unknown): string {
 
   return error instanceof Error
     ? error.message
-    : "操作失败，请重试";
+    : messages.common.operationFailedRetry;
 }
 
 
@@ -308,7 +309,7 @@ export function DraftScheduleEditor({
 
     return Number.isSafeInteger(sum)
       ? String(sum)
-      : "超出前端安全整数范围";
+      : messages.schedule.safeRangeExceeded;
   }, [numericValues]);
 
 
@@ -349,7 +350,7 @@ export function DraftScheduleEditor({
 
           if (!/^\d+$/.test(text)) {
             throw new Error(
-              `${date} 的目标必须是非负整数`,
+              messages.schedule.dateTargetInvalid(date),
             );
           }
 
@@ -357,7 +358,7 @@ export function DraftScheduleEditor({
 
           if (!Number.isSafeInteger(value)) {
             throw new Error(
-              `${date} 的目标超出前端安全整数范围`,
+              messages.schedule.dateTargetTooLarge(date),
             );
           }
 
@@ -367,14 +368,14 @@ export function DraftScheduleEditor({
           });
         }
       } else {
-        throw new Error("当前叶子不是手动安排模式");
+        throw new Error(messages.schedule.notManual);
       }
 
       // PUT 是整组替换，清空时要求再次确认
       if (
         entries.length === 0 &&
         !window.confirm(
-          "当前没有有效安排，保存会清空该叶子原有的草稿安排。确定继续吗？",
+          messages.schedule.clearConfirm,
         )
       ) {
         return;
@@ -388,7 +389,7 @@ export function DraftScheduleEditor({
         entries,
       );
 
-      setNotice("草稿每日安排已保存");
+      setNotice(messages.schedule.saved);
 
       // 保存后重新读取数据库实际内容
       setScheduleRevision((value) => value + 1);
@@ -403,14 +404,9 @@ export function DraftScheduleEditor({
 
   return (
     <section className="space-y-5 rounded border p-5">
-      <h2 className="text-xl font-semibold">
-        每日手动安排
-      </h2>
+      <h2 className="text-xl font-semibold">{messages.schedule.title}</h2>
 
-      <p className="text-sm">
-        自动重复和数量自动分配不需要填写这里。
-        手动安排可分多次保存；正式开始时再检查完整性。
-      </p>
+      <p className="text-sm">{messages.schedule.description}</p>
 
       {error && (
         <p role="alert" className="text-red-600">
@@ -425,21 +421,16 @@ export function DraftScheduleEditor({
       )}
 
       {treeLoading ? (
-        <p>正在读取学习步骤...</p>
+        <p>{messages.schedule.loadingSteps}</p>
       ) : leaves.length === 0 ? (
-        <p>
-          当前没有需要手动安排的叶子节点。
-          若所有叶子都使用自动模式，可以直接开始计划。
-        </p>
+        <p>{messages.schedule.noManualLeaves}</p>
       ) : (
         <>
           <div>
             <label
               htmlFor="schedule-step"
               className="mb-2 block font-medium"
-            >
-              选择学习项目
-            </label>
+            >{messages.schedule.selectLeaf}</label>
 
             <select
               id="schedule-step"
@@ -460,7 +451,7 @@ export function DraftScheduleEditor({
           </div>
 
           {scheduleLoading ? (
-            <p>正在读取该叶子的每日安排...</p>
+            <p>{messages.schedule.loading}</p>
           ) : selectedLeaf?.schedule_mode ===
             "DAILY_CUSTOM" ? (
             <div className="space-y-4">
@@ -479,9 +470,7 @@ export function DraftScheduleEditor({
                     </h3>
 
                     {rows.length === 0 && (
-                      <p className="text-sm">
-                        当天尚未安排任务。
-                      </p>
+                      <p className="text-sm">{messages.schedule.emptyDay}</p>
                     )}
 
                     {rows.map((row) => (
@@ -498,7 +487,7 @@ export function DraftScheduleEditor({
                             )
                           }
                           disabled={saving}
-                          placeholder="填写当天任务内容"
+                          placeholder={messages.schedule.contentPlaceholder}
                           className="min-w-0 flex-1 rounded border p-2"
                         />
 
@@ -509,9 +498,7 @@ export function DraftScheduleEditor({
                             removeBooleanRow(row.id)
                           }
                           className="text-red-700"
-                        >
-                          删除
-                        </button>
+                        >{messages.common.delete}</button>
                       </div>
                     ))}
 
@@ -520,9 +507,7 @@ export function DraftScheduleEditor({
                       disabled={saving}
                       onClick={() => addBooleanRow(date)}
                       className="text-blue-700"
-                    >
-                      + 当天再添加一条
-                    </button>
+                    >{messages.schedule.addDailyTask}</button>
                   </div>
                 );
               })}
@@ -531,9 +516,7 @@ export function DraftScheduleEditor({
             "DAILY_MANUAL" ? (
             <div className="space-y-4">
               <p className="text-sm">
-                当前填写总量：{numericSum}
-                {" / "}
-                叶子总目标：{selectedLeaf.total_target ?? 0}
+                {messages.schedule.quantitySummary(numericSum, selectedLeaf.total_target ?? 0)}
               </p>
 
               {dates.map((date) => (
@@ -560,17 +543,13 @@ export function DraftScheduleEditor({
                       }))
                     }
                     disabled={saving}
-                    placeholder="当天数量"
+                    placeholder={messages.schedule.quantityPlaceholder}
                     className="min-w-0 flex-1 rounded border p-2"
                   />
                 </div>
               ))}
 
-              <p className="text-sm">
-                每天必须恰好有一条数量安排，
-                全部日期的数量之和必须等于总目标，
-                才可以正式开始。
-              </p>
+              <p className="text-sm">{messages.schedule.numericHint}</p>
             </div>
           ) : null}
 
@@ -585,7 +564,7 @@ export function DraftScheduleEditor({
             onClick={() => void handleSave()}
             className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
           >
-            {saving ? "正在保存..." : "保存当前叶子的全部安排"}
+            {saving ? messages.common.saving : messages.schedule.save}
           </button>
         </>
       )}

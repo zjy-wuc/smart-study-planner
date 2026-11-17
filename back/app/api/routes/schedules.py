@@ -6,7 +6,7 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.response import success
 from app.schemas.schedule import ScheduleReplace
-from app.services import schedule_service
+from app.services.schedules import schedule_service
 
 
 router = APIRouter(

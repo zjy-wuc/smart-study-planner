@@ -8,11 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.core.security import verify_password
-from app.services.auth_service import issue_token_pair
+from app.services.auth.auth_service import issue_token_pair
 from app.response import success
 
 from app.schemas.auth import RefreshRequest
-from app.services.auth_service import (
+from app.services.auth.auth_service import (
     issue_token_pair,
     rotate_refresh_token,
     revoke_current_session,

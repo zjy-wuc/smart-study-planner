@@ -1,5 +1,7 @@
 "use client";
 
+import { messages } from "@/messages";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
@@ -25,7 +27,7 @@ function HistoryItem({ task }: { task: DailyTask }) {
       setRecords(await getTaskRecords(task.id));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) router.replace("/login");
-      else setError(err instanceof Error ? err.message : "历史记录加载失败");
+      else setError(err instanceof Error ? err.message : messages.history.loadFailed);
     } finally {
       setLoading(false);
     }
@@ -36,12 +38,12 @@ function HistoryItem({ task }: { task: DailyTask }) {
       <div className="dashboard-history-heading">
         <span>{task.content || task.step_name} <small>· {task.step_name}</small></span>
         <button type="button" className="workspace-text-link" onClick={() => void toggle()} aria-expanded={open}>
-          {open ? "收起历史" : "查看历史"}
+          {open ? messages.history.collapse : messages.history.view}
         </button>
       </div>
-      {open && (loading ? <p role="status">正在加载历史…</p> : error ? <p role="alert">{error}，请收起后重试。</p> : records.length === 0 ? <p>暂无打卡记录</p> : (
+      {open && (loading ? <p role="status">{messages.history.loadingCompact}</p> : error ? <p role="alert">{messages.history.collapseRetry(error)}</p> : records.length === 0 ? <p>{messages.history.emptyRecords}</p> : (
         <ul className="dashboard-history-records">{records.map((record) => (
-          <li key={record.id}>{record.event_type === "BOOLEAN_COMPLETE" ? "完成打卡" : `累计完成 ${record.recorded_value ?? 0}`} <span>{record.recorded_at}</span></li>
+          <li key={record.id}>{record.event_type === "BOOLEAN_COMPLETE" ? messages.tasks.booleanCheckin : messages.tasks.recordedTotal(record.recorded_value ?? 0)} <span>{record.recorded_at}</span></li>
         ))}</ul>
       ))}
     </li>
@@ -51,8 +53,8 @@ function HistoryItem({ task }: { task: DailyTask }) {
 export function CheckinHistory({ tasks }: { tasks: DailyTask[] }) {
   return (
     <section className="workspace-panel dashboard-history" aria-labelledby="history-heading">
-      <div className="workspace-section-heading"><div className="workspace-section-title"><div><h2 id="history-heading">打卡历史</h2><p>查看今日任务的打卡记录</p></div></div></div>
-      {tasks.length === 0 ? <p className="workspace-empty-state">今天暂无任务记录</p> : <ul>{tasks.map((task) => <HistoryItem key={task.id} task={task} />)}</ul>}
+      <div className="workspace-section-heading"><div className="workspace-section-title"><div><h2 id="history-heading">{messages.navigation.history}</h2><p>{messages.history.todayDescription}</p></div></div></div>
+      {tasks.length === 0 ? <p className="workspace-empty-state">{messages.history.emptyToday}</p> : <ul>{tasks.map((task) => <HistoryItem key={task.id} task={task} />)}</ul>}
     </section>
   );
 }

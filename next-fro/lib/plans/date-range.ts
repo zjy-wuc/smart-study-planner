@@ -1,3 +1,4 @@
+import { messages } from "@/messages";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -7,7 +8,7 @@ function parseDate(value: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
 
   if (!match) {
-    throw new Error("日期必须使用 YYYY-MM-DD 格式");
+    throw new Error(messages.validation.dateFormat);
   }
 
   const year = Number(match[1]);
@@ -25,7 +26,7 @@ function parseDate(value: string): Date {
     date.getUTCMonth() + 1 !== month ||
     date.getUTCDate() !== day
   ) {
-    throw new Error("存在无效的计划日期");
+    throw new Error(messages.validation.invalidPlanDate);
   }
 
   return date;
@@ -41,7 +42,7 @@ export function listPlanDates(
   const end = parseDate(endDate);
 
   if (start.getTime() > end.getTime()) {
-    throw new Error("计划结束日期不能早于开始日期");
+    throw new Error(messages.validation.planDateOrder);
   }
 
   const dates: string[] = [];

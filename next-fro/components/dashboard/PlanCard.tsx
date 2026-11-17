@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -10,9 +11,9 @@ import { WorkspaceIcon } from "@/components/ui/WorkspaceIcon";
 
 
 const statusLabels = {
-  DRAFT: "草稿",
-  ACTIVE: "进行中",
-  ENDED: "已结束",
+  DRAFT: messages.plans.statusDraft,
+  ACTIVE: messages.common.statusActive,
+  ENDED: messages.plans.statusEnded,
 };
 
 
@@ -56,18 +57,18 @@ function PlanProgressView({ plan }: { plan: Plan }) {
   return (
     <div className="workspace-plan-progress">
       {progressLoading ? (
-        <p className="workspace-muted">正在加载完成率...</p>
+        <p className="workspace-muted">{messages.progress.loading}</p>
       ) : progressError ? (
-        <p className="workspace-inline-error">进度暂时无法获取</p>
+        <p className="workspace-inline-error">{messages.progress.unavailable}</p>
       ) : percent === null ? (
-        <p className="workspace-muted">暂无可计算进度</p>
+        <p className="workspace-muted">{messages.progress.notComputable}</p>
       ) : (
         <>
-          <p className="workspace-progress-label"><span>当前可统计进度</span><strong>{percent}%</strong></p>
+          <p className="workspace-progress-label"><span>{messages.progress.current}</span><strong>{percent}%</strong></p>
           <div
             className="workspace-progress-track"
             role="progressbar"
-            aria-label={`${plan.name}的可统计进度`}
+            aria-label={messages.progress.planLabel(plan.name)}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent}
@@ -75,8 +76,7 @@ function PlanProgressView({ plan }: { plan: Plan }) {
             <div className="workspace-progress-fill" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
           </div>
           <p className="workspace-progress-caption">
-            {progress?.computable_leaf_count}/{progress?.leaf_count} 个叶子参与计算
-          </p>
+            {messages.progress.leafCount(progress?.computable_leaf_count, progress?.leaf_count)}</p>
         </>
       )}
     </div>
@@ -108,15 +108,11 @@ export function PlanCard({ plan }: { plan: Plan }) {
       )}
 
       {plan.status === "DRAFT" && (
-        <p className="workspace-plan-note">
-          计划尚未开始
-        </p>
+        <p className="workspace-plan-note">{messages.plans.notStarted}</p>
       )}
 
       {plan.status === "ENDED" && (
-        <p className="workspace-plan-note">
-          计划已结束
-        </p>
+        <p className="workspace-plan-note">{messages.plans.endedTitle}</p>
       )}
     </article>
   );

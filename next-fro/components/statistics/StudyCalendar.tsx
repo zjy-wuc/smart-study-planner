@@ -1,10 +1,12 @@
 "use client";
 
+import { messages } from "@/messages";
+
 import { CalendarDays, Check, Flame, Sparkles } from "lucide-react";
 import type { StatisticsOverview } from "@/types/statistics";
 import "@/components/css/StudyCalendar.css";
 
-const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
+const WEEKDAYS = [messages.common.weekdayMonday, messages.common.weekdayTuesday, messages.common.weekdayWednesday, messages.common.weekdayThursday, messages.common.weekdayFriday, messages.common.weekdaySaturday, messages.common.weekdaySunday];
 
 export function StudyCalendar({ data }: { data: StatisticsOverview }) {
   const [year, month, day] = data.as_of_date.split("-").map(Number);
@@ -20,21 +22,21 @@ export function StudyCalendar({ data }: { data: StatisticsOverview }) {
   return (
     <section className="study-calendar" aria-labelledby="study-calendar-title">
       <div className="study-calendar-intro">
-        <div className="study-calendar-eyebrow"><span><CalendarDays size={16} /></span> 我的学习日历</div>
-        <h2 id="study-calendar-title">把每一天的努力，<br />留在日历里。</h2>
-        <p>时间会记住你的每一次坚持。</p>
+        <div className="study-calendar-eyebrow"><span><CalendarDays size={16} /></span>{messages.statistics.calendarTitle}</div>
+        <h2 id="study-calendar-title">{messages.statistics.calendarMottoFirstLine}<br />{messages.statistics.calendarMottoSecondLine}</h2>
+        <p>{messages.statistics.calendarSubtitle}</p>
         <div className="study-calendar-streak">
           <span className="study-calendar-streak-icon"><Flame size={21} /></span>
-          <div><span>当前连续打卡</span><strong>{data.checkins.current_streak_days}<small> 天</small></strong></div>
+          <div><span>{messages.statistics.currentStreak}</span><strong>{data.checkins.current_streak_days}<small>{messages.statistics.dayUnitSpaced}</small></strong></div>
         </div>
-        <div className="study-calendar-message"><Sparkles size={15} />{todayCount > 0 ? "今天也在向目标靠近" : "今天也为自己留一点学习时间"}</div>
+        <div className="study-calendar-message"><Sparkles size={15} />{todayCount > 0 ? messages.statistics.todayEncouragement : messages.statistics.todayReminder}</div>
       </div>
       <div className="study-calendar-month">
         <div className="study-calendar-month-header">
-          <div><h3>{year} 年 {month} 月</h3><p>每一次打卡，都是前进的一步</p></div>
-          <span className="study-calendar-today">今天 {month}/{day}</span>
+          <div><h3>{messages.statistics.monthHeading(year, month)}</h3><p>{messages.statistics.calendarProgressMotto}</p></div>
+          <span className="study-calendar-today">{messages.statistics.todayDate(month, day)}</span>
         </div>
-        <div className="study-calendar-grid" role="group" aria-label={`${year}年${month}月学习日历`}>
+        <div className="study-calendar-grid" role="group" aria-label={messages.statistics.calendarLabel(year, month)}>
           {WEEKDAYS.map((label) => <span key={label} className="study-calendar-weekday">{label}</span>)}
           {Array.from({ length: offset }, (_, index) => <span key={`blank-${index}`} aria-hidden="true" />)}
           {Array.from({ length: monthDays }, (_, index) => {
@@ -43,12 +45,12 @@ export function StudyCalendar({ data }: { data: StatisticsOverview }) {
             const future = date > data.as_of_date;
             const unknown = !future && count === undefined;
             const checked = count !== undefined && count > 0;
-            const label = `${month}月${index + 1}日${date === data.as_of_date ? "，今天" : ""}，${future ? "未来日期" : unknown ? "暂无数据" : checked ? `打卡 ${count} 次` : "未打卡"}`;
+            const label = messages.statistics.calendarDayLabel(month, index + 1, date === data.as_of_date ? messages.statistics.todaySuffix : "", future ? messages.statistics.futureDate : unknown ? messages.statistics.noData : checked ? messages.statistics.checkins(count) : messages.statistics.notCheckedIn);
             return <div key={date} aria-label={label} title={label} className={`study-calendar-day${checked ? " is-checked" : ""}${date === data.as_of_date ? " is-today" : ""}${future ? " is-future" : ""}${unknown ? " is-unknown" : ""}`}><span>{index + 1}</span>{checked && <Check size={11} strokeWidth={3} aria-hidden="true" />}{unknown && <span className="study-calendar-unknown-mark" aria-hidden="true">—</span>}</div>;
           })}
         </div>
-        <div className="study-calendar-legend"><span><i className="study-calendar-legend-check" />已打卡</span><span><i className="study-calendar-legend-today" />今天</span>{missingPast && <span>— 暂无数据</span>}</div>
-        {missingPast && <p className="study-calendar-note">日历显示最近 30 天的打卡情况；{firstAvailable ? `${firstAvailable} 之前` : "当前"}暂无日期明细。</p>}
+        <div className="study-calendar-legend"><span><i className="study-calendar-legend-check" />{messages.statistics.checkedIn}</span><span><i className="study-calendar-legend-today" />{messages.common.today}</span>{missingPast && <span>{messages.statistics.noDataLegend}</span>}</div>
+        {missingPast && <p className="study-calendar-note">{messages.statistics.calendarRange(firstAvailable)}</p>}
       </div>
     </section>
   );

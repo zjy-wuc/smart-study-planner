@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useEffect, useState } from "react";
 
@@ -17,7 +18,7 @@ function StepBranch({
     <li className="workspace-step-branch">
       <div className="workspace-step-row" data-kind={node.node_type}>
         <span className="workspace-step-kind">
-          {node.node_type === "GROUP" ? "分类" : "任务"}
+          {node.node_type === "GROUP" ? messages.steps.group : messages.tasks.task}
         </span>
 
         <span>{node.name}</span>
@@ -55,7 +56,7 @@ function StepTree({ planId }: { planId: number }) {
           setError(
             err instanceof Error
               ? err.message
-              : "获取学习步骤失败",
+              : messages.steps.fetchFailed,
           );
         }
       } finally {
@@ -72,9 +73,9 @@ function StepTree({ planId }: { planId: number }) {
     };
   }, [planId]);
 
-  if (loading) return <p role="status" className="workspace-loading">正在加载步骤...</p>;
+  if (loading) return <p role="status" className="workspace-loading">{messages.steps.loading}</p>;
   if (error) return <p role="alert" className="workspace-feedback workspace-feedback--error">{error}</p>;
-  if (nodes.length === 0) return <p className="workspace-empty-state">当前计划还没有学习步骤</p>;
+  if (nodes.length === 0) return <p className="workspace-empty-state">{messages.steps.emptyCurrentPlan}</p>;
 
   return (
     <ul className="workspace-step-tree">
@@ -91,9 +92,7 @@ export function StepPreview({ plans }: { plans: Plan[] }) {
 
   if (plans.length === 0) {
     return (
-      <p className="workspace-empty-state">
-        创建计划后，这里将显示学习步骤。
-      </p>
+      <p className="workspace-empty-state">{messages.steps.createPlanHint}</p>
     );
   }
 
@@ -102,9 +101,7 @@ export function StepPreview({ plans }: { plans: Plan[] }) {
       <label
         htmlFor="preview-plan"
         className="workspace-field-label"
-      >
-        选择学习计划
-      </label>
+      >{messages.plans.select}</label>
 
       <select
         id="preview-plan"

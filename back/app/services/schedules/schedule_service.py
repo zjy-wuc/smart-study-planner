@@ -2,13 +2,11 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.repositories import (
-    schedule_repository,
-    step_repository,
-)
+from app.repositories.schedules import schedule_repository
+from app.repositories.steps import step_repository
 from app.schemas.schedule import ScheduleReplace
-from app.services import plan_service
-from app.services.plan_rules import get_plan_days
+from app.services.plans import plan_service
+from app.services.plans.plan_rules import get_plan_days
 
 
 def _require_draft_leaf(

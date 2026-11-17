@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -22,7 +23,7 @@ export default function LoginForm() {
 
   useLayoutEffect(() => {
     return () => {
-      setMessage((current) => current === "登录成功！" ? "" : current);
+      setMessage((current) => current === messages.auth.loginSuccess ? "" : current);
     };
   }, []);
 
@@ -44,7 +45,7 @@ const refreshToken = result.data.refresh_token;
 setTokenPair(accessToken, refreshToken);
 
 // 3. 更新页面提示
-setMessage("登录成功！");
+setMessage(messages.auth.loginSuccess);
 
 // 4. 跳转到首页
 router.replace("/");
@@ -54,7 +55,7 @@ router.replace("/");
   setMessage(
     error instanceof Error
       ? error.message
-      : "登录失败"
+      : messages.auth.loginFailed
   );
 } finally {
   setLoading(false);
@@ -67,16 +68,16 @@ router.replace("/");
         <svg className="login-book" viewBox="0 0 64 52" fill="none" aria-hidden="true">
           <path d="M32 11C23 3 12 3 4 8v36c9-5 19-4 28 3m0-36c9-8 20-8 28-3v36c-9-5-19-4-28 3m0-36v36" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <h1>学习计划管理系统</h1>
+        <h1>{messages.common.appName}</h1>
       </div>
 
       <div className="login-field">
-        <label htmlFor="login-username">用户名</label>
+        <label htmlFor="login-username">{messages.auth.username}</label>
         <input
           id="login-username"
           name="username"
           autoComplete="username"
-          placeholder="请输入用户名"
+          placeholder={messages.auth.usernamePlaceholder}
           value={formData.username}
           onChange={(event) =>
             setFormData({
@@ -89,12 +90,12 @@ router.replace("/");
       </div>
 
       <div className="login-field">
-        <label htmlFor="login-password">密码</label>
+        <label htmlFor="login-password">{messages.auth.password}</label>
         <input
           id="login-password"
           name="password"
           autoComplete="current-password"
-          placeholder="请输入密码"
+          placeholder={messages.auth.passwordPlaceholder}
           type="password"
           value={formData.password}
           onChange={(event) =>
@@ -109,17 +110,17 @@ router.replace("/");
 
       {message && (
         <p
-          className={message === "登录成功！" ? "login-message login-message-success" : "login-message"}
-          role={message === "登录成功！" ? "status" : "alert"}
+          className={message === messages.auth.loginSuccess ? "login-message login-message-success" : "login-message"}
+          role={message === messages.auth.loginSuccess ? "status" : "alert"}
         >
           {message}
         </p>
       )}
       <button className="login-submit" type="submit" disabled={loading}>
-        {loading ? "登录中..." : "登录"}
+        {loading ? messages.auth.loggingIn : messages.auth.login}
       </button>
-      <p className="login-register"><Link href="/register">新用户注册</Link></p>
-      <p className="login-motto">把目标写下来，让每一天的努力都有方向。</p>
+      <p className="login-register"><Link href="/register">{messages.auth.newUser}</Link></p>
+      <p className="login-motto">{messages.auth.motto}</p>
     </form>
   );
 }

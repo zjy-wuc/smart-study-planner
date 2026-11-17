@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,22 +27,16 @@ export default function CreatePlanPage() {
         <Link
           href="/plans"
           className="text-sm text-blue-700"
-        >
-          返回我的计划
-        </Link>
+        >{messages.plans.backToMyPlans}</Link>
 
-        <h1 className="mt-3 text-2xl font-bold">
-          创建学习计划
-        </h1>
+        <h1 className="mt-3 text-2xl font-bold">{messages.plans.createTitle}</h1>
 
-        <p className="mt-2 text-slate-500">
-          先创建草稿，再配置具体学习步骤。
-        </p>
+        <p className="mt-2 text-slate-500">{messages.plans.createDescription}</p>
       </div>
 
       <PlanForm
         onSubmit={handleCreate}
-        submitLabel="创建计划"
+        submitLabel={messages.plans.create}
       />
     </div>
   );

@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useState } from "react";//保存输入内容
 import { loginUser, registerUser } from "@/services/auth.service";
@@ -41,14 +42,14 @@ export default function RegisterForm() {
         });
         setTokenPair(result.data.access_token, result.data.refresh_token);
         setSuccess(true);
-        setMessage("注册成功，正在进入首页...");
+        setMessage(messages.auth.registerSuccessRedirect);
         router.replace("/");
       } catch {
-        setMessage("注册成功，但自动登录失败，请点击下方返回登录。");
+        setMessage(messages.auth.registerSuccessLoginFailed);
       }
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "注册失败"
+        error instanceof Error ? error.message : messages.auth.registerFailed
       );
     } finally {
       setLoading(false);
@@ -61,16 +62,16 @@ export default function RegisterForm() {
         <svg className="login-book" viewBox="0 0 64 52" fill="none" aria-hidden="true">
           <path d="M32 11C23 3 12 3 4 8v36c9-5 19-4 28 3m0-36c9-8 20-8 28-3v36c-9-5-19-4-28 3m0-36v36" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <h1>学习计划管理系统</h1>
+        <h1>{messages.common.appName}</h1>
       </div>
 
       <div className="login-field">
-        <label htmlFor="register-username">用户名</label>
+        <label htmlFor="register-username">{messages.auth.username}</label>
         <input
           id="register-username"
           name="username"
           autoComplete="username"
-          placeholder="请输入用户名"
+          placeholder={messages.auth.usernamePlaceholder}
           value={formData.username}//输入框显示的内容
           onChange={(event) =>//监听用户输入
             setFormData({
@@ -83,12 +84,12 @@ export default function RegisterForm() {
       </div>
 
       <div className="login-field">
-        <label htmlFor="register-password">密码</label>
+        <label htmlFor="register-password">{messages.auth.password}</label>
         <input
           id="register-password"
           name="password"
           autoComplete="new-password"
-          placeholder="请输入密码"
+          placeholder={messages.auth.passwordPlaceholder}
           type="password"
           value={formData.password}
           onChange={(event) =>
@@ -102,12 +103,12 @@ export default function RegisterForm() {
       </div>
 
       <div className="login-field">
-        <label htmlFor="register-nickname">昵称</label>
+        <label htmlFor="register-nickname">{messages.auth.nickname}</label>
         <input
           id="register-nickname"
           name="nickname"
           autoComplete="nickname"
-          placeholder="请输入昵称"
+          placeholder={messages.auth.nicknamePlaceholder}
           value={formData.nickname}
           onChange={(event) =>
             setFormData({
@@ -121,10 +122,10 @@ export default function RegisterForm() {
 
       {message && <p className={success ? "login-message login-message-success" : "login-message"} role={success ? "status" : "alert"}>{message}</p>}
       <button className="login-submit" type="submit" disabled={loading || registered}>
-        {loading ? "注册中..." : registered ? "注册成功" : "注册"}
+        {loading ? messages.auth.registering : registered ? messages.auth.registerSuccess : messages.auth.register}
       </button>
 
-      <p className="login-register">已有账号？ <Link href="/login">返回登录</Link></p>
+      <p className="login-register">{messages.auth.hasAccount}<Link href="/login">{messages.auth.backToLogin}</Link></p>
     </form>
   );
 }

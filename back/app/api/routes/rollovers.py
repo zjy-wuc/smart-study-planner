@@ -6,7 +6,7 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.response import success
 from app.schemas.rollover import RolloverRequest
-from app.services import rollover_service
+from app.services.rollovers import rollover_service
 
 
 router = APIRouter(

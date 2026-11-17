@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import Link from "next/link";
 
@@ -22,32 +23,26 @@ export default function PlansPage() {
       <LandscapeScene variant="mountains" />
       <div className="workspace-page-heading">
         <div>
-          <h1 className="text-2xl font-bold">我的计划</h1>
-          <p className="mt-2 text-slate-500">
-            查看全部学习计划
-          </p>
+          <h1 className="text-2xl font-bold">{messages.navigation.plans}</h1>
+          <p className="mt-2 text-slate-500">{messages.plans.listDescription}</p>
         </div>
 
         <div className="workspace-heading-actions">
           <button type="button" onClick={reload} className="workspace-button workspace-button--secondary">
-            <WorkspaceIcon name="refresh" />
-            刷新
-          </button>
+            <WorkspaceIcon name="refresh" />{messages.common.refresh}</button>
           <Link href="/plans/new" className="workspace-button workspace-button--primary">
-            <WorkspaceIcon name="plus" />
-            创建计划
-          </Link>
+            <WorkspaceIcon name="plus" />{messages.plans.create}</Link>
         </div>
       </div>
 
       {loading ? (
-        <p role="status" className="workspace-loading">正在加载计划...</p>
+        <p role="status" className="workspace-loading">{messages.plans.loading}</p>
       ) : plansError ? (
         <p role="alert" className="workspace-feedback workspace-feedback--error">
           {plansError}
         </p>
       ) : plans.length === 0 ? (
-        <p className="workspace-empty-state">暂无学习计划</p>
+        <p className="workspace-empty-state">{messages.plans.empty}</p>
       ) : (
         <div className="workspace-plan-grid">
           {plans.map((plan) => (
@@ -56,9 +51,7 @@ export default function PlansPage() {
         </div>
       )}
 
-      <Link href="/" className="workspace-text-link workspace-back-link">
-        返回首页
-      </Link>
+      <Link href="/" className="workspace-text-link workspace-back-link">{messages.navigation.backHome}</Link>
     </section>
   );
 }

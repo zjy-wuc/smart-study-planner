@@ -11,18 +11,15 @@ from sqlalchemy.orm import Session
 from app.core.clock import business_today
 from app.database import engine
 from app.jobs import plan_expiration_worker
-from app.repositories import plan_lifecycle_repository
+from app.repositories.plans import plan_lifecycle_repository
 from app.schemas.active_step import ActiveStepNode, ActiveStepTreeCreate
 from app.schemas.active_task import ActiveTaskUpdate
 from app.schemas.step import StepRule
 from app.api.routes import plan_lifecycle as plan_lifecycle_route
-from app.services import (
-    active_step_service,
-    active_task_service,
-    plan_lifecycle_service,
-    rollover_service,
-    task_service,
-)
+from app.services.steps import active_step_service
+from app.services.tasks import active_task_service, task_service
+from app.services.plans import plan_lifecycle_service
+from app.services.rollovers import rollover_service
 
 
 class PlanLifecycleRegression(unittest.TestCase):
@@ -405,7 +402,7 @@ class PlanLifecycleRegression(unittest.TestCase):
         started = self.task(step, "BOOLEAN", 0, status="IN_PROGRESS")
         pending = self.task(step, "BOOLEAN", 1)
         with patch(
-            "app.services.plan_lifecycle_service.plan_lifecycle_repository"
+            "app.services.plans.plan_lifecycle_service.plan_lifecycle_repository"
             ".mark_plan_ended",
             side_effect=RuntimeError("injected"),
         ):

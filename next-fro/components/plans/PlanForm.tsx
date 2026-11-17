@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useState, type FormEvent } from "react";
 
@@ -22,7 +23,7 @@ type PlanFormProps = {
 export function PlanForm({
   initialPlan,
   onSubmit,
-  submitLabel = "保存计划",
+  submitLabel = messages.plans.save,
   datesLocked = false,
 }: PlanFormProps) {
 
@@ -67,19 +68,19 @@ export function PlanForm({
     // 前端先给用户提供友好的校验反馈
     if (!cleanedName) {
       setFieldErrors({
-        name: "请输入计划名称",
+        name: messages.plans.nameRequired,
       });
       return;
     }
 
     if (!startDate || !endDate) {
-      setError("请选择计划的开始和结束日期");
+      setError(messages.plans.datesRequired);
       return;
     }
 
     if (startDate > endDate) {
       setFieldErrors({
-        end_date: "结束日期不能早于开始日期",
+        end_date: messages.plans.invalidDateOrder,
       });
       return;
     }
@@ -120,7 +121,7 @@ export function PlanForm({
         setError(
           err instanceof Error
             ? err.message
-            : "操作失败，请稍后重试",
+            : messages.common.operationFailedLater,
         );
       }
 
@@ -139,9 +140,7 @@ export function PlanForm({
         <label
           htmlFor="plan-name"
           className="mb-2 block font-medium"
-        >
-          计划名称
-        </label>
+        >{messages.plans.name}</label>
 
         <input
           id="plan-name"
@@ -151,7 +150,7 @@ export function PlanForm({
           onChange={(event) => setName(event.target.value)}
           maxLength={100}
           className="w-full rounded-lg border border-slate-300 px-3 py-2"
-          placeholder="例如：大学英语学习计划"
+          placeholder={messages.plans.namePlaceholder}
         />
 
         {fieldErrors.name && (
@@ -165,9 +164,7 @@ export function PlanForm({
         <label
           htmlFor="plan-description"
           className="mb-2 block font-medium"
-        >
-          计划描述
-        </label>
+        >{messages.plans.description}</label>
 
         <textarea
           id="plan-description"
@@ -178,7 +175,7 @@ export function PlanForm({
           rows={3}
           maxLength={255}
           className="w-full rounded-lg border border-slate-300 px-3 py-2"
-          placeholder="简单描述你的学习目标"
+          placeholder={messages.plans.descriptionPlaceholder}
         />
       </div>
 
@@ -187,9 +184,7 @@ export function PlanForm({
           <label
             htmlFor="plan-start-date"
             className="mb-2 block font-medium"
-          >
-            开始日期
-          </label>
+          >{messages.plans.startDate}</label>
 
           <input
             id="plan-start-date"
@@ -208,9 +203,7 @@ export function PlanForm({
           <label
             htmlFor="plan-end-date"
             className="mb-2 block font-medium"
-          >
-            结束日期
-          </label>
+          >{messages.plans.endDate}</label>
 
           <input
             id="plan-end-date"
@@ -233,9 +226,7 @@ export function PlanForm({
       </div>
 
       {datesLocked && (
-        <p className="text-sm text-slate-500">
-          计划开始后，执行周期不能修改。
-        </p>
+        <p className="text-sm text-slate-500">{messages.plans.datesLocked}</p>
       )}
 
       {error && (
@@ -249,7 +240,7 @@ export function PlanForm({
         disabled={submitting}
         className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white disabled:opacity-50"
       >
-        {submitting ? "正在保存..." : submitLabel}
+        {submitting ? messages.common.saving : submitLabel}
       </button>
     </form>
   );

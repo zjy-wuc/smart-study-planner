@@ -1,3 +1,4 @@
+import { messages } from "@/messages";
 
 import { apiFetch } from "@/lib/api/client";
 import type { ApiResponse } from "@/types/api";
@@ -103,7 +104,7 @@ export async function getTaskRecords(
   }
 
   throw new Error(
-    "打卡历史响应格式不符合预期，请核对后端接口",
+    messages.validation.historyResponse,
   );
 }
 

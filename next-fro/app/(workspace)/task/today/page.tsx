@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import Link from "next/link";
 
@@ -20,13 +21,9 @@ export default function TodayTasksPage() {
     <div className="workspace-page">
       <div className="workspace-page-heading">
         <div>
-          <h1 className="text-2xl font-bold">
-            今日任务
-          </h1>
+          <h1 className="text-2xl font-bold">{messages.navigation.today}</h1>
 
-          <p className="mt-2 text-slate-500">
-            记录实际完成情况，合理安排未完成任务
-          </p>
+          <p className="mt-2 text-slate-500">{messages.tasks.todayDescription}</p>
         </div>
 
         <button
@@ -35,43 +32,34 @@ export default function TodayTasksPage() {
           disabled={loading}
           className="workspace-button workspace-button--secondary"
         >
-          <WorkspaceIcon name="refresh" />
-          刷新任务
-        </button>
+          <WorkspaceIcon name="refresh" />{messages.tasks.refresh}</button>
       </div>
 
       {loading ? (
-        <p role="status" className="workspace-loading">正在获取今日任务...</p>
+        <p role="status" className="workspace-loading">{messages.tasks.loadingToday}</p>
       ) : error ? (
         <div role="alert" className="workspace-feedback workspace-feedback--error">
-          <p className="text-red-700">
-            获取任务失败：{error}
+          <p className="text-red-700">{messages.tasks.fetchError(error)}
           </p>
 
           <button
             type="button"
             onClick={reload}
             className="workspace-text-link"
-          >
-            重新尝试
-          </button>
+          >{messages.common.tryAgain}</button>
         </div>
       ) : tasks.length === 0 ? (
         <div className="workspace-empty-state">
-          <p>今天没有需要展示的任务。</p>
+          <p>{messages.tasks.emptyToday}</p>
 
           <Link
             href="/plans"
             className="workspace-text-link"
-          >
-            查看我的学习计划
-          </Link>
+          >{messages.plans.viewMyPlans}</Link>
         </div>
       ) : (
         <div className="workspace-task-cards">
-          <p className="workspace-summary-note">
-            今天共 {tasks.length} 条任务
-          </p>
+          <p className="workspace-summary-note">{messages.tasks.todayCount(tasks.length)}</p>
 
           {tasks.map((task) => (
             <TaskActionCard
@@ -83,9 +71,7 @@ export default function TodayTasksPage() {
         </div>
       )}
 
-      <Link href="/" className="workspace-text-link workspace-back-link">
-        返回首页
-      </Link>
+      <Link href="/" className="workspace-text-link workspace-back-link">{messages.navigation.backHome}</Link>
     </div>
   );
 }

@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,7 +20,7 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return "请求失败，请稍后重试";
+  return messages.common.requestFailed;
 }
 
 

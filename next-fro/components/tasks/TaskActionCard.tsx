@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import {
   useEffect,
@@ -31,11 +32,11 @@ type Props = {
 };
 
 const statusLabels = {
-  PENDING: "待完成",
-  IN_PROGRESS: "进行中",
-  COMPLETED: "已完成",
-  OVERDUE: "已逾期",
-  ENDED: "已停止",
+  PENDING: messages.tasks.statusPending,
+  IN_PROGRESS: messages.common.statusActive,
+  COMPLETED: messages.tasks.statusCompleted,
+  OVERDUE: messages.tasks.statusOverdue,
+  ENDED: messages.tasks.statusStopped,
 };
 
 
@@ -51,7 +52,7 @@ function getErrorText(error: unknown): string {
 
   return error instanceof Error
     ? error.message
-    : "操作失败，请重试";
+    : messages.common.operationFailedRetry;
 }
 
 
@@ -163,7 +164,7 @@ export function TaskActionCard({
 
     void runAction(
       () => completeBooleanTask(task.id),
-      "BOOLEAN 任务已完成",
+      messages.tasks.booleanCompletedNotice,
     );
   }
 
@@ -176,20 +177,20 @@ export function TaskActionCard({
     const text = actualText.trim();
 
     if (!/^\d+$/.test(text)) {
-      setError("累计数量必须是非负整数");
+      setError(messages.tasks.actualIntegerRequired);
       return;
     }
 
     const quantity = Number(text);
 
     if (!Number.isSafeInteger(quantity)) {
-      setError("数量超出前端安全整数范围");
+      setError(messages.tasks.quantityTooLarge);
       return;
     }
 
     void runAction(
       async () => { await updateNumericTask(task.id, quantity); daily.markDone(); },
-      "累计完成数量已更新",
+      messages.tasks.quantityUpdated,
     );
   }
 
@@ -200,19 +201,19 @@ export function TaskActionCard({
     }
 
     if (!targetDate) {
-      setError("请选择顺延目标日期");
+      setError(messages.tasks.rolloverDateRequired);
       return;
     }
 
     if (targetDate > task.plan_end_date) {
-      setError("目标日期不能超过计划结束日期");
+      setError(messages.tasks.rolloverDateTooLate);
       return;
     }
 
     const confirmed = window.confirm(
       task.task_type === "NUMERIC"
-        ? "确定将当前任务剩余的全部数量顺延到所选日期吗？"
-        : "确定将这条未完成任务顺延到所选日期吗？",
+        ? messages.tasks.numericRolloverConfirm
+        : messages.tasks.booleanRolloverConfirm,
     );
 
     if (!confirmed) {
@@ -223,7 +224,7 @@ export function TaskActionCard({
       () => rolloverTask(task.id, {
         target_date: targetDate,
       }),
-      "任务顺延成功",
+      messages.tasks.rolloverSuccess,
     );
   }
 
@@ -253,43 +254,41 @@ export function TaskActionCard({
 
           <p className="task-action-type">
             {task.task_type === "BOOLEAN"
-              ? "完成型任务"
-              : "数量型任务"}
+              ? messages.tasks.booleanType
+              : messages.tasks.numericType}
           </p>
         </div>
 
         <span className="workspace-task-status" data-status={task.display_status}>
-          {task.task_type === "NUMERIC" && ["PENDING", "IN_PROGRESS"].includes(task.display_status) ? "未完成" : statusLabels[task.display_status]}
+          {task.task_type === "NUMERIC" && ["PENDING", "IN_PROGRESS"].includes(task.display_status) ? messages.tasks.statusIncomplete : statusLabels[task.display_status]}
         </span>
       </div>
 
       {task.task_type === "NUMERIC" && (
         <div className="task-quantity-summary">
           <p>
-            <span>实际累计</span><strong>{task.actual_quantity}</strong>
+            <span>{messages.tasks.actualQuantity}</span><strong>{task.actual_quantity}</strong>
           </p>
 
           <p>
-            <span>当前有效目标</span>
+            <span>{messages.tasks.effectiveTarget}</span>
             <strong>{task.effective_target_quantity ?? task.target_quantity ?? 0}</strong>
           </p>
 
           <p>
-            <span>尚需完成</span><strong>{task.remaining_quantity ?? 0}</strong>
+            <span>{messages.tasks.remaining}</span><strong>{task.remaining_quantity ?? 0}</strong>
           </p>
 
           {task.rollover_out_quantity > 0 && (
             <p>
-              <span>已转出数量</span><strong>{task.rollover_out_quantity}</strong>
+              <span>{messages.tasks.rolledOut}</span><strong>{task.rollover_out_quantity}</strong>
             </p>
           )}
         </div>
       )}
 
       {isRolledOver && (
-        <p className="workspace-feedback workspace-feedback--warning">
-          该任务已发生向外顺延，来源不能再次打卡或顺延。
-        </p>
+        <p className="workspace-feedback workspace-feedback--warning">{messages.tasks.rolloverLockedHint}</p>
       )}
 
       {error && (
@@ -313,19 +312,17 @@ export function TaskActionCard({
               disabled={busy}
               className="workspace-button workspace-button--primary"
             >
-              {busy ? "处理中..." : "打卡"}
+              {busy ? messages.common.processing : messages.tasks.checkin}
             </button>
           ) : daily.state === "done" ? (
-            <span className="checkin-success-text">坚持就是胜利</span>
+            <span className="checkin-success-text">{messages.tasks.encouragement}</span>
           ) : (
             <div className="task-progress-form">
               <div>
                 <label
                   htmlFor={`actual-${task.id}`}
                   className="workspace-field-label"
-                >
-                  当前累计完成数量
-                </label>
+                >{messages.tasks.currentQuantity}</label>
 
                 <input
                   id={`actual-${task.id}`}
@@ -346,9 +343,9 @@ export function TaskActionCard({
                 disabled={busy || daily.state !== "available"}
                 className="workspace-button workspace-button--primary"
               >
-                {busy ? "保存中..." : daily.state === "loading" ? "正在确认…" : "打卡"}
+                {busy ? messages.common.savingShort : daily.state === "loading" ? messages.tasks.confirming : messages.tasks.checkin}
               </button>
-              {daily.state === "error" && <button type="button" onClick={daily.retry} className="workspace-text-link">确认失败，重试</button>}
+              {daily.state === "error" && <button type="button" onClick={daily.retry} className="workspace-text-link">{messages.tasks.confirmRetry}</button>}
             </div>
           )}
 
@@ -361,7 +358,7 @@ export function TaskActionCard({
             }}
             className="workspace-text-link task-rollover-toggle"
           >
-            {showRollover ? "取消顺延" : "顺延到未来日期"}
+            {showRollover ? messages.tasks.cancelRollover : messages.tasks.rollover}
           </button>
 
           {showRollover && (
@@ -369,9 +366,7 @@ export function TaskActionCard({
               <label
                 htmlFor={`rollover-${task.id}`}
                 className="workspace-field-label"
-              >
-                顺延目标日期
-              </label>
+              >{messages.tasks.rolloverDate}</label>
 
               <input
                 id={`rollover-${task.id}`}
@@ -385,26 +380,20 @@ export function TaskActionCard({
                 className="task-action-input"
               />
 
-              <p className="task-action-help">
-                只能选择后端业务日期之后、
-                且不超过计划结束日的日期。
-                最终合法性由后端检查。
-              </p>
+              <p className="task-action-help">{messages.tasks.rolloverDateHint}</p>
 
               <button
                 type="button"
                 onClick={handleRollover}
                 disabled={busy}
                 className="workspace-button workspace-button--secondary"
-              >
-                确认顺延
-              </button>
+              >{messages.tasks.confirmRollover}</button>
             </div>
           )}
         </div>
       )}
 
-      {!canOperate && !isRolledOver && task.status === "COMPLETED" && <span className="checkin-success-text">坚持就是胜利</span>}
+      {!canOperate && !isRolledOver && task.status === "COMPLETED" && <span className="checkin-success-text">{messages.tasks.encouragement}</span>}
 
       <div className="task-records">
         <button
@@ -412,21 +401,19 @@ export function TaskActionCard({
           onClick={() => void toggleRecords()}
           className="workspace-text-link"
         >
-          {showRecords ? "收起打卡历史" : "查看打卡历史"}
+          {showRecords ? messages.history.collapseFull : messages.history.viewFull}
         </button>
 
         {showRecords && (
           <div className="task-records-content">
             {recordsLoading ? (
-              <p className="workspace-muted">正在加载历史...</p>
+              <p className="workspace-muted">{messages.history.loadingFull}</p>
             ) : recordsError ? (
               <p role="alert" className="workspace-feedback workspace-feedback--error">
                 {recordsError}
               </p>
             ) : records.length === 0 ? (
-              <p className="workspace-muted">
-                暂无打卡记录
-              </p>
+              <p className="workspace-muted">{messages.history.emptyRecords}</p>
             ) : (
               <ul className="task-records-list">
                 {records.map((record) => (
@@ -436,12 +423,11 @@ export function TaskActionCard({
                   >
                     <p>
                       {record.event_type === "BOOLEAN_COMPLETE"
-                        ? "完成打卡"
-                        : `累计完成：${record.recorded_value ?? 0}`}
+                        ? messages.tasks.booleanCheckin
+                        : messages.tasks.recordedTotalWithColon(record.recorded_value ?? 0)}
                     </p>
 
-                    <p className="task-record-time">
-                      记录时间：{record.recorded_at}
+                    <p className="task-record-time">{messages.history.recordedAt(record.recorded_at)}
                     </p>
                   </li>
                 ))}

@@ -8,13 +8,11 @@ from typing import NoReturn
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.repositories import (
-    step_repository,
-    schedule_repository,
-    daily_task_repository,
-)
-from app.services import plan_service
-from app.services.plan_rules import (
+from app.repositories.steps import step_repository
+from app.repositories.schedules import schedule_repository
+from app.repositories.tasks import daily_task_repository
+from app.services.plans import plan_service
+from app.services.plans.plan_rules import (
     get_plan_days,
     distribute_numeric_target,
 )

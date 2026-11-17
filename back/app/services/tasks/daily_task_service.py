@@ -1,8 +1,8 @@
 
 from sqlalchemy.orm import Session
 
-from app.repositories import daily_task_repository
-from app.services import plan_service
+from app.repositories.tasks import daily_task_repository
+from app.services.plans import plan_service
 
 
 def list_plan_tasks(

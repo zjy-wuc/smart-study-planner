@@ -1,3 +1,4 @@
+import { messages } from "@/messages";
 
 import type { StepRule } from "@/types/step";
 
@@ -16,7 +17,7 @@ export function buildStepRule(
     const content = repeatContent.trim();
 
     if (!content) {
-      throw new Error("请填写每天重复的任务内容");
+      throw new Error(messages.validation.repeatContentRequired);
     }
 
     return {
@@ -36,13 +37,13 @@ export function buildStepRule(
   // NUMERIC 只接受非负安全整数。
   // 避免 JavaScript number 出现精度丢失。
   if (!/^\d+$/.test(totalText.trim())) {
-    throw new Error("总目标必须是非负整数");
+    throw new Error(messages.validation.totalIntegerRequired);
   }
 
   const total = Number(totalText.trim());
 
   if (!Number.isSafeInteger(total)) {
-    throw new Error("总目标超出前端安全整数范围");
+    throw new Error(messages.validation.totalTooLarge);
   }
 
   return {

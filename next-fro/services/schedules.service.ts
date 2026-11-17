@@ -1,3 +1,4 @@
+import { messages } from "@/messages";
 
 import { apiFetch } from "@/lib/api/client";
 
@@ -27,7 +28,7 @@ function parseScheduleEntries(
   }
 
   throw new Error(
-    "后端每日安排响应格式不符合预期，请核对接口契约",
+    messages.validation.scheduleResponse,
   );
 }
 

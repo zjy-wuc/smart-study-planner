@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useEffect, useState } from "react";
 
@@ -8,14 +9,14 @@ type HealthResponse = {
 };
 
 export default function Home() {
-  const [status, setStatus] = useState("正在连接后端...");
+  const [status, setStatus] = useState(messages.health.connecting);
   const [error, setError] = useState("");
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/health`)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`HTTP 错误：${response.status}`);
+          throw new Error(messages.health.httpError(response.status));
         }
         return response.json();
       })
@@ -24,24 +25,23 @@ export default function Home() {
       })
       .catch((err: Error) => {
         setError(err.message);
-        setStatus("连接失败");
+        setStatus(messages.health.connectionFailed);
       });
   }, []);//组件挂载时执行一次
 
   return (
     <main style={{ maxWidth: 700, margin: "80px auto", padding: 24 }}>
-      <h1>智能学习计划管理系统</h1>
-      <p>前端：Next.js</p>
-      <p>后端：Python + FastAPI</p>
+      <h1>{messages.health.title}</h1>
+      <p>{messages.health.frontend}</p>
+      <p>{messages.health.backend}</p>
 
       <hr />
 
-      <h2>后端连接测试</h2>
-      <p>连接状态：{status}</p>
+      <h2>{messages.health.testTitle}</h2>
+      <p>{messages.health.statusText(status)}</p>
 
       {error && (
-        <p style={{ color: "red" }}>
-          错误信息：{error}
+        <p style={{ color: "red" }}>{messages.health.errorText(error)}
         </p>
       )}
     </main>

@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import {
   useCallback,
@@ -49,7 +50,7 @@ export function useStatistics(days: TrendDays) {
           setError(
             err instanceof Error
               ? err.message
-              : "获取学习统计失败",
+              : messages.statistics.fetchFailed,
           );
         }
       } finally {

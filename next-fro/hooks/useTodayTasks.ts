@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import {
   useCallback,
@@ -61,7 +62,7 @@ export function useTodayTasks() {
         setError(
           err instanceof Error
             ? err.message
-            : "今日任务加载失败",
+            : messages.tasks.loadTodayFailed,
         );
 
       } finally {

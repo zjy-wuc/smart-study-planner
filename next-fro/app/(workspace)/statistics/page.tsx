@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useState } from "react";
 
@@ -44,13 +45,9 @@ export default function StatisticsPage() {
       <div className="statistics-page mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">
-              学习统计
-            </h1>
+            <h1 className="text-2xl font-semibold">{messages.navigation.statistics}</h1>
 
-            <p className="mt-2 text-sm text-slate-600">
-              查看打卡记录、学习连续性和计划执行情况。
-            </p>
+            <p className="mt-2 text-sm text-slate-600">{messages.statistics.subtitle}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -60,15 +57,13 @@ export default function StatisticsPage() {
               disabled={loading || calendar.loading}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
             >
-              {loading && visibleData ? "刷新中..." : "刷新数据"}
+              {loading && visibleData ? messages.common.refreshing : messages.common.refreshData}
             </button>
           </div>
         </header>
 
         {loading && !visibleData && (
-          <p role="status" className="py-8 text-slate-600">
-            正在加载学习统计...
-          </p>
+          <p role="status" className="py-8 text-slate-600">{messages.statistics.loading}</p>
         )}
 
         {error && !loading && (
@@ -77,34 +72,30 @@ export default function StatisticsPage() {
             className="space-y-3 rounded-xl border border-red-200 p-5"
           >
             <p className="text-sm text-red-700">
-              {visibleData ? "更新失败，当前显示上次的数据：" : "加载失败："}{error}
+              {visibleData ? messages.statistics.staleError(error) : messages.common.loadError(error)}
             </p>
 
             <button
               type="button"
               onClick={refreshAll}
               className="rounded-lg border px-3 py-2 text-sm"
-            >
-              重新尝试
-            </button>
+            >{messages.common.tryAgain}</button>
           </div>
         )}
 
         {visibleData && (
           <>
             {calendar.data ? <>
-              {calendar.error && <p role="alert">日历更新失败，当前显示上次的数据：{calendar.error}</p>}
+              {calendar.error && <p role="alert">{messages.statistics.calendarStaleError(calendar.error)}</p>}
               <StudyCalendar data={calendar.data} />
-            </> : calendar.error ? <p role="alert">日历加载失败：{calendar.error} <button type="button" onClick={calendar.refresh}>重试</button></p> : <p role="status">正在加载学习日历...</p>}
+            </> : calendar.error ? <p role="alert">{messages.statistics.calendarError(calendar.error)} <button type="button" onClick={calendar.refresh}>{messages.common.retry}</button></p> : <p role="status">{messages.statistics.loadingCalendar}</p>}
             <StatisticsSummary
               checkins={visibleData.checkins}
               plans={visibleData.plans}
             />
 
             {loading && switching && (
-              <p role="status" className="text-sm text-slate-600">
-                正在切换到最近 {days} 天，暂时显示最近 {visibleData.trend_days} 天的数据。
-              </p>
+              <p role="status" className="text-sm text-slate-600">{messages.statistics.switchingRange(days, visibleData.trend_days)}</p>
             )}
 
             <CheckinTrend
@@ -114,10 +105,7 @@ export default function StatisticsPage() {
               disabled={loading}
             />
 
-            <p className="text-xs text-slate-500">
-              统计截至北京时间 {visibleData.as_of_date}。
-              打卡数据以成功保存的学习记录为准。
-            </p>
+            <p className="text-xs text-slate-500">{messages.statistics.asOf(visibleData.as_of_date)}</p>
           </>
         )}
       </div>

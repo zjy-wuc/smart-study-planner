@@ -6,10 +6,8 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.clock import business_today
-from app.repositories import (
-    task_repository,
-    rollover_repository,
-)
+from app.repositories.tasks import task_repository
+from app.repositories.rollovers import rollover_repository
 
 
 MAX_UINT64 = 2**64 - 1

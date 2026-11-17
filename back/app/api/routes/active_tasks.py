@@ -7,7 +7,7 @@ from app.database import get_db
 from app.response import success
 
 from app.schemas.active_task import ActiveTaskUpdate
-from app.services import active_task_service
+from app.services.tasks import active_task_service
 
 
 router = APIRouter(

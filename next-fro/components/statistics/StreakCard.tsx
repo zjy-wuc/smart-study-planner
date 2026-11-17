@@ -1,3 +1,4 @@
+import { messages } from "@/messages";
 
 type Props = {
   streakDays: number;
@@ -18,27 +19,21 @@ export function StreakCard({
       <h2
         id="streak-title"
         className="text-lg font-semibold text-slate-900"
-      >
-        连续打卡
-      </h2>
+      >{messages.statistics.streakTitle}</h2>
 
       <p className="mt-4 text-4xl font-semibold text-slate-900">
         {streakDays}
 
-        <span className="ml-2 text-base font-normal text-slate-500">
-          天
-        </span>
+        <span className="ml-2 text-base font-normal text-slate-500">{messages.common.daysUnit}</span>
       </p>
 
       <p className="mt-3 text-sm text-slate-600">
         {checkedInToday
-          ? "今天已打卡，连续记录已更新。"
-          : "今天尚未打卡，可以在今天结束前继续打卡。"}
+          ? messages.statistics.checkedInToday
+          : messages.statistics.notCheckedInToday}
       </p>
 
-      <p className="mt-2 text-xs text-slate-500">
-        按北京时间自然日统计，每天成功打卡至少一次即可。
-      </p>
+      <p className="mt-2 text-xs text-slate-500">{messages.statistics.businessDayHint}</p>
     </section>
   );
 }

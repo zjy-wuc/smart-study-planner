@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import type { RuleMode } from "@/lib/plans/step-rule";
 
@@ -31,9 +32,7 @@ export function StepRuleFields({
         <label
           htmlFor="rule-mode"
           className="mb-1 block font-medium"
-        >
-          执行方式
-        </label>
+        >{messages.steps.executionMode}</label>
 
         <select
           id="rule-mode"
@@ -43,21 +42,13 @@ export function StepRuleFields({
           }
           className="w-full rounded border p-2"
         >
-          <option value="BOOLEAN_REPEAT">
-            完成型 · 每天重复
-          </option>
+          <option value="BOOLEAN_REPEAT">{messages.steps.booleanRepeat}</option>
 
-          <option value="BOOLEAN_DAILY_CUSTOM">
-            完成型 · 每日自定义
-          </option>
+          <option value="BOOLEAN_DAILY_CUSTOM">{messages.steps.booleanCustom}</option>
 
-          <option value="NUMERIC_AUTO_DISTRIBUTE">
-            数量型 · 自动分配
-          </option>
+          <option value="NUMERIC_AUTO_DISTRIBUTE">{messages.steps.numericAuto}</option>
 
-          <option value="NUMERIC_DAILY_MANUAL">
-            数量型 · 每日手动安排
-          </option>
+          <option value="NUMERIC_DAILY_MANUAL">{messages.steps.numericManual}</option>
         </select>
       </div>
 
@@ -66,9 +57,7 @@ export function StepRuleFields({
           <label
             htmlFor="repeat-content"
             className="mb-1 block font-medium"
-          >
-            每天重复的内容
-          </label>
+          >{messages.steps.repeatContent}</label>
 
           <input
             id="repeat-content"
@@ -77,7 +66,7 @@ export function StepRuleFields({
               onRepeatContentChange(event.target.value)
             }
             maxLength={255}
-            placeholder="例如：阅读一篇英语文章"
+            placeholder={messages.steps.contentPlaceholder}
             className="w-full rounded border p-2"
           />
         </div>
@@ -88,9 +77,7 @@ export function StepRuleFields({
           <label
             htmlFor="total-target"
             className="mb-1 block font-medium"
-          >
-            总目标数量
-          </label>
+          >{messages.steps.totalTarget}</label>
 
           <input
             id="total-target"
@@ -101,22 +88,20 @@ export function StepRuleFields({
             onChange={(event) =>
               onTotalTextChange(event.target.value)
             }
-            placeholder="例如：100"
+            placeholder={messages.steps.targetPlaceholder}
             className="w-full rounded border p-2"
           />
 
           <p className="mt-1 text-sm text-slate-500">
             {mode === "NUMERIC_AUTO_DISTRIBUTE"
-              ? "开始计划后，系统会把数量分配到每天。"
-              : "后续需要填写每一天的目标数量。"}
+              ? messages.steps.autoAllocationHint
+              : messages.steps.manualAllocationHint}
           </p>
         </div>
       )}
 
       {mode === "BOOLEAN_DAILY_CUSTOM" && (
-        <p className="text-sm text-slate-500">
-          创建叶子后，需要在逐日安排中填写每一天的任务内容。
-        </p>
+        <p className="text-sm text-slate-500">{messages.steps.customContentHint}</p>
       )}
     </div>
   );

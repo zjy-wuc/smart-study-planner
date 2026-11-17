@@ -1,3 +1,4 @@
+import { messages } from "@/messages";
 
 import { Suspense, type ReactNode } from "react";
 
@@ -12,9 +13,7 @@ export default function WorkspaceLayout({
   return (
     <Suspense
       fallback={
-        <div role="status" className="p-6">
-          正在加载工作台...
-        </div>
+        <div role="status" className="p-6">{messages.navigation.loadingWorkspace}</div>
       }
     >
       <WorkspaceShell>

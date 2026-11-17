@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import {
   createContext,
@@ -38,7 +39,7 @@ export function useWorkspaceSearch() {
 
   if (!context) {
     throw new Error(
-      "必须在 WorkspaceShell 内使用搜索状态",
+      messages.navigation.searchContextError,
     );
   }
 
@@ -51,15 +52,15 @@ const navigation: {
   label: string;
   icon: WorkspaceIconName;
 }[] = [
-  { href: "/", label: "首页", icon: "home" },
-  { href: "/plans", label: "我的计划", icon: "calendar" },
-  { href: "/task/today", label: "今日任务", icon: "tasks" },
-  { href: "/history", label: "打卡历史", icon: "book" },
+  { href: "/", label: messages.navigation.home, icon: "home" },
+  { href: "/plans", label: messages.navigation.plans, icon: "calendar" },
+  { href: "/task/today", label: messages.navigation.today, icon: "tasks" },
+  { href: "/history", label: messages.navigation.history, icon: "book" },
 
   // V2.1 新增：学习统计中心
-  { href: "/statistics", label: "学习统计", icon: "calendar" },
+  { href: "/statistics", label: messages.navigation.statistics, icon: "calendar" },
 
-  { href: "/profile", label: "个人中心", icon: "user" },
+  { href: "/profile", label: messages.navigation.profile, icon: "user" },
 ];
 
 
@@ -87,9 +88,7 @@ export function WorkspaceShell({
 
   if (!authChecked) {
     return (
-      <p role="status">
-        正在检查登录状态...
-      </p>
+      <p role="status">{messages.auth.checkingSession}</p>
     );
   }
 
@@ -106,11 +105,9 @@ export function WorkspaceShell({
               <WorkspaceIcon name="book" />
             </span>
 
-            <strong>学习计划管理系统</strong>
+            <strong>{messages.common.appName}</strong>
 
-            <span className="workspace-brand-tagline">
-              让学习更有计划
-            </span>
+            <span className="workspace-brand-tagline">{messages.navigation.tagline}</span>
           </div>
 
           <div>
@@ -120,8 +117,8 @@ export function WorkspaceShell({
 
                 <input
                   type="search"
-                  aria-label="搜索学习计划"
-                  placeholder="搜索计划名称..."
+                  aria-label={messages.navigation.searchLabel}
+                  placeholder={messages.navigation.searchPlaceholder}
                   value={search}
                   onChange={(event) =>
                     setSearch(event.target.value)
@@ -137,12 +134,10 @@ export function WorkspaceShell({
         <div className="workspace-layout">
           <aside className="workspace-sidebar">
             <nav
-              aria-label="主导航"
+              aria-label={messages.navigation.mainLabel}
               className="workspace-nav"
             >
-              <div className="workspace-sidebar-label">
-                学习空间
-              </div>
+              <div className="workspace-sidebar-label">{messages.navigation.spaceLabel}</div>
 
               {navigation.map((item) => {
                 const active =
@@ -158,9 +153,7 @@ export function WorkspaceShell({
                       <>
                         <div className="workspace-nav-divider" />
 
-                        <div className="workspace-sidebar-label">
-                          账户
-                        </div>
+                        <div className="workspace-sidebar-label">{messages.navigation.accountLabel}</div>
                       </>
                     )}
 
@@ -179,11 +172,7 @@ export function WorkspaceShell({
               })}
             </nav>
 
-            <p className="workspace-sidebar-note">
-              每一天的努力，
-              <br />
-              都在带你靠近目标。
-              <span aria-hidden="true">✦</span>
+            <p className="workspace-sidebar-note">{messages.navigation.mottoFirstLine}<br />{messages.navigation.mottoSecondLine}<span aria-hidden="true">✦</span>
             </p>
           </aside>
 

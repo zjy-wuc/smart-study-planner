@@ -7,8 +7,8 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 from app.core.clock import business_today
 from app.database import SessionLocal
-from app.repositories import plan_lifecycle_repository
-from app.services import plan_lifecycle_service
+from app.repositories.plans import plan_lifecycle_repository
+from app.services.plans import plan_lifecycle_service
 
 
 logger = logging.getLogger(__name__)

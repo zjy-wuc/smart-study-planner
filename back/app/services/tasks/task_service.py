@@ -5,8 +5,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.clock import business_today
-from app.repositories import task_repository
-from app.repositories import active_task_repository
+from app.repositories.tasks import task_repository
+from app.repositories.tasks import active_task_repository
 
 # 允许继续打卡的任务状态
 CHECKIN_ALLOWED_STATUSES = {

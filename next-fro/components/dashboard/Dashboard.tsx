@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import Link from "next/link";
 import { useMemo } from "react";
@@ -49,13 +50,9 @@ export default function Dashboard() {
     <div className="workspace-dashboard">
       <div className="workspace-page-heading">
         <div>
-          <h1 className="text-3xl font-bold">
-            首页工作台
-          </h1>
+          <h1 className="text-3xl font-bold">{messages.dashboard.title}</h1>
 
-          <p className="mt-2 text-slate-600">
-            学习计划与每日执行情况
-          </p>
+          <p className="mt-2 text-slate-600">{messages.dashboard.subtitle}</p>
         </div>
 
         <button
@@ -63,9 +60,7 @@ export default function Dashboard() {
           onClick={reload}
           className="workspace-button workspace-button--secondary"
         >
-          <WorkspaceIcon name="refresh" />
-          刷新数据
-        </button>
+          <WorkspaceIcon name="refresh" />{messages.common.refreshData}</button>
       </div>
 
       <section aria-labelledby="today-heading" className="workspace-panel workspace-dashboard-today">
@@ -73,22 +68,19 @@ export default function Dashboard() {
           <div className="workspace-section-title">
             <span className="workspace-section-icon"><WorkspaceIcon name="tasks" /></span>
             <div>
-              <h2 id="today-heading">今日任务 {!loading && !tasksError && <span className="dashboard-count">{pendingTasks} 项待完成</span>}</h2>
-              <p>从今天的安排开始</p>
+              <h2 id="today-heading">{messages.navigation.today}{" "}{!loading && !tasksError && <span className="dashboard-count">{messages.dashboard.pendingCount(pendingTasks)}</span>}</h2>
+              <p>{messages.dashboard.todaySubtitle}</p>
             </div>
           </div>
 
-          <Link href="/task/today" className="workspace-text-link text-blue-700">
-            查看全部
-            <WorkspaceIcon name="arrow" />
+          <Link href="/task/today" className="workspace-text-link text-blue-700">{messages.common.viewAll}<WorkspaceIcon name="arrow" />
           </Link>
         </div>
 
         {loading ? (
-          <p role="status" className="workspace-loading">正在获取今日任务...</p>
+          <p role="status" className="workspace-loading">{messages.tasks.loadingToday}</p>
         ) : tasksError ? (
-          <p role="alert" className="workspace-feedback workspace-feedback--error">
-            今日任务加载失败：{tasksError}
+          <p role="alert" className="workspace-feedback workspace-feedback--error">{messages.dashboard.tasksError(tasksError)}
           </p>
         ) : (
           <TodayTaskList tasks={tasks.slice(0, 5)} onChanged={reload} />
@@ -104,31 +96,28 @@ export default function Dashboard() {
             <div className="workspace-section-title">
               <span className="workspace-section-icon"><WorkspaceIcon name="calendar" /></span>
               <div>
-              <h2 id="plans-heading">我的计划 {!loading && !plansError && <span className="dashboard-count">{activePlans} 个进行中</span>}</h2>
-                <p>查看计划与完成进度</p>
+              <h2 id="plans-heading">{messages.navigation.plans}{" "}{!loading && !plansError && <span className="dashboard-count">{messages.dashboard.activeCount(activePlans)}</span>}</h2>
+                <p>{messages.dashboard.plansSubtitle}</p>
               </div>
             </div>
 
             <Link
               href="/plans"
               className="workspace-text-link text-blue-700"
-            >
-              查看全部计划
-              <WorkspaceIcon name="arrow" />
+            >{messages.plans.viewAll}<WorkspaceIcon name="arrow" />
             </Link>
           </div>
 
           {loading ? (
-            <p role="status" className="workspace-loading">正在获取计划...</p>
+            <p role="status" className="workspace-loading">{messages.dashboard.loadingPlans}</p>
           ) : plansError ? (
-            <p role="alert" className="workspace-feedback workspace-feedback--error">
-              计划加载失败：{plansError}
+            <p role="alert" className="workspace-feedback workspace-feedback--error">{messages.dashboard.plansError(plansError)}
             </p>
           ) : filteredPlans.length === 0 ? (
             <p className="workspace-empty-state">
               {search.trim()
-                ? "没有匹配的学习计划"
-                : "还没有学习计划"}
+                ? messages.dashboard.noMatches
+                : messages.dashboard.noPlans}
             </p>
           ) : (
             <>
@@ -139,10 +128,7 @@ export default function Dashboard() {
               </div>
 
               {filteredPlans.length > 3 && (
-                <p className="workspace-summary-note">
-                  匹配 {filteredPlans.length} 个计划，
-                  首页显示前 3 个。
-                </p>
+                <p className="workspace-summary-note">{messages.dashboard.searchSummary(filteredPlans.length)}</p>
               )}
             </>
           )}
@@ -156,18 +142,16 @@ export default function Dashboard() {
             <div className="workspace-section-title">
               <span className="workspace-section-icon"><WorkspaceIcon name="steps" /></span>
               <div>
-                <h2 id="steps-heading">学习步骤预览</h2>
-                <p>按计划查看步骤层级</p>
+                <h2 id="steps-heading">{messages.dashboard.stepsTitle}</h2>
+                <p>{messages.dashboard.stepsSubtitle}</p>
               </div>
             </div>
           </div>
 
           {loading ? (
-            <p role="status" className="workspace-loading">正在准备步骤预览...</p>
+            <p role="status" className="workspace-loading">{messages.dashboard.loadingSteps}</p>
           ) : plansError ? (
-            <p className="workspace-feedback workspace-feedback--error">
-              当前无法加载计划步骤
-            </p>
+            <p className="workspace-feedback workspace-feedback--error">{messages.dashboard.stepsUnavailable}</p>
           ) : (
             <StepPreview plans={plans} />
           )}

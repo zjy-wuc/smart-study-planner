@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.response import success
-from app.services import plan_lifecycle_service
+from app.services.plans import plan_lifecycle_service
 
 
 router = APIRouter(

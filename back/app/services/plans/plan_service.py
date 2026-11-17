@@ -2,7 +2,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.repositories import plan_repository
+from app.repositories.plans import plan_repository
 from app.schemas.plan import PlanCreate, PlanUpdate
 
 

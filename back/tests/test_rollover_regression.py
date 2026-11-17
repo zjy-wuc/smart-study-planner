@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session
 
 from app.core.clock import business_today
 from app.database import engine
-from app.services import rollover_service, task_service
-from app.repositories import rollover_repository, task_repository
+from app.services.rollovers import rollover_service
+from app.services.tasks import task_service
+from app.repositories.rollovers import rollover_repository
+from app.repositories.tasks import task_repository
 
 
 class RolloverRegression(unittest.TestCase):
@@ -20,9 +22,9 @@ class RolloverRegression(unittest.TestCase):
         self.outer = self.conn.begin()
         self.db = Session(bind=self.conn, join_transaction_mode="create_savepoint")
         self.today = business_today()
-        self.clock = patch("app.services.rollover_service.business_today", return_value=self.today)
+        self.clock = patch("app.services.rollovers.rollover_service.business_today", return_value=self.today)
         self.clock.start()
-        self.task_clock = patch("app.services.task_service.business_today", return_value=self.today)
+        self.task_clock = patch("app.services.tasks.task_service.business_today", return_value=self.today)
         self.task_clock.start()
         self.user = self.sql("INSERT INTO users (username, password_hash) VALUES (:name, 'test')",
                              name="rollover_test_" + uuid4().hex).lastrowid
@@ -82,7 +84,7 @@ class RolloverRegression(unittest.TestCase):
             task_repository.update_numeric_progress(self.db, a, 100, "COMPLETED")
         self.db.rollback()
         self.reject(lambda: self.rollover(a, self.today + timedelta(days=2)))
-        with patch("app.services.rollover_service.business_today", return_value=self.today + timedelta(days=1)):
+        with patch("app.services.rollovers.rollover_service.business_today", return_value=self.today + timedelta(days=1)):
             c = self.rollover(b, self.today + timedelta(days=2))["target_task_id"]
         task_service.delete_task(self.db, b, self.user)
         self.assertIsNone(self.row(a)["deleted_at"])
@@ -90,7 +92,7 @@ class RolloverRegression(unittest.TestCase):
         self.assertIsNone(self.row(c)["deleted_at"])
         self.assertEqual(self.row(a)["rollover_out_quantity"], 40)
         self.assertEqual(self.row(c)["target_quantity"], 40)
-        with patch("app.services.task_service.business_today", return_value=self.today + timedelta(days=1)):
+        with patch("app.services.tasks.task_service.business_today", return_value=self.today + timedelta(days=1)):
             self.assertNotIn(b, [task["id"] for task in task_service.list_today_tasks(self.db, self.user)])
         self.assertEqual(self.sql("SELECT COUNT(*) FROM task_rollovers WHERE source_task_id IN (:a,:b)", a=a, b=b).scalar(), 2)
 
@@ -109,7 +111,7 @@ class RolloverRegression(unittest.TestCase):
         s2 = self.step("NUMERIC")
         src = self.task(s2, "NUMERIC", self.today, 8)
         dst = self.task(s2, "NUMERIC", self.today + timedelta(days=1), 50)
-        with patch("app.services.task_service.business_today", return_value=self.today + timedelta(days=1)):
+        with patch("app.services.tasks.task_service.business_today", return_value=self.today + timedelta(days=1)):
             task_service.update_numeric_task(self.db, dst, self.user, 10)
             task_service.update_numeric_task(self.db, dst, self.user, 0)
         self.reject(lambda: self.rollover(src, self.today + timedelta(days=1)))
@@ -133,7 +135,7 @@ class RolloverRegression(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             task_repository.mark_boolean_completed(self.db, a)
         self.db.rollback()
-        with patch("app.services.rollover_service.business_today", return_value=self.today + timedelta(days=1)):
+        with patch("app.services.rollovers.rollover_service.business_today", return_value=self.today + timedelta(days=1)):
             c = self.rollover(b, self.today + timedelta(days=2))["target_task_id"]
         task_service.delete_task(self.db, b, self.user)
         self.reject(lambda: self.rollover(a, self.today + timedelta(days=3)))
@@ -142,7 +144,7 @@ class RolloverRegression(unittest.TestCase):
     def test_rollback_ownership_and_dates_R14_R15_R16_R17_R18(self):
         s = self.step("NUMERIC")
         a = self.task(s, "NUMERIC", self.today, 20)
-        with patch("app.services.rollover_service.rollover_repository.insert_rollover_relation", side_effect=RuntimeError("injected")):
+        with patch("app.services.rollovers.rollover_service.rollover_repository.insert_rollover_relation", side_effect=RuntimeError("injected")):
             with self.assertRaisesRegex(RuntimeError, "injected"):
                 self.rollover(a, self.today + timedelta(days=1))
         self.assertEqual(self.row(a)["rollover_out_quantity"], 0)

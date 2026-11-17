@@ -1,5 +1,7 @@
 "use client";
 
+import { messages } from "@/messages";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, CalendarDays } from "lucide-react";
@@ -28,8 +30,8 @@ function previousDay(day: string, days = 1) {
 
 function formatHistoryDate(date: string, today: string) {
   const [year, month, day] = date.split("-").map(Number);
-  const weekday = ["日", "一", "二", "三", "四", "五", "六"][new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
-  return `${month}月${day}日 · 周${weekday}${date === today ? " · 今天" : ""}`;
+  const weekday = [messages.common.weekdaySunday, messages.common.weekdayMonday, messages.common.weekdayTuesday, messages.common.weekdayWednesday, messages.common.weekdayThursday, messages.common.weekdayFriday, messages.common.weekdaySaturday][new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return messages.history.dateHeading(month, day, weekday, date === today ? messages.history.todaySuffix : "");
 }
 
 function countDays(entries: HistoryEntry[], today: string) {
@@ -72,7 +74,7 @@ async function mapLimited<T, R>(items: T[], concurrency: number, fn: (item: T) =
 function StepItem({ node, entries, today, incomplete }: { node: StepNode; entries: HistoryEntry[]; today: string; incomplete: boolean }) {
   const ids = new Set(descendants(node));
   const counts = countDays(entries.filter((entry) => ids.has(entry.task.step_id)), today);
-  return <li className="history-step"><div className="history-step-row"><span>{node.name}</span><span className="history-step-count">{incomplete ? "数据未完整加载" : `累计 ${counts.total} 天 · 连续 ${counts.streak} 天`}</span></div>
+  return <li className="history-step"><div className="history-step-row"><span>{node.name}</span><span className="history-step-count">{incomplete ? messages.history.incompleteData : messages.history.dayCounts(counts.total, counts.streak)}</span></div>
     {node.children.length > 0 && <ul className="history-step-children">{node.children.map((child) => <StepItem key={child.id} node={child} entries={entries} today={today} incomplete={incomplete} />)}</ul>}
   </li>;
 }
@@ -102,12 +104,12 @@ export default function HistoryPage() {
         if (cancelled) return;
         const failedPlans = planResults.filter((item) => item.status === "rejected");
         const planAuthFailure = failedPlans.some((item) => item.status === "rejected" && item.reason instanceof ApiError && item.reason.status === 401);
-        if (planAuthFailure) throw new ApiError("登录已过期", 401);
+        if (planAuthFailure) throw new ApiError(messages.auth.sessionExpired, 401);
         const loaded = planResults.flatMap((item) => item.status === "fulfilled" ? [item.value] : []);
         const work = loaded.flatMap(({ plan, tasks }) => tasks.map((task) => ({ plan, task })));
         const records = await mapLimited(work, 6, async ({ plan, task }) => ({ plan, task, records: await getTaskRecords(task.id) }), () => cancelled);
         if (cancelled) return;
-        if (records.some((item) => item.status === "rejected" && item.reason instanceof ApiError && item.reason.status === 401)) throw new ApiError("登录已过期", 401);
+        if (records.some((item) => item.status === "rejected" && item.reason instanceof ApiError && item.reason.status === 401)) throw new ApiError(messages.auth.sessionExpired, 401);
         const result = loaded.map(({ plan, steps }) => ({ plan, steps, entries: [] as HistoryEntry[], incomplete: false }));
         const byId = new Map(result.map((item) => [item.plan.id, item]));
         const paths = new Map(result.map((item) => [item.plan.id, nodePaths(item.steps)]));
@@ -122,7 +124,7 @@ export default function HistoryPage() {
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError && err.status === 401) router.replace("/login");
-        else setError(err instanceof Error ? err.message : "加载失败，请重试");
+        else setError(err instanceof Error ? err.message : messages.common.loadFailedRetry);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -148,21 +150,21 @@ export default function HistoryPage() {
   const incomplete = planErrors > 0 || plans.some((plan) => plan.incomplete);
 
   return <div className="workspace-page history-page">
-    <header className="history-page-header"><div><h1>打卡历史</h1><p>记录每一次认真学习的日子</p></div><button className="history-refresh" type="button" onClick={reload} disabled={loading}>刷新记录</button></header>
-    {loading ? <p role="status" className="workspace-loading">正在整理打卡记录，任务较多时需要一些时间…</p> : error ? <div role="alert" className="workspace-feedback workspace-feedback--error">{error} <button type="button" onClick={reload}>重试</button></div> : <>
-      {incomplete && <div role="alert" className="history-warning">部分数据加载失败，记录可能不完整，受影响的计划不显示统计。<button type="button" onClick={reload}>重新加载</button></div>}
+    <header className="history-page-header"><div><h1>{messages.navigation.history}</h1><p>{messages.history.subtitle}</p></div><button className="history-refresh" type="button" onClick={reload} disabled={loading}>{messages.history.refresh}</button></header>
+    {loading ? <p role="status" className="workspace-loading">{messages.history.loading}</p> : error ? <div role="alert" className="workspace-feedback workspace-feedback--error">{error} <button type="button" onClick={reload}>{messages.common.retry}</button></div> : <>
+      {incomplete && <div role="alert" className="history-warning">{messages.history.partialFailure}<button type="button" onClick={reload}>{messages.common.reload}</button></div>}
       <div className="history-layout">
         <section className="history-panel" aria-labelledby="history-timeline-title">
-          <div className="history-panel-title"><div><h2 id="history-timeline-title">打卡记录</h2><p>每一次努力，都值得被记录</p></div></div>
-          <div className="history-filters" role="group" aria-label="打卡记录时间范围">{([7, 30, "all"] as const).map((value) => <button key={value} type="button" aria-pressed={range === value} onClick={() => setRange(value)}>{value === "all" ? "全部" : `最近 ${value} 天`}</button>)}</div>
-          {grouped.length === 0 ? <p className="history-empty">{incomplete ? "部分数据未加载，请重试" : "这个时间范围还没有打卡记录"}</p> : <div className="history-timeline">{grouped.map(([day, dayEntries]) => <section className="history-day" key={day}><div className="history-day-heading"><h3><CalendarDays size={17} aria-hidden="true" />{formatHistoryDate(day, asOf)}</h3><span>{dayEntries.length} 次打卡</span></div><ul>{dayEntries.map(({ plan, task, record, path }) => <li className="history-entry" key={record.id}><span className="history-entry-icon" aria-hidden="true"><Check size={19} strokeWidth={2.6} /></span><div><strong>{task.content || task.step_name}</strong><p>{plan.name} / {path.join(" / ")}</p><small>{record.event_type === "BOOLEAN_COMPLETE" ? "完成打卡" : `累计完成 ${record.recorded_value ?? 0}`}</small></div><time>{record.recorded_at.slice(11, 16)}</time></li>)}</ul></section>)}</div>}
+          <div className="history-panel-title"><div><h2 id="history-timeline-title">{messages.history.recordsTitle}</h2><p>{messages.history.recordsSubtitle}</p></div></div>
+          <div className="history-filters" role="group" aria-label={messages.history.rangeLabel}>{([7, 30, "all"] as const).map((value) => <button key={value} type="button" aria-pressed={range === value} onClick={() => setRange(value)}>{value === "all" ? messages.common.all : messages.common.recentDays(value)}</button>)}</div>
+          {grouped.length === 0 ? <p className="history-empty">{incomplete ? messages.history.partialRetry : messages.history.emptyRange}</p> : <div className="history-timeline">{grouped.map(([day, dayEntries]) => <section className="history-day" key={day}><div className="history-day-heading"><h3><CalendarDays size={17} aria-hidden="true" />{formatHistoryDate(day, asOf)}</h3><span>{messages.history.checkinCount(dayEntries.length)}</span></div><ul>{dayEntries.map(({ plan, task, record, path }) => <li className="history-entry" key={record.id}><span className="history-entry-icon" aria-hidden="true"><Check size={19} strokeWidth={2.6} /></span><div><strong>{task.content || task.step_name}</strong><p>{plan.name} / {path.join(" / ")}</p><small>{record.event_type === "BOOLEAN_COMPLETE" ? messages.tasks.booleanCheckin : messages.tasks.recordedTotal(record.recorded_value ?? 0)}</small></div><time>{record.recorded_at.slice(11, 16)}</time></li>)}</ul></section>)}</div>}
         </section>
-        <section className="history-panel" aria-labelledby="history-plans-title"><div className="history-panel-title"><div><h2 id="history-plans-title">计划坚持情况</h2><p>每个学习方向的点滴积累</p></div></div>
-          <p className="history-explanation">同一天打卡多次只算一天；今天未打卡时，连续天数从昨天计算。</p>
-          {plans.length === 0 ? <p className="history-empty">暂无学习计划</p> : <div className="history-plans">{plans.map((item) => { const counts = countDays(item.entries, asOf); return <details className="history-plan" key={item.plan.id}><summary><span className="history-plan-name">{item.plan.name}<small>{item.steps.length ? "展开查看学习步骤" : "暂无学习步骤"}</small></span><span className="history-plan-metrics">{item.incomplete ? <small>数据未完整加载</small> : <><span><strong>{counts.total}</strong><small>累计天数</small></span><span><strong>{counts.streak}</strong><small>连续天数</small></span></>}</span></summary><div className="history-plan-body">{item.steps.length ? <ul>{item.steps.map((node) => <StepItem key={node.id} node={node} entries={item.entries} today={asOf} incomplete={item.incomplete} />)}</ul> : <p>此计划暂无步骤</p>}</div></details>; })}</div>}
+        <section className="history-panel" aria-labelledby="history-plans-title"><div className="history-panel-title"><div><h2 id="history-plans-title">{messages.history.plansTitle}</h2><p>{messages.history.plansSubtitle}</p></div></div>
+          <p className="history-explanation">{messages.history.streakExplanation}</p>
+          {plans.length === 0 ? <p className="history-empty">{messages.plans.empty}</p> : <div className="history-plans">{plans.map((item) => { const counts = countDays(item.entries, asOf); return <details className="history-plan" key={item.plan.id}><summary><span className="history-plan-name">{item.plan.name}<small>{item.steps.length ? messages.history.expandSteps : messages.steps.empty}</small></span><span className="history-plan-metrics">{item.incomplete ? <small>{messages.history.incompleteData}</small> : <><span><strong>{counts.total}</strong><small>{messages.history.totalDays}</small></span><span><strong>{counts.streak}</strong><small>{messages.history.streakDays}</small></span></>}</span></summary><div className="history-plan-body">{item.steps.length ? <ul>{item.steps.map((node) => <StepItem key={node.id} node={node} entries={item.entries} today={asOf} incomplete={item.incomplete} />)}</ul> : <p>{messages.history.emptyPlanSteps}</p>}</div></details>; })}</div>}
         </section>
       </div>
-      <p className="history-footnote">按北京时间的实际打卡日期统计；当前展示可查询的有效计划、步骤和任务记录。</p>
+      <p className="history-footnote">{messages.history.dataScope}</p>
     </>}
   </div>;
 }

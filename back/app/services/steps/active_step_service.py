@@ -7,18 +7,16 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.clock import business_today
-from app.repositories import (
-    active_step_repository,
-    daily_task_repository,
-    schedule_repository,
-    step_repository,
-)
+from app.repositories.steps import active_step_repository, step_repository
+from app.repositories.tasks import daily_task_repository
+from app.repositories.schedules import schedule_repository
 from app.schemas.active_step import (
     ActiveStepNode,
     ActiveStepTreeCreate,
 )
-from app.services import plan_service, step_service
-from app.services.plan_rules import (
+from app.services.plans import plan_service
+from app.services.steps import step_service
+from app.services.plans.plan_rules import (
     distribute_numeric_target,
     get_plan_days,
 )

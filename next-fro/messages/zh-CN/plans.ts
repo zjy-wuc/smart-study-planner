@@ -1,0 +1,74 @@
+import type { MessageValue } from "../types";
+
+export const plans = {
+  empty: "暂无学习计划",
+  backToMyPlans: "返回我的计划",
+  createTitle: "创建学习计划",
+  createDescription: "先创建草稿，再配置具体学习步骤。",
+  create: "创建计划",
+  listDescription: "查看全部学习计划",
+  loading: "正在加载计划...",
+  statusDraft: "草稿",
+  statusEnded: "已结束",
+  startSuccess: (count: MessageValue): string =>
+    `计划启动成功，已生成 ${count} 条每日任务`,
+  startFailed: "计划启动失败",
+  invalidId: "无效的计划 ID",
+  fetchFailed: "获取计划失败",
+  endedEarly: (stopped: MessageValue, deleted: MessageValue): string =>
+    `计划已提前结束：${stopped} 条任务停止，${deleted} 条任务被逻辑删除。`,
+  endedNormally: "计划已正常到期结束，原有任务执行记录予以保留。",
+  latestDetailsFailed: (message: MessageValue): string =>
+    `${message} 最新详情读取失败，请刷新页面。`,
+  updateSuccess: "计划修改成功",
+  deleteFailed: "删除计划失败",
+  loadingDetails: "正在加载计划详情...",
+  notFound: "计划不存在",
+  backToList: "返回计划列表",
+  statusText: (status: MessageValue): string =>
+    `状态：${status}`,
+  endedTitle: "计划已结束",
+  period: (start: MessageValue, end: MessageValue): string =>
+    `执行周期：${start} ～ ${end}`,
+  endedDescription: "已结束的计划不能继续编辑。 当前版本不显示最终完成率。",
+  editDraft: "编辑草稿计划",
+  editDetails: "编辑计划基本信息",
+  startTitle: "正式开始计划",
+  startChecklist: "开始前请检查： 树形步骤完整、叶子规则正确， 每日自定义安排已经填写完成， NUMERIC 手动安排的数量合计等于总目标。",
+  startValidation: "点击开始后，FastAPI 会再次完成全部校验。 如果有缺失或冲突，计划不会进入 ACTIVE。",
+  starting: "正在启动计划...",
+  start: "开始执行计划",
+  delete: "删除计划",
+  deleteDescription: "删除采用逻辑删除方式。 请先确认不再需要在当前计划列表中使用它。",
+  viewMyPlans: "查看我的学习计划",
+  viewAll: "查看全部计划",
+  notStarted: "计划尚未开始",
+  select: "选择学习计划",
+  save: "保存计划",
+  nameRequired: "请输入计划名称",
+  datesRequired: "请选择计划的开始和结束日期",
+  invalidDateOrder: "结束日期不能早于开始日期",
+  name: "计划名称",
+  namePlaceholder: "例如：大学英语学习计划",
+  description: "计划描述",
+  descriptionPlaceholder: "简单描述你的学习目标",
+  startDate: "开始日期",
+  endDate: "结束日期",
+  datesLocked: "计划开始后，执行周期不能修改。",
+  endFailed: "结束计划失败，请稍后重试",
+  endTitle: "结束学习计划",
+  endDescription: "当前计划处于执行状态。 结束计划后，不能继续执行原有每日任务。",
+  expirationDescription: "如果计划已经超过结束日期， 后端会按正常到期规则处理。 具体结束方式以接口返回结果为准。",
+  ending: "正在结束计划...",
+  endEarly: "提前结束计划",
+  startConfirm: (name: MessageValue): string =>
+    `确定开始「${name}」吗？\n\n后端将生成整个计划周期的每日任务。\n开始后不能再修改计划起止日期，草稿节点编辑规则也将受到限制。`,
+  deleteConfirm: (name: MessageValue): string =>
+    `确定删除学习计划「${name}」吗？\n\n计划将从当前有效列表中移除，相关历史数据不会自动恢复。`,
+  endConfirm: (name: MessageValue): string =>
+    `确定提前结束「${name}」吗？\n\n已完成的任务和历史记录将保留。\n已开始但未完成的任务会停止执行，尚未开始的任务可能被逻辑删除。\n\n结束后不能继续打卡、顺延或修改此计划。`,
+  startRefreshFailed: (count: MessageValue): string =>
+    `计划已经启动，生成了 ${count} 条任务。但详情刷新失败，请刷新页面确认最新数据。`,
+  stateChangedRefresh: (message: MessageValue): string =>
+    `计划状态可能已经改变：${message}。请刷新页面后查看最新状态。`,
+};

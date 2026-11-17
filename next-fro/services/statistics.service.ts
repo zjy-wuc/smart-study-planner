@@ -1,3 +1,4 @@
+import { messages } from "@/messages";
 
 import { apiFetch } from "@/lib/api/client";
 import type { ApiResponse } from "@/types/api";
@@ -24,7 +25,7 @@ export async function getStatisticsOverview(
     !Array.isArray(data.daily_trend)
   ) {
     throw new Error(
-      "学习统计接口响应格式不符合预期",
+      messages.validation.statisticsResponse,
     );
   }
 

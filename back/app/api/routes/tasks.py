@@ -7,7 +7,7 @@ from app.database import get_db
 from app.response import success
 
 from app.schemas.task import NumericProgressUpdate
-from app.services import task_service
+from app.services.tasks import task_service
 
 
 router = APIRouter(

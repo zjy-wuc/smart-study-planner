@@ -2,13 +2,13 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.repositories import step_repository
+from app.repositories.steps import step_repository
 from app.schemas.step import (
     StepCreate,
     StepUpdate,
     StepRule,
 )
-from app.services import plan_service
+from app.services.plans import plan_service
 
 
 def require_draft_plan(

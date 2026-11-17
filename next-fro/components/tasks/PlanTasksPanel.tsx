@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -40,15 +41,15 @@ function errorText(error: unknown): string {
 
   return error instanceof Error
     ? error.message
-    : "操作失败，请重试";
+    : messages.common.operationFailedRetry;
 }
 
 const statusNames = {
-  PENDING: "待完成",
-  IN_PROGRESS: "进行中",
-  COMPLETED: "已完成",
-  OVERDUE: "已逾期",
-  ENDED: "已停止",
+  PENDING: messages.tasks.statusPending,
+  IN_PROGRESS: messages.common.statusActive,
+  COMPLETED: messages.tasks.statusCompleted,
+  OVERDUE: messages.tasks.statusOverdue,
+  ENDED: messages.tasks.statusStopped,
 };
 
 export function PlanTasksPanel({
@@ -138,7 +139,7 @@ export function PlanTasksPanel({
       task.task_date <= today ||
       task.status !== "PENDING"
     ) {
-      setError("只能修改符合条件的未来待执行任务");
+      setError(messages.tasks.futureOnly);
       return;
     }
 
@@ -155,7 +156,7 @@ export function PlanTasksPanel({
         detail.is_rolled_over ||
         detail.rollover_out_quantity > 0
       ) {
-        throw new Error("任务已发生变化，不能直接修改");
+        throw new Error(messages.tasks.changedCannotEdit);
       }
 
       setEditing(detail);
@@ -183,7 +184,7 @@ export function PlanTasksPanel({
       const content = editText.trim();
 
       if (!content) {
-        setError("BOOLEAN 任务内容不能为空");
+        setError(messages.tasks.booleanContentRequired);
         return;
       }
 
@@ -192,14 +193,14 @@ export function PlanTasksPanel({
       const value = editText.trim();
 
       if (!/^\d+$/.test(value)) {
-        setError("目标数量必须是非负整数");
+        setError(messages.tasks.targetIntegerRequired);
         return;
       }
 
       const quantity = Number(value);
 
       if (!Number.isSafeInteger(quantity)) {
-        setError("数量超出前端安全整数范围");
+        setError(messages.tasks.quantityTooLarge);
         return;
       }
 
@@ -213,7 +214,7 @@ export function PlanTasksPanel({
       await updateFutureTask(editing.id, payload);
 
       setEditing(null);
-      setNotice("未来任务修改成功");
+      setNotice(messages.tasks.futureUpdated);
       reload();
     } catch (err) {
       handleError(err);
@@ -228,9 +229,7 @@ export function PlanTasksPanel({
     }
 
     const confirmed = window.confirm(
-      `确定删除 ${task.task_date} 的「${task.step_name}」吗？\n\n` +
-      "删除会影响当前有效任务和计划完成率。" +
-      "已有打卡记录、顺延历史不会因此自动恢复。",
+      messages.tasks.deleteConfirm(task.task_date, task.step_name),
     );
 
     if (!confirmed) {
@@ -253,7 +252,7 @@ export function PlanTasksPanel({
         setRecords([]);
       }
 
-      setNotice("任务已删除");
+      setNotice(messages.tasks.deleted);
       reload();
     } catch (err) {
       handleError(err);
@@ -298,21 +297,15 @@ export function PlanTasksPanel({
     <section className="space-y-5 rounded border p-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">
-            计划全部任务
-          </h2>
-          <p className="text-sm text-slate-500">
-            按日期查看、修改未来任务与浏览打卡记录
-          </p>
+          <h2 className="text-xl font-semibold">{messages.tasks.planTitle}</h2>
+          <p className="text-sm text-slate-500">{messages.tasks.planDescription}</p>
         </div>
 
         <button
           type="button"
           onClick={reload}
           disabled={loading || busy}
-        >
-          刷新
-        </button>
+        >{messages.common.refresh}</button>
       </div>
 
       {error && (
@@ -328,12 +321,12 @@ export function PlanTasksPanel({
       )}
 
       {loading ? (
-        <p>正在获取任务...</p>
+        <p>{messages.tasks.loading}</p>
       ) : tasks.length === 0 ? (
-        <p>当前计划暂无有效每日任务。</p>
+        <p>{messages.tasks.emptyPlan}</p>
       ) : (
         <div className="space-y-6">
-          <p>共 {tasks.length} 条有效任务</p>
+          <p>{messages.tasks.validCount(tasks.length)}</p>
 
           {groupedTasks.map(([date, dayTasks]) => (
             <section key={date} className="space-y-3">
@@ -367,9 +360,7 @@ export function PlanTasksPanel({
 
                         {task.task_type === "NUMERIC" && (
                           <p className="text-sm">
-                            累计 {task.actual_quantity}
-                            {" / 原始目标 "}
-                            {task.target_quantity ?? 0}
+                            {messages.tasks.originalQuantitySummary(task.actual_quantity, task.target_quantity ?? 0)}
                           </p>
                         )}
                       </div>
@@ -381,9 +372,7 @@ export function PlanTasksPanel({
                             disabled={busy}
                             onClick={() => void beginEdit(task)}
                             className="text-blue-700"
-                          >
-                            修改未来任务
-                          </button>
+                          >{messages.tasks.editFuture}</button>
                         )}
 
                         <button
@@ -394,8 +383,8 @@ export function PlanTasksPanel({
                           className="text-blue-700"
                         >
                           {historyTaskId === task.id
-                            ? "收起历史"
-                            : "打卡历史"}
+                            ? messages.history.collapse
+                            : messages.navigation.history}
                         </button>
 
                         {planStatus === "ACTIVE" && (
@@ -406,9 +395,7 @@ export function PlanTasksPanel({
                               void handleDelete(task)
                             }
                             className="text-red-700"
-                          >
-                            删除
-                          </button>
+                          >{messages.common.delete}</button>
                         )}
                       </div>
                     </div>
@@ -416,19 +403,19 @@ export function PlanTasksPanel({
                     {historyTaskId === task.id && (
                       <div className="mt-3 border-t pt-3">
                         {historyLoading ? (
-                          <p>正在获取历史...</p>
+                          <p>{messages.history.fetching}</p>
                         ) : historyError ? (
                           <p role="alert">{historyError}</p>
                         ) : records.length === 0 ? (
-                          <p>暂无打卡记录</p>
+                          <p>{messages.history.emptyRecords}</p>
                         ) : (
                           <ul className="space-y-2">
                             {records.map((record) => (
                               <li key={record.id} className="text-sm">
                                 {record.event_type ===
                                 "BOOLEAN_COMPLETE"
-                                  ? "完成打卡"
-                                  : `累计提交：${record.recorded_value}`}
+                                  ? messages.tasks.booleanCheckin
+                                  : messages.tasks.submittedTotal(record.recorded_value)}
                                 {" · "}
                                 {record.recorded_at}
                               </li>
@@ -447,18 +434,16 @@ export function PlanTasksPanel({
 
       {editing && (
         <div className="space-y-3 rounded border p-4">
-          <h3 className="font-semibold">
-            修改未来任务：{editing.step_name}
+          <h3 className="font-semibold">{messages.tasks.editFutureTitle(editing.step_name)}
           </h3>
 
-          <p className="text-sm">
-            日期：{editing.task_date}
+          <p className="text-sm">{messages.tasks.dateText(editing.task_date)}
           </p>
 
           <label htmlFor="future-edit" className="block">
             {editing.task_type === "BOOLEAN"
-              ? "任务内容"
-              : "新的目标数量"}
+              ? messages.tasks.content
+              : messages.tasks.newTarget}
           </label>
 
           <input
@@ -472,10 +457,7 @@ export function PlanTasksPanel({
             className="w-full rounded border p-2"
           />
 
-          <p className="text-sm text-slate-500">
-            NUMERIC 新目标不能小于已经承接的顺延数量。
-            具体限制由后端验证。
-          </p>
+          <p className="text-sm text-slate-500">{messages.tasks.minimumTargetHint}</p>
 
           <div className="flex gap-3">
             <button
@@ -483,16 +465,12 @@ export function PlanTasksPanel({
               disabled={busy}
               onClick={() => void saveEdit()}
               className="text-blue-700"
-            >
-              保存修改
-            </button>
+            >{messages.common.saveChanges}</button>
             <button
               type="button"
               disabled={busy}
               onClick={() => setEditing(null)}
-            >
-              取消
-            </button>
+            >{messages.common.cancel}</button>
           </div>
         </div>
       )}

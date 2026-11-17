@@ -7,7 +7,7 @@ from app.database import get_db
 from app.response import success
 
 from app.schemas.active_step import ActiveStepTreeCreate
-from app.services import active_step_service
+from app.services.steps import active_step_service
 
 
 router = APIRouter(

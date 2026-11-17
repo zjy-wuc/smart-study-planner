@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -37,9 +38,9 @@ import { PlanLifecyclePanel } from
 
 import type { EndPlanResult } from "@/types/plan";
 const statusLabels = {
-  DRAFT: "草稿",
-  ACTIVE: "进行中",
-  ENDED: "已结束",
+  DRAFT: messages.plans.statusDraft,
+  ACTIVE: messages.common.statusActive,
+  ENDED: messages.plans.statusEnded,
 };
 
 
@@ -68,10 +69,7 @@ async function handleStartPlan() {
   }
 
   const confirmed = window.confirm(
-    `确定开始「${plan.name}」吗？\n\n` +
-    "后端将生成整个计划周期的每日任务。\n" +
-    "开始后不能再修改计划起止日期，" +
-    "草稿节点编辑规则也将受到限制。",
+    messages.plans.startConfirm(plan.name),
   );
 
   if (!confirmed) {
@@ -93,7 +91,7 @@ async function handleStartPlan() {
     );
 
     setNotice(
-      `计划启动成功，已生成 ${result.generated_count} 条每日任务`,
+      messages.plans.startSuccess(result.generated_count),
     );
 
     // 再获取数据库的最新计划详情
@@ -102,8 +100,7 @@ async function handleStartPlan() {
       setPlan(updated);
     } catch {
       setNotice(
-        `计划已经启动，生成了 ${result.generated_count} 条任务。` +
-        "但详情刷新失败，请刷新页面确认最新数据。",
+        messages.plans.startRefreshFailed(result.generated_count),
       );
     }
 
@@ -116,7 +113,7 @@ async function handleStartPlan() {
     setError(
       err instanceof Error
         ? err.message
-        : "计划启动失败",
+        : messages.plans.startFailed,
     );
   } finally {
     setStarting(false);
@@ -136,7 +133,7 @@ async function handleStartPlan() {
       setNotice(null);
 
       if (!Number.isSafeInteger(planId) || planId <= 0) {
-        setError("无效的计划 ID");
+        setError(messages.plans.invalidId);
         setLoading(false);
         return;
       }
@@ -161,7 +158,7 @@ async function handleStartPlan() {
         setError(
           err instanceof Error
             ? err.message
-            : "获取计划失败",
+            : messages.plans.fetchFailed,
         );
 
       } finally {
@@ -193,8 +190,8 @@ function handlePlanEnded(result: EndPlanResult) {
 
   const message =
     result.end_mode === "EARLY"
-      ? `计划已提前结束：${result.ended_task_count} 条任务停止，${result.deleted_task_count} 条任务被逻辑删除。`
-      : "计划已正常到期结束，原有任务执行记录予以保留。";
+      ? messages.plans.endedEarly(result.ended_task_count, result.deleted_task_count)
+      : messages.plans.endedNormally;
 
   setNotice(message);
   setError(null);
@@ -208,7 +205,7 @@ function handlePlanEnded(result: EndPlanResult) {
     })
     .catch(() => {
       setNotice(
-        `${message} 最新详情读取失败，请刷新页面。`,
+        messages.plans.latestDetailsFailed(message),
       );
     });
 }
@@ -240,7 +237,7 @@ function handlePlanEnded(result: EndPlanResult) {
     const updated = await getPlan(planId);
 
     setPlan(updated);
-    setNotice("计划修改成功");
+    setNotice(messages.plans.updateSuccess);
   }
 
 
@@ -251,9 +248,7 @@ function handlePlanEnded(result: EndPlanResult) {
     }
 
     const confirmed = window.confirm(
-      `确定删除学习计划「${plan.name}」吗？\n\n` +
-      "计划将从当前有效列表中移除，" +
-      "相关历史数据不会自动恢复。",
+      messages.plans.deleteConfirm(plan.name),
     );
 
     if (!confirmed) {
@@ -277,7 +272,7 @@ function handlePlanEnded(result: EndPlanResult) {
       setError(
         err instanceof Error
           ? err.message
-          : "删除计划失败",
+          : messages.plans.deleteFailed,
       );
 
     } finally {
@@ -287,19 +282,17 @@ function handlePlanEnded(result: EndPlanResult) {
 
 
   if (loading) {
-    return <p>正在加载计划详情...</p>;
+    return <p>{messages.plans.loadingDetails}</p>;
   }
 
   if (!plan) {
     return (
       <div className="space-y-4">
         <p role="alert" className="text-red-600">
-          {error ?? "计划不存在"}
+          {error ?? messages.plans.notFound}
         </p>
 
-        <Link href="/plans" className="text-blue-700">
-          返回计划列表
-        </Link>
+        <Link href="/plans" className="text-blue-700">{messages.plans.backToList}</Link>
       </div>
     );
   }
@@ -309,9 +302,7 @@ function handlePlanEnded(result: EndPlanResult) {
       <Link
         href="/plans"
         className="text-sm text-blue-700"
-      >
-        返回我的计划
-      </Link>
+      >{messages.plans.backToMyPlans}</Link>
 
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -319,8 +310,7 @@ function handlePlanEnded(result: EndPlanResult) {
             {plan.name}
           </h1>
 
-          <p className="mt-2 text-slate-500">
-            状态：{statusLabels[plan.status]}
+          <p className="mt-2 text-slate-500">{messages.plans.statusText(statusLabels[plan.status])}
           </p>
         </div>
       </div>
@@ -339,32 +329,26 @@ function handlePlanEnded(result: EndPlanResult) {
 
       {plan.status === "ENDED" ? (
         <div className="rounded-xl border bg-white p-6">
-          <h2 className="font-semibold">计划已结束</h2>
+          <h2 className="font-semibold">{messages.plans.endedTitle}</h2>
 
-          <p className="mt-3 text-slate-600">
-            执行周期：{plan.start_date}
-            {" ～ "}
-            {plan.end_date}
+          <p className="mt-3 text-slate-600">{messages.plans.period(plan.start_date, plan.end_date)}
           </p>
 
-          <p className="mt-3 text-sm text-slate-500">
-            已结束的计划不能继续编辑。
-            当前版本不显示最终完成率。
-          </p>
+          <p className="mt-3 text-sm text-slate-500">{messages.plans.endedDescription}</p>
         </div>
       ) : (
         <>
           <h2 className="text-xl font-semibold">
             {plan.status === "DRAFT"
-              ? "编辑草稿计划"
-              : "编辑计划基本信息"}
+              ? messages.plans.editDraft
+              : messages.plans.editDetails}
           </h2>
 
           <PlanForm
             key={`${plan.id}-${plan.updated_at}`}
             initialPlan={plan}
             onSubmit={handleSave}
-            submitLabel="保存修改"
+            submitLabel={messages.common.saveChanges}
             datesLocked={plan.status === "ACTIVE"}
           />
         </>
@@ -402,21 +386,11 @@ function handlePlanEnded(result: EndPlanResult) {
     />
 
     <section className="space-y-4 rounded-xl border p-6">
-      <h2 className="text-xl font-semibold">
-        正式开始计划
-      </h2>
+      <h2 className="text-xl font-semibold">{messages.plans.startTitle}</h2>
 
-      <p className="text-sm">
-        开始前请检查：
-        树形步骤完整、叶子规则正确，
-        每日自定义安排已经填写完成，
-        NUMERIC 手动安排的数量合计等于总目标。
-      </p>
+      <p className="text-sm">{messages.plans.startChecklist}</p>
 
-      <p className="text-sm">
-        点击开始后，FastAPI 会再次完成全部校验。
-        如果有缺失或冲突，计划不会进入 ACTIVE。
-      </p>
+      <p className="text-sm">{messages.plans.startValidation}</p>
 
       <button
         type="button"
@@ -424,7 +398,7 @@ function handlePlanEnded(result: EndPlanResult) {
         onClick={() => void handleStartPlan()}
         className="rounded bg-blue-600 px-5 py-3 text-white disabled:opacity-50"
       >
-        {starting ? "正在启动计划..." : "开始执行计划"}
+        {starting ? messages.plans.starting : messages.plans.start}
       </button>
     </section>
   </>
@@ -448,14 +422,9 @@ function handlePlanEnded(result: EndPlanResult) {
 
 
       <section className="rounded-xl border border-red-200 bg-white p-6">
-        <h2 className="font-semibold text-red-700">
-          删除计划
-        </h2>
+        <h2 className="font-semibold text-red-700">{messages.plans.delete}</h2>
 
-        <p className="mt-2 text-sm text-slate-600">
-          删除采用逻辑删除方式。
-          请先确认不再需要在当前计划列表中使用它。
-        </p>
+        <p className="mt-2 text-sm text-slate-600">{messages.plans.deleteDescription}</p>
 
         <button
           type="button"
@@ -463,7 +432,7 @@ function handlePlanEnded(result: EndPlanResult) {
           onClick={handleDelete}
           className="mt-4 rounded-lg border border-red-300 px-4 py-2 text-red-700 disabled:opacity-50"
         >
-          {deleting ? "正在删除..." : "删除计划"}
+          {deleting ? messages.common.deleting : messages.plans.delete}
         </button>
       </section>
     </div>

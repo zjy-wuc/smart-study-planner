@@ -1,5 +1,7 @@
 "use client";
 
+import { messages } from "@/messages";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
@@ -8,8 +10,8 @@ import { useDailyCheckin } from "@/hooks/useDailyCheckin";
 import type { DailyTask } from "@/types/task";
 
 const statusLabels = {
-  PENDING: "待完成", IN_PROGRESS: "进行中", COMPLETED: "已完成",
-  OVERDUE: "已逾期", ENDED: "已停止",
+  PENDING: messages.tasks.statusPending, IN_PROGRESS: messages.common.statusActive, COMPLETED: messages.tasks.statusCompleted,
+  OVERDUE: messages.tasks.statusOverdue, ENDED: messages.tasks.statusStopped,
 };
 
 function TodayTaskRow({ task, onChanged }: { task: DailyTask; onChanged: () => void }) {
@@ -22,7 +24,7 @@ function TodayTaskRow({ task, onChanged }: { task: DailyTask; onChanged: () => v
     ["PENDING", "IN_PROGRESS", "OVERDUE"].includes(task.status);
   const daily = useDailyCheckin(task.id, task.task_type === "NUMERIC" && canCheckin);
   const label = task.task_type === "NUMERIC" && ["PENDING", "IN_PROGRESS"].includes(task.display_status)
-    ? "未完成" : statusLabels[task.display_status];
+    ? messages.tasks.statusIncomplete : statusLabels[task.display_status];
 
   async function checkin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,7 +32,7 @@ function TodayTaskRow({ task, onChanged }: { task: DailyTask; onChanged: () => v
     const text = quantity.trim();
     const value = Number(text);
     if (task.task_type === "NUMERIC" && (!/^\d+$/.test(text) || !Number.isSafeInteger(value))) {
-      setError("请输入安全范围内的非负整数");
+      setError(messages.tasks.invalidSafeQuantity);
       return;
     }
     setBusy(true);
@@ -44,7 +46,7 @@ function TodayTaskRow({ task, onChanged }: { task: DailyTask; onChanged: () => v
       if (err instanceof ApiError && err.status === 401) {
         router.replace("/login");
       } else {
-        setError(err instanceof Error ? err.message : "打卡失败，请重试");
+        setError(err instanceof Error ? err.message : messages.tasks.checkinFailed);
       }
     } finally {
       setBusy(false);
@@ -56,24 +58,24 @@ function TodayTaskRow({ task, onChanged }: { task: DailyTask; onChanged: () => v
       <div className="dashboard-task-main">
         <p className="workspace-task-title">{task.content || task.step_name}</p>
         <p className="workspace-task-meta">{task.step_name} · {task.task_date}</p>
-        {task.task_type === "NUMERIC" && <p className="workspace-task-quantity">累计完成 {task.actual_quantity} / 目标 {task.effective_target_quantity ?? task.target_quantity ?? 0}</p>}
-        {rolledOver && <p className="workspace-rollover-label">已发生顺延</p>}
+        {task.task_type === "NUMERIC" && <p className="workspace-task-quantity">{messages.tasks.quantitySummary(task.actual_quantity, task.effective_target_quantity ?? task.target_quantity ?? 0)}</p>}
+        {rolledOver && <p className="workspace-rollover-label">{messages.tasks.rolledOver}</p>}
         {error && <p role="alert" className="dashboard-checkin-error">{error}</p>}
       </div>
       <div className="dashboard-task-actions">
         <span className="workspace-task-status" data-status={task.display_status}>{label}</span>
         {canCheckin && daily.state !== "done" && <form className="dashboard-checkin" onSubmit={(event) => void checkin(event)}>
-          {task.task_type === "NUMERIC" && <input aria-label={`${task.content || task.step_name}累计完成数量`} type="text" inputMode="numeric" value={quantity} onChange={(event) => setQuantity(event.target.value)} disabled={busy || daily.state !== "available"} />}
-          <button type="submit" disabled={busy || (task.task_type === "NUMERIC" && daily.state !== "available")}>{busy ? "保存中…" : daily.state === "loading" ? "正在确认…" : "打卡"}</button>
-          {daily.state === "error" && task.task_type === "NUMERIC" && <button type="button" onClick={daily.retry}>确认失败，重试</button>}
+          {task.task_type === "NUMERIC" && <input aria-label={messages.tasks.quantityLabel(task.content || task.step_name)} type="text" inputMode="numeric" value={quantity} onChange={(event) => setQuantity(event.target.value)} disabled={busy || daily.state !== "available"} />}
+          <button type="submit" disabled={busy || (task.task_type === "NUMERIC" && daily.state !== "available")}>{busy ? messages.common.savingCompact : daily.state === "loading" ? messages.tasks.confirming : messages.tasks.checkin}</button>
+          {daily.state === "error" && task.task_type === "NUMERIC" && <button type="button" onClick={daily.retry}>{messages.tasks.confirmRetry}</button>}
         </form>}
-        {!rolledOver && (daily.state === "done" || task.status === "COMPLETED") && <span className="checkin-success-text">坚持就是胜利</span>}
+        {!rolledOver && (daily.state === "done" || task.status === "COMPLETED") && <span className="checkin-success-text">{messages.tasks.encouragement}</span>}
       </div>
     </li>
   );
 }
 
 export function TodayTaskList({ tasks, onChanged }: { tasks: DailyTask[]; onChanged: () => void }) {
-  if (!tasks.length) return <p className="workspace-empty-state">今天暂无安排的任务</p>;
+  if (!tasks.length) return <p className="workspace-empty-state">{messages.tasks.noScheduledToday}</p>;
   return <ul className="workspace-task-list">{tasks.map((task) => <TodayTaskRow key={task.id} task={task} onChanged={onChanged} />)}</ul>;
 }

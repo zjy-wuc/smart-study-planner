@@ -2,7 +2,7 @@
 import unittest
 from datetime import date
 
-from app.services.plan_rules import (
+from app.services.plans.plan_rules import (
     get_plan_days,
     distribute_numeric_target,
 )

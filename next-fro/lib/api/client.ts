@@ -1,3 +1,4 @@
+import { messages } from "@/messages";
 import {
   getAccessToken,
   getRefreshToken,
@@ -209,7 +210,7 @@ if (!response.ok) {
         ? body.detail
         : typeof body?.detail?.message === "string"
           ? body.detail.message
-          : `请求失败（${response.status}）`;
+          : messages.common.httpRequestFailed(response.status);
 
   throw new ApiError(
     message,

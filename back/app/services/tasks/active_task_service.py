@@ -6,12 +6,9 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.clock import business_today
-from app.repositories import (
-    task_repository,
-    active_task_repository,
-)
+from app.repositories.tasks import task_repository, active_task_repository
 from app.schemas.active_task import ActiveTaskUpdate
-from app.services import task_service
+from app.services.tasks import task_service
 
 
 def _reject(message: str) -> NoReturn:

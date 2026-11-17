@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import {
   useEffect,
@@ -93,7 +94,7 @@ function getErrorText(error: unknown): string {
 
   return error instanceof Error
     ? error.message
-    : "操作失败，请重试";
+    : messages.common.operationFailedRetry;
 }
 
 
@@ -118,7 +119,7 @@ function TreeItem({
 
           <span className="text-sm text-slate-500">
             {node.node_type === "GROUP"
-              ? "分类节点"
+              ? messages.steps.groupNode
               : `${node.task_type} · ${node.schedule_mode}`}
           </span>
         </div>
@@ -129,27 +130,21 @@ function TreeItem({
               type="button"
               onClick={() => onRename(node)}
               className="text-blue-700"
-            >
-              修改名称
-            </button>
+            >{messages.steps.rename}</button>
 
             {node.node_type === "LEAF" && (
               <button
                 type="button"
                 onClick={() => onEditRule(node)}
                 className="text-blue-700"
-              >
-                修改规则
-              </button>
+              >{messages.steps.editRule}</button>
             )}
 
             <button
               type="button"
               onClick={() => onDelete(node)}
               className="text-red-700"
-            >
-              删除节点
-            </button>
+            >{messages.steps.deleteNode}</button>
           </div>
         )}
       </div>
@@ -290,7 +285,7 @@ export function StepTreeEditor({
     const cleanedName = name.trim();
 
     if (!cleanedName) {
-      setError("请输入节点名称");
+      setError(messages.steps.nameRequired);
       return;
     }
 
@@ -317,7 +312,7 @@ export function StepTreeEditor({
         const childName = firstLeafName.trim();
 
         if (!childName) {
-          setError("创建 GROUP 时必须填写第一个叶子节点");
+          setError(messages.steps.groupNeedsLeaf);
           return;
         }
 
@@ -337,7 +332,7 @@ export function StepTreeEditor({
 
       const success = await runAction(
         () => createStep(planId, payload),
-        "学习步骤创建成功",
+        messages.steps.created,
       );
 
       if (success) {
@@ -369,7 +364,7 @@ export function StepTreeEditor({
     const value = renameText.trim();
 
     if (!value) {
-      setError("节点名称不能为空");
+      setError(messages.steps.emptyName);
       return;
     }
 
@@ -379,7 +374,7 @@ export function StepTreeEditor({
         renamingNode.id,
         { name: value },
       ),
-      "节点名称修改成功",
+      messages.steps.renamed,
     );
 
     if (success) {
@@ -416,7 +411,7 @@ export function StepTreeEditor({
 
       const success = await runAction(
         () => updateStepRule(planId, ruleNode.id, rule),
-        "执行规则修改成功",
+        messages.steps.ruleUpdated,
       );
 
       if (success) {
@@ -430,8 +425,7 @@ export function StepTreeEditor({
 
   async function handleDelete(node: StepNode) {
     const confirmed = window.confirm(
-      `确定删除「${node.name}」吗？\n` +
-      "该节点及其后代都会被逻辑删除。",
+      messages.steps.deleteConfirm(node.name),
     );
 
     if (!confirmed) {
@@ -440,7 +434,7 @@ export function StepTreeEditor({
 
     const success = await runAction(
       () => deleteStep(planId, node.id),
-      "节点删除成功",
+      messages.steps.deleted,
     );
 
     if (success) {
@@ -453,9 +447,7 @@ export function StepTreeEditor({
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">
-          学习步骤
-        </h2>
+        <h2 className="text-xl font-semibold">{messages.steps.title}</h2>
 
         <button
           type="button"
@@ -464,9 +456,7 @@ export function StepTreeEditor({
           }
           disabled={loading || busy}
           className="text-sm text-blue-700"
-        >
-          刷新步骤
-        </button>
+        >{messages.steps.refresh}</button>
       </div>
 
       {error && (
@@ -482,11 +472,9 @@ export function StepTreeEditor({
       )}
 
       {loading ? (
-        <p>正在加载学习步骤...</p>
+        <p>{messages.steps.loadingFull}</p>
       ) : tree.length === 0 ? (
-        <p className="text-slate-500">
-          当前计划还没有学习步骤。
-        </p>
+        <p className="text-slate-500">{messages.steps.emptyCurrentPlanSentence}</p>
       ) : (
         <ul>
           {tree.map((node) => (
@@ -507,8 +495,7 @@ export function StepTreeEditor({
           onSubmit={handleRename}
           className="space-y-3 rounded border p-4"
         >
-          <h3 className="font-semibold">
-            修改名称：{renamingNode.name}
+          <h3 className="font-semibold">{messages.steps.renameTitle(renamingNode.name)}
           </h3>
 
           <input
@@ -525,16 +512,12 @@ export function StepTreeEditor({
               type="submit"
               disabled={busy}
               className="text-blue-700"
-            >
-              保存名称
-            </button>
+            >{messages.steps.saveName}</button>
 
             <button
               type="button"
               onClick={() => setRenamingNode(null)}
-            >
-              取消
-            </button>
+            >{messages.common.cancel}</button>
           </div>
         </form>
       )}
@@ -544,14 +527,10 @@ export function StepTreeEditor({
           onSubmit={handleUpdateRule}
           className="space-y-4 rounded border p-4"
         >
-          <h3 className="font-semibold">
-            修改规则：{ruleNode.name}
+          <h3 className="font-semibold">{messages.steps.editRuleTitle(ruleNode.name)}
           </h3>
 
-          <p className="text-sm text-amber-700">
-            修改执行规则会清除该叶子原有的草稿每日安排。
-            如需自定义安排，修改后应重新填写。
-          </p>
+          <p className="text-sm text-amber-700">{messages.steps.ruleChangeWarning}</p>
 
           <StepRuleFields
             mode={mode}
@@ -567,16 +546,12 @@ export function StepTreeEditor({
               type="submit"
               disabled={busy}
               className="text-blue-700"
-            >
-              保存规则
-            </button>
+            >{messages.steps.saveRule}</button>
 
             <button
               type="button"
               onClick={() => setRuleNode(null)}
-            >
-              取消
-            </button>
+            >{messages.common.cancel}</button>
           </div>
         </form>
       ) : canEdit ? (
@@ -584,14 +559,10 @@ export function StepTreeEditor({
           onSubmit={handleCreate}
           className="space-y-4 rounded border p-5"
         >
-          <h3 className="text-lg font-semibold">
-            新增学习步骤
-          </h3>
+          <h3 className="text-lg font-semibold">{messages.steps.createTitle}</h3>
 
           <div>
-            <label className="mb-1 block">
-              新增位置
-            </label>
+            <label className="mb-1 block">{messages.steps.parentLabel}</label>
 
             <select
               value={parentId}
@@ -600,9 +571,7 @@ export function StepTreeEditor({
               }
               className="w-full rounded border p-2"
             >
-              <option value="">
-                顶层节点
-              </option>
+              <option value="">{messages.steps.rootNode}</option>
 
               {groups.map((group) => (
                 <option
@@ -616,9 +585,7 @@ export function StepTreeEditor({
           </div>
 
           <div>
-            <label className="mb-1 block">
-              节点类型
-            </label>
+            <label className="mb-1 block">{messages.steps.nodeType}</label>
 
             <select
               value={nodeType}
@@ -629,21 +596,17 @@ export function StepTreeEditor({
               }
               className="w-full rounded border p-2"
             >
-              <option value="LEAF">
-                LEAF · 学习项目
-              </option>
+              <option value="LEAF">{messages.steps.leafType}</option>
 
-              <option value="GROUP">
-                GROUP · 分类（同时创建首个叶子）
-              </option>
+              <option value="GROUP">{messages.steps.groupWithLeaf}</option>
             </select>
           </div>
 
           <div>
             <label className="mb-1 block">
               {nodeType === "GROUP"
-                ? "分类名称"
-                : "学习项目名称"}
+                ? messages.steps.groupName
+                : messages.steps.leafName}
             </label>
 
             <input
@@ -659,9 +622,7 @@ export function StepTreeEditor({
 
           {nodeType === "GROUP" && (
             <div>
-              <label className="mb-1 block">
-                第一个叶子的名称
-              </label>
+              <label className="mb-1 block">{messages.steps.firstLeafNameLabel}</label>
 
               <input
                 value={firstLeafName}
@@ -689,13 +650,11 @@ export function StepTreeEditor({
             disabled={busy}
             className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
           >
-            {busy ? "正在提交..." : "创建步骤"}
+            {busy ? messages.common.submitting : messages.steps.create}
           </button>
         </form>
       ) : (
-        <p className="text-sm text-slate-500">
-          当前计划不处于草稿状态，已有步骤仅供查看。
-        </p>
+        <p className="text-sm text-slate-500">{messages.steps.readOnlyHint}</p>
       )}
     </section>
   );

@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -35,11 +36,7 @@ export function PlanLifecyclePanel({
     }
 
     const confirmed = window.confirm(
-      `确定提前结束「${plan.name}」吗？\n\n` +
-      "已完成的任务和历史记录将保留。\n" +
-      "已开始但未完成的任务会停止执行，" +
-      "尚未开始的任务可能被逻辑删除。\n\n" +
-      "结束后不能继续打卡、顺延或修改此计划。",
+      messages.plans.endConfirm(plan.name),
     );
 
     if (!confirmed) {
@@ -69,8 +66,7 @@ export function PlanLifecyclePanel({
         err.status === 409
       ) {
         setError(
-          `计划状态可能已经改变：${err.message}。` +
-          "请刷新页面后查看最新状态。",
+          messages.plans.stateChangedRefresh(err.message),
         );
         return;
       }
@@ -78,7 +74,7 @@ export function PlanLifecyclePanel({
       setError(
         err instanceof Error
           ? err.message
-          : "结束计划失败，请稍后重试",
+          : messages.plans.endFailed,
       );
 
     } finally {
@@ -94,21 +90,12 @@ export function PlanLifecyclePanel({
   return (
     <section className="space-y-4 rounded-xl border border-amber-200 bg-white p-6">
       <div>
-        <h2 className="text-xl font-semibold">
-          结束学习计划
-        </h2>
+        <h2 className="text-xl font-semibold">{messages.plans.endTitle}</h2>
 
-        <p className="mt-2 text-sm text-slate-600">
-          当前计划处于执行状态。
-          结束计划后，不能继续执行原有每日任务。
-        </p>
+        <p className="mt-2 text-sm text-slate-600">{messages.plans.endDescription}</p>
       </div>
 
-      <p className="text-sm text-slate-600">
-        如果计划已经超过结束日期，
-        后端会按正常到期规则处理。
-        具体结束方式以接口返回结果为准。
-      </p>
+      <p className="text-sm text-slate-600">{messages.plans.expirationDescription}</p>
 
       {error && (
         <p role="alert" className="text-sm text-red-700">
@@ -122,7 +109,7 @@ export function PlanLifecyclePanel({
         onClick={() => void handleEnd()}
         className="rounded-lg border border-red-500 px-5 py-3 text-red-700 disabled:opacity-50"
       >
-        {ending ? "正在结束计划..." : "提前结束计划"}
+        {ending ? messages.plans.ending : messages.plans.endEarly}
       </button>
     </section>
   );

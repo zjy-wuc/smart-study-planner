@@ -1,5 +1,6 @@
-
 "use client";
+
+import { messages } from "@/messages";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -45,7 +46,7 @@ function getErrorText(error: unknown): string {
 
   return error instanceof Error
     ? error.message
-    : "操作失败";
+    : messages.common.operationFailed;
 }
 
 function collectGroups(
@@ -88,7 +89,7 @@ function ActiveTreeItem({
           <strong>{node.name}</strong>
           <p className="text-sm text-slate-500">
             {node.node_type === "GROUP"
-              ? "GROUP · 分类"
+              ? messages.steps.groupType
               : `${node.task_type} · ${node.schedule_mode}`}
           </p>
         </div>
@@ -98,9 +99,7 @@ function ActiveTreeItem({
           disabled={busy}
           onClick={() => onDelete(node)}
           className="text-red-700"
-        >
-          删除子树
-        </button>
+        >{messages.steps.deleteSubtree}</button>
       </div>
 
       {node.children.length > 0 && (
@@ -230,7 +229,7 @@ export function ActiveStepManager({
           .filter(Boolean);
 
         if (lines.length === 0) {
-          throw new Error(`${date} 至少填写一条任务内容`);
+          throw new Error(messages.steps.dateContentRequired(date));
         }
 
         for (const content of lines) {
@@ -249,19 +248,19 @@ export function ActiveStepManager({
         const value = (numericDaily[date] ?? "").trim();
 
         if (!/^\d+$/.test(value)) {
-          throw new Error(`${date} 必须填写非负整数`);
+          throw new Error(messages.steps.dateIntegerRequired(date));
         }
 
         const quantity = Number(value);
 
         if (!Number.isSafeInteger(quantity)) {
-          throw new Error(`${date} 的数量超出安全范围`);
+          throw new Error(messages.steps.dateQuantityTooLarge(date));
         }
 
         sum += quantity;
 
         if (!Number.isSafeInteger(sum)) {
-          throw new Error("总数量超出安全整数范围");
+          throw new Error(messages.steps.totalTooLarge);
         }
 
         entries.push({
@@ -272,7 +271,7 @@ export function ActiveStepManager({
 
       if (sum !== totalTarget) {
         throw new Error(
-          `每日数量合计 ${sum}，但总目标是 ${totalTarget}`,
+          messages.steps.totalMismatch(sum, totalTarget),
         );
       }
     }
@@ -288,12 +287,12 @@ export function ActiveStepManager({
     const cleanedName = name.trim();
 
     if (!cleanedName) {
-      setError("请输入节点名称");
+      setError(messages.steps.nameRequired);
       return;
     }
 
     if (remainingDates.length === 0) {
-      setError("当前计划已超过结束日期，不能新增执行任务");
+      setError(messages.steps.planExpired);
       return;
     }
 
@@ -312,7 +311,7 @@ export function ActiveStepManager({
           : firstLeafName.trim();
 
       if (!leafName) {
-        setError("请填写第一个叶子的名称");
+        setError(messages.steps.firstLeafRequired);
         return;
       }
 
@@ -343,7 +342,7 @@ export function ActiveStepManager({
       });
 
       setNotice(
-        `创建成功，生成 ${result.generated_task_count} 条每日任务`,
+        messages.steps.createdWithTasks(result.generated_task_count),
       );
 
       setName("");
@@ -366,10 +365,7 @@ export function ActiveStepManager({
     }
 
     const confirmed = window.confirm(
-      `确定删除「${node.name}」及其所有后代吗？\n\n` +
-      "关联的有效每日任务将被逻辑删除，" +
-      "完成率会重新统计。\n" +
-      "至少需要保留一个有效叶子节点。",
+      messages.steps.deleteSubtreeConfirm(node.name),
     );
 
     if (!confirmed) {
@@ -383,7 +379,7 @@ export function ActiveStepManager({
     try {
       await deleteActiveStep(plan.id, node.id);
 
-      setNotice("节点及其关联任务已删除");
+      setNotice(messages.steps.subtreeDeleted);
       setRevision((value) => value + 1);
       onChanged?.();
     } catch (err) {
@@ -395,15 +391,9 @@ export function ActiveStepManager({
 
   return (
     <section className="space-y-6 rounded border p-5">
-      <h2 className="text-xl font-semibold">
-        执行中的学习步骤
-      </h2>
+      <h2 className="text-xl font-semibold">{messages.steps.activeTitle}</h2>
 
-      <p className="text-sm text-slate-500">
-        可以新增步骤或删除子树。
-        已存在节点的修改规则与草稿阶段不同，
-        不在这里直接修改执行规则。
-      </p>
+      <p className="text-sm text-slate-500">{messages.steps.activeDescription}</p>
 
       {error && (
         <p role="alert" className="text-red-700">
@@ -418,7 +408,7 @@ export function ActiveStepManager({
       )}
 
       {loading ? (
-        <p>正在加载步骤树...</p>
+        <p>{messages.steps.loadingTree}</p>
       ) : (
         <ul>
           {tree.map((node) => (
@@ -433,23 +423,17 @@ export function ActiveStepManager({
       )}
 
       {remainingDates.length === 0 ? (
-        <p>
-          当前计划已没有可以新生成任务的日期。
-        </p>
+        <p>{messages.steps.noRemainingDates}</p>
       ) : (
         <div className="space-y-4 border-t pt-5">
-          <h3 className="font-semibold">
-            新增执行中的学习节点
-          </h3>
+          <h3 className="font-semibold">{messages.steps.addActiveTitle}</h3>
 
-          <p className="text-sm text-slate-500">
-            本次新节点的任务生成范围：
-            {remainingDates[0]} ～{" "}
+          <p className="text-sm text-slate-500">{messages.steps.generationPeriod}{remainingDates[0]} ～{" "}
             {remainingDates[remainingDates.length - 1]}
           </p>
 
           <div>
-            <label className="mb-1 block">新增位置</label>
+            <label className="mb-1 block">{messages.steps.parentLabel}</label>
 
             <select
               value={parentId}
@@ -459,7 +443,7 @@ export function ActiveStepManager({
               disabled={busy || loading}
               className="w-full rounded border p-2"
             >
-              <option value="">顶层</option>
+              <option value="">{messages.steps.topLevel}</option>
 
               {groups.map((group) => (
                 <option key={group.id} value={group.id}>
@@ -470,7 +454,7 @@ export function ActiveStepManager({
           </div>
 
           <div>
-            <label className="mb-1 block">节点类型</label>
+            <label className="mb-1 block">{messages.steps.nodeType}</label>
 
             <select
               value={nodeType}
@@ -482,13 +466,13 @@ export function ActiveStepManager({
               }
               className="w-full rounded border p-2"
             >
-              <option value="LEAF">LEAF · 学习项目</option>
-              <option value="GROUP">GROUP · 分类</option>
+              <option value="LEAF">{messages.steps.leafType}</option>
+              <option value="GROUP">{messages.steps.groupType}</option>
             </select>
           </div>
 
           <div>
-            <label className="mb-1 block">节点名称</label>
+            <label className="mb-1 block">{messages.steps.nodeName}</label>
 
             <input
               value={name}
@@ -500,9 +484,7 @@ export function ActiveStepManager({
 
           {nodeType === "GROUP" && (
             <div>
-              <label className="mb-1 block">
-                第一个叶子名称
-              </label>
+              <label className="mb-1 block">{messages.steps.firstLeafName}</label>
 
               <input
                 value={firstLeafName}
@@ -526,13 +508,9 @@ export function ActiveStepManager({
 
           {mode === "BOOLEAN_DAILY_CUSTOM" && (
             <div className="space-y-3">
-              <h4 className="font-medium">
-                每日 BOOLEAN 任务
-              </h4>
+              <h4 className="font-medium">{messages.steps.dailyBoolean}</h4>
 
-              <p className="text-sm">
-                每天至少一条，每行填写一条任务。
-              </p>
+              <p className="text-sm">{messages.steps.dailyBooleanHint}</p>
 
               {remainingDates.map((date) => (
                 <div key={date}>
@@ -556,9 +534,7 @@ export function ActiveStepManager({
 
           {mode === "NUMERIC_DAILY_MANUAL" && (
             <div className="space-y-3">
-              <h4 className="font-medium">
-                每日 NUMERIC 目标
-              </h4>
+              <h4 className="font-medium">{messages.steps.dailyNumeric}</h4>
 
               {remainingDates.map((date) => (
                 <div key={date}>
@@ -587,7 +563,7 @@ export function ActiveStepManager({
             onClick={() => void handleCreate()}
             className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
           >
-            {busy ? "正在创建..." : "新增节点并生成任务"}
+            {busy ? messages.common.creating : messages.steps.createAndGenerate}
           </button>
         </div>
       )}

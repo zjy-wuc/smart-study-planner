@@ -12,7 +12,7 @@ from app.schemas.step import (
     StepRule,
 )
 
-from app.services import step_service
+from app.services.steps import step_service
 
 
 router = APIRouter(

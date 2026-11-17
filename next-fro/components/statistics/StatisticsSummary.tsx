@@ -1,3 +1,4 @@
+import { locale, messages } from "@/messages";
 
 import type {
   CheckinStatistics,
@@ -15,29 +16,30 @@ export function StatisticsSummary({
 }: Props) {
   const items = [
     {
-      label: "累计打卡",
+      label: messages.statistics.totalCheckins,
       value: checkins.total_count,
-      unit: "次",
+      unit: messages.common.timesUnit,
     },
     {
-      label: "最近 7 天打卡",
+      label: messages.statistics.last7Checkins,
       value: checkins.last_7_days_count,
-      unit: "次",
+      unit: messages.common.timesUnit,
     },
     {
-      label: "最近 30 天打卡",
+      label: messages.statistics.last30Checkins,
       value: checkins.last_30_days_count,
-      unit: "次",
+      unit: messages.common.timesUnit,
     },
     {
-      label: "执行中的计划",
+      label: messages.statistics.activePlans,
       value: plans.active_count,
-      unit: "个",
+      unit: messages.common.plansUnit,
     },
     {
-      label: "已结束计划",
+      label: messages.statistics.endedPlans,
+      hint: messages.statistics.endedPlansHint,
       value: plans.ended_count,
-      unit: "个",
+      unit: messages.common.plansUnit,
     },
   ];
 
@@ -49,9 +51,7 @@ export function StatisticsSummary({
       <h2
         id="statistics-summary-title"
         className="text-lg font-semibold"
-      >
-        学习数据概览
-      </h2>
+      >{messages.statistics.summaryTitle}</h2>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
@@ -64,17 +64,15 @@ export function StatisticsSummary({
             </h3>
 
             <p className="mt-3 text-3xl font-semibold text-slate-900">
-              {item.value.toLocaleString("zh-CN")}
+              {item.value.toLocaleString(locale)}
 
               <span className="ml-2 text-sm font-normal text-slate-500">
                 {item.unit}
               </span>
             </p>
 
-            {item.label === "已结束计划" && (
-              <p className="mt-2 text-xs text-slate-500">
-                含正常到期和提前结束的计划
-              </p>
+            {item.hint && (
+              <p className="mt-2 text-xs text-slate-500">{item.hint}</p>
             )}
           </article>
         ))}
