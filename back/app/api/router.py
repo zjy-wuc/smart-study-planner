@@ -16,6 +16,7 @@ from app.api.routes import (
     daily_tasks,
     statistics,
     knowledge,
+    focus,
 )
 
 
@@ -55,3 +56,5 @@ api_router.include_router(statistics.router)
 
 #知识笔记
 api_router.include_router(knowledge.router)
+#专注闹钟
+api_router.include_router(focus.router)
