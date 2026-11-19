@@ -1,0 +1,290 @@
+.reminders-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.reminders-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 26px;
+}
+
+.reminders-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #173b62;
+}
+
+.reminders-header p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #708aa4;
+}
+
+.reminders-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #deebf6;
+  border-radius: 12px;
+  background: #fff;
+  color: #397db5;
+  cursor: pointer;
+}
+
+.reminders-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reminders-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(290px, 1fr);
+  align-items: stretch;
+  gap: 24px;
+}
+
+.reminders-card {
+  min-width: 0;
+  padding: 26px;
+  border: 1px solid #e4edf6;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 32px rgba(52, 101, 154, 0.06);
+}
+
+.reminders-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reminders-card-heading h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  color: #234766;
+}
+
+.reminders-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #e9f4ff;
+  color: #2586ce;
+}
+
+.reminders-overview {
+  display: flex;
+  flex-direction: column;
+}
+
+.reminders-summary {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  margin: 22px 0;
+  padding: 28px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #eef7ff, #f6fbff);
+  text-align: center;
+}
+
+.reminders-count {
+  font-size: 92px;
+  font-weight: 750;
+  line-height: 1;
+  color: #2787d2;
+  font-variant-numeric: tabular-nums;
+}
+
+.reminders-summary h3 {
+  margin: 14px 0 4px;
+  font-size: 20px;
+  color: #264c70;
+}
+
+.reminders-summary p {
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #728ba2;
+}
+
+.reminders-date {
+  margin-top: 18px;
+  font-size: 12px;
+  color: #8aa0b3;
+}
+
+.reminders-empty-icon {
+  color: #48a2c7;
+}
+
+.reminders-state {
+  color: #6789a5;
+}
+
+.reminders-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.reminders-retry {
+  padding: 9px 18px;
+  border: 1px solid #c7e1f5;
+  border-radius: 10px;
+  background: #fff;
+  color: #277bb7;
+  cursor: pointer;
+}
+
+.reminders-task-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  border-radius: 12px;
+  background: #e8f4ff;
+  color: #227bbb;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.reminders-task-link:hover {
+  background: #d8edfd;
+}
+
+.reminders-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.reminders-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: #496984;
+}
+
+.reminders-setting-row strong {
+  color: #2586ce;
+  font-size: 13px;
+}
+
+.reminders-setting-divider {
+  height: 1px;
+  background: #eaf0f5;
+}
+
+.reminders-time-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reminders-time-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #577895;
+  font-size: 14px;
+}
+
+.reminders-time {
+  font-size: 36px;
+  font-weight: 700;
+  color: #245e91;
+  font-variant-numeric: tabular-nums;
+}
+
+.reminders-time-block p {
+  margin: 0;
+  font-size: 13px;
+  color: #8199ad;
+}
+
+.reminders-settings-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #edf8fa;
+  color: #418d9d;
+}
+
+.reminders-settings-note p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.reminders-browser-note {
+  margin-top: auto;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #8da0b2;
+}
+
+
+/* V2.4 F2：提醒设置 */
+
+.reminders-toggle {
+  width: 42px;
+  height: 22px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #2586ce;
+}
+
+.reminders-time-input {
+  width: 170px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cfe2f2;
+  border-radius: 10px;
+  background: #f8fcff;
+  color: #245e91;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.reminders-time-input:focus-visible,
+.reminders-toggle:focus-visible {
+  outline: 2px solid #2586ce;
+  outline-offset: 3px;
+}
+
+.reminders-time-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.reminders-settings-status {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #7189a0;
+}

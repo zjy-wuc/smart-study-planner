@@ -1,5 +1,9 @@
 import type { MessageValue } from "../types";
 
+export function historyRangeSummary(days: number, records: number): string {
+  return `${days} 天有打卡 · 共 ${records} 次`;
+}
+
 export const history = {
   dateHeading: (month: MessageValue, day: MessageValue, weekday: MessageValue, todaySuffix: MessageValue): string =>
     `${month}月${day}日 · 周${weekday}${todaySuffix}`,

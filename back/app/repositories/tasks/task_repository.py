@@ -1,5 +1,5 @@
 
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from typing import Any, cast
 
 from sqlalchemy import text
@@ -142,6 +142,101 @@ def find_today_tasks(
         dict(row)
         for row in result.mappings().all()
     ]
+
+
+
+def count_today_unchecked_tasks(
+    db: Session,
+    user_id: int,
+    today: date,
+) -> int:
+    """
+    统计当前用户今天仍可打卡、但今天尚未打卡的任务数量。
+
+    只看实际打卡日期
+    """
+
+    day_start = datetime.combine(today, time.min)
+    day_end = datetime.combine(
+        today + timedelta(days=1),
+        time.min,
+    )
+
+    sql = text("""
+        SELECT COUNT(*)
+        FROM daily_tasks AS t
+        JOIN study_plans AS p
+            ON t.plan_id = p.id
+        JOIN plan_steps AS s
+            ON t.step_id = s.id
+           AND s.plan_id = p.id
+        WHERE p.user_id = :user_id
+          AND p.status = 'ACTIVE'
+          AND p.start_date <= :today
+          AND p.end_date >= :today
+          AND t.task_date = :today
+
+          AND t.deleted_at IS NULL
+          AND p.deleted_at IS NULL
+          AND s.deleted_at IS NULL
+
+          AND t.status IN (
+              'PENDING',
+              'IN_PROGRESS',
+              'OVERDUE'
+          )
+
+          AND (
+              (
+                  t.task_type = 'BOOLEAN'
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM task_rollovers AS ro
+                      WHERE ro.source_task_id = t.id
+                  )
+              )
+              OR
+              (
+                  t.task_type = 'NUMERIC'
+                  AND t.rollover_out_quantity = 0
+                  AND t.target_quantity IS NOT NULL
+              )
+          )
+
+          AND NOT EXISTS (
+              SELECT 1
+              FROM study_records AS r
+              WHERE r.task_id = t.id
+                AND r.user_id = :user_id
+                AND r.recorded_at >= :day_start
+                AND r.recorded_at < :day_end
+                AND (
+                    (
+                        t.task_type = 'BOOLEAN'
+                        AND r.event_type = 'BOOLEAN_COMPLETE'
+                    )
+                    OR
+                    (
+                        t.task_type = 'NUMERIC'
+                        AND r.event_type = 'NUMERIC_PROGRESS'
+                    )
+                )
+          )
+    """)
+
+    count = db.scalar(
+        sql,
+        {
+            "user_id": user_id,
+            "today": today,
+            "day_start": day_start,
+            "day_end": day_end,
+        },
+    )
+
+    return int(count or 0)
+
+
 
 
 def mark_boolean_completed(

@@ -87,6 +87,13 @@ export default function UserProfile() {
               <Icon name="calendar" />{messages.navigation.statistics}</Link>
             <div className="profile-nav-divider" />
             <div className="profile-sidebar-label">{messages.navigation.accountLabel}</div>
+            <Link
+  className="profile-nav-item"
+  href="/reminders"
+>
+  <Icon name="bell" />
+  {messages.navigation.reminders}
+</Link>
             <Link className="profile-nav-item profile-nav-active" href="/profile" aria-current="page">
               <Icon name="user" />{messages.navigation.profile}</Link>
           </nav>

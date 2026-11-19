@@ -8,13 +8,15 @@ import { ApiError } from "@/lib/api/client";
 import { completeBooleanTask, updateNumericTask } from "@/services/tasks.service";
 import { useDailyCheckin } from "@/hooks/useDailyCheckin";
 import type { DailyTask } from "@/types/task";
+import type { Plan } from "@/types/plan";
+import { BookOpen, Check, ListTodo } from "lucide-react";
 
 const statusLabels = {
   PENDING: messages.tasks.statusPending, IN_PROGRESS: messages.common.statusActive, COMPLETED: messages.tasks.statusCompleted,
   OVERDUE: messages.tasks.statusOverdue, ENDED: messages.tasks.statusStopped,
 };
 
-function TodayTaskRow({ task, onChanged }: { task: DailyTask; onChanged: () => void }) {
+function TodayTaskRow({ task, planName, onChanged }: { task: DailyTask; planName?: string; onChanged: () => void }) {
   const router = useRouter();
   const [quantity, setQuantity] = useState(String(task.actual_quantity));
   const [busy, setBusy] = useState(false);
@@ -55,9 +57,12 @@ function TodayTaskRow({ task, onChanged }: { task: DailyTask; onChanged: () => v
 
   return (
     <li className="workspace-task-item dashboard-task" data-status={task.display_status}>
+      <span className="dashboard-task-icon" aria-hidden="true">
+        {task.status === "COMPLETED" && !rolledOver ? <Check size={18} /> : task.task_type === "NUMERIC" ? <BookOpen size={18} /> : <ListTodo size={18} />}
+      </span>
       <div className="dashboard-task-main">
         <p className="workspace-task-title">{task.content || task.step_name}</p>
-        <p className="workspace-task-meta">{task.step_name} · {task.task_date}</p>
+        <p className="workspace-task-meta">{planName && <>{planName} / </>}{task.step_name} · {task.task_date}</p>
         {task.task_type === "NUMERIC" && <p className="workspace-task-quantity">{messages.tasks.quantitySummary(task.actual_quantity, task.effective_target_quantity ?? task.target_quantity ?? 0)}</p>}
         {rolledOver && <p className="workspace-rollover-label">{messages.tasks.rolledOver}</p>}
         {error && <p role="alert" className="dashboard-checkin-error">{error}</p>}
@@ -75,7 +80,7 @@ function TodayTaskRow({ task, onChanged }: { task: DailyTask; onChanged: () => v
   );
 }
 
-export function TodayTaskList({ tasks, onChanged }: { tasks: DailyTask[]; onChanged: () => void }) {
+export function TodayTaskList({ tasks, plans, onChanged }: { tasks: DailyTask[]; plans: Plan[]; onChanged: () => void }) {
   if (!tasks.length) return <p className="workspace-empty-state">{messages.tasks.noScheduledToday}</p>;
-  return <ul className="workspace-task-list">{tasks.map((task) => <TodayTaskRow key={task.id} task={task} onChanged={onChanged} />)}</ul>;
+  return <ul className="workspace-task-list">{tasks.map((task) => <TodayTaskRow key={task.id} task={task} planName={plans.find((plan) => plan.id === task.plan_id)?.name} onChanged={onChanged} />)}</ul>;
 }

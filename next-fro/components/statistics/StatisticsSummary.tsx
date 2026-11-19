@@ -2,17 +2,14 @@ import { locale, messages } from "@/messages";
 
 import type {
   CheckinStatistics,
-  PlanStatistics,
 } from "@/types/statistics";
 
 type Props = {
   checkins: CheckinStatistics;
-  plans: PlanStatistics;
 };
 
 export function StatisticsSummary({
   checkins,
-  plans,
 }: Props) {
   const items = [
     {
@@ -29,17 +26,6 @@ export function StatisticsSummary({
       label: messages.statistics.last30Checkins,
       value: checkins.last_30_days_count,
       unit: messages.common.timesUnit,
-    },
-    {
-      label: messages.statistics.activePlans,
-      value: plans.active_count,
-      unit: messages.common.plansUnit,
-    },
-    {
-      label: messages.statistics.endedPlans,
-      hint: messages.statistics.endedPlansHint,
-      value: plans.ended_count,
-      unit: messages.common.plansUnit,
     },
   ];
 
@@ -71,9 +57,6 @@ export function StatisticsSummary({
               </span>
             </p>
 
-            {item.hint && (
-              <p className="mt-2 text-xs text-slate-500">{item.hint}</p>
-            )}
           </article>
         ))}
       </div>

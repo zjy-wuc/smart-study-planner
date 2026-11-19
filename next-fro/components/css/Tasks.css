@@ -1,46 +1,98 @@
-/* 今日任务操作卡片。所有选择器均限定在工作台内。 */
+/* 今日任务：状态分组、紧凑任务行和按需展开的详情。 */
+.workspace-app .workspace-main:has(.today-task-page) {
+  background: #f3f8fe;
+}
+
+.workspace-app .today-task-page { max-width: 1200px; }
+
+/* 窗边书桌照片：Skylar Kang，Pexels（照片编号 6044260）。 */
+.workspace-app .today-task-page .workspace-page-heading {
+  min-height: 160px;
+  padding: 24px;
+  border: 1px solid #dce8f4;
+  border-radius: 16px;
+  background:
+    linear-gradient(90deg, #f7fbff 28%, #f7fbfff2 43%, #e6f1ff30 78%),
+    url("/illustrations/today-study-window.jpg") right 53% / 65% auto no-repeat,
+    #eaf3ff;
+}
+
+.workspace-app .today-task-page .workspace-page-heading p { color: #405b76; }
+
+@media (max-width: 600px) {
+  .workspace-app .today-task-page .workspace-page-heading {
+    padding: 18px;
+    background:
+      linear-gradient(90deg, #f7fbff 12%, #f7fbfff5 48%, #f7fbff66 100%),
+      url("/illustrations/today-study-window.jpg") right center / auto 100% no-repeat,
+      #eaf3ff;
+  }
+}
+
+.today-task-list {
+  background: #fff;
+  border: 1px solid var(--workspace-border);
+  border-radius: 16px;
+}
+
+.today-task-group {
+  margin: 0;
+  padding: 14px 22px;
+  color: #36577c;
+  background: #f4f8fe;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.today-task-group:first-child { border-radius: 15px 15px 0 0; }
+.today-task-group span { margin-left: 6px; font-size: 12px; font-weight: 500; }
+
 .workspace-app .task-action-card {
   min-width: 0;
-  padding: 24px 28px;
-  border: 1px solid var(--workspace-border);
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 5px 20px rgb(79 120 148 / 4.5%);
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--workspace-border);
 }
 
-.workspace-app .task-action-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
+.workspace-app .task-action-card:last-child { border-bottom: 0; }
+
+.today-task-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, .36fr) minmax(166px, max-content) auto;
+  align-items: center;
+  gap: 14px;
 }
 
-.workspace-app .task-action-heading > div {
-  min-width: 0;
-  overflow-wrap: anywhere;
+.today-task-identity, .today-task-actions { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.today-task-identity h3 { margin: 0; font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
+.today-task-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #edf4ff;
+  color: #365f90;
 }
-
-.workspace-app .task-action-heading h2 {
-  margin: 0;
-  color: var(--workspace-ink);
-  font-size: 16px;
-  font-weight: 600;
-}
+.today-task-icon[data-checked="true"] { color: #26734e; background: #e5f5ed; }
+.today-task-state { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 9px; font-size: 13px; }
+.today-task-state strong { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.today-task-actions { justify-content: flex-end; }
+.workspace-app .today-task-actions .task-action-input { width: 70px; min-height: 38px; padding: 6px 8px; }
+.workspace-app .today-task-actions .workspace-button--primary { background: #2867ce; min-height: 38px; }
+.workspace-app .today-task-actions .workspace-button--primary:hover:not(:disabled) { background: #1b54b1; }
+.workspace-app .today-task-actions .checkin-success-text { color: #26734e; }
+.today-task-details { min-width: 0; }
+.today-task-details summary { width: max-content; margin-left: auto; color: #345d8c; cursor: pointer; padding: 7px 3px; }
+.today-task-details summary:focus-visible { outline: 2px solid #2867ce; outline-offset: 3px; }
+.today-task-details[open] { grid-column: 1 / -1; }
+.today-task-detail-content { border-top: 1px solid var(--workspace-border); padding-top: 12px; }
 
 .workspace-app .task-action-meta {
   margin: 6px 0 0;
   color: var(--workspace-muted);
   font-size: 12px;
-}
-
-.workspace-app .task-action-type {
-  display: inline-block;
-  margin: 10px 0 0;
-  padding: 2px 8px;
-  border: 1px solid #e6eff5;
-  border-radius: 5px;
-  color: #71889b;
-  font-size: 11px;
+  overflow-wrap: anywhere;
 }
 
 /* 数量信息使用后端返回值，只调整排版，不重新计算。 */
@@ -175,8 +227,18 @@
   font-size: 11px;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 950px) {
+  .today-task-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+  .today-task-identity { grid-column: 1 / -1; }
+  .today-task-state { padding-left: 44px; }
+  .today-task-details { grid-column: 1 / -1; }
+}
+
+@media (max-width: 480px) {
+  .today-task-group { padding-inline: 14px; }
   .workspace-app .task-action-card {
-    padding: 20px;
+    padding: 14px;
   }
+  .today-task-state { padding-left: 0; }
+  .today-task-actions .task-progress-form { justify-content: flex-end; gap: 6px; }
 }

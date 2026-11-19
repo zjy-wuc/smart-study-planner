@@ -3,6 +3,7 @@
 import { messages } from "@/messages";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo } from "react";
 
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -12,6 +13,7 @@ import { PlanCard } from "@/components/dashboard/PlanCard";
 import { TodayTaskList } from "@/components/dashboard/TodayTaskList";
 import { StepPreview } from "@/components/dashboard/StepPreview";
 import { WorkspaceIcon } from "@/components/ui/WorkspaceIcon";
+import "@/components/css/DashboardRefresh.css";
 
 
 export default function Dashboard() {
@@ -47,14 +49,14 @@ export default function Dashboard() {
   const activePlans = plans.filter((plan) => plan.status === "ACTIVE").length;
 
   return (
-    <div className="workspace-dashboard">
+    <div className="workspace-dashboard dashboard-refresh">
       <div className="workspace-page-heading">
         <div>
-          <h1 className="text-3xl font-bold">{messages.dashboard.title}</h1>
+          <h1 className="text-3xl font-bold">{messages.dashboard.greeting}</h1>
 
-          <p className="mt-2 text-slate-600">{messages.dashboard.subtitle}</p>
+          <p className="mt-2 text-slate-600">{messages.dashboard.welcomeDescription}</p>
         </div>
-
+        <Image className="dashboard-welcome-art" src="/illustrations/workspace-books.svg" alt="" width={190} height={125} />
         <button
           type="button"
           onClick={reload}
@@ -83,7 +85,7 @@ export default function Dashboard() {
           <p role="alert" className="workspace-feedback workspace-feedback--error">{messages.dashboard.tasksError(tasksError)}
           </p>
         ) : (
-          <TodayTaskList tasks={tasks.slice(0, 5)} onChanged={reload} />
+          <TodayTaskList tasks={tasks.slice(0, 5)} plans={plans} onChanged={reload} />
         )}
       </section>
 
@@ -101,11 +103,14 @@ export default function Dashboard() {
               </div>
             </div>
 
+            <div className="dashboard-plan-links">
+            <Link href="/plans/new" className="workspace-text-link">{messages.plans.create}</Link>
             <Link
               href="/plans"
               className="workspace-text-link text-blue-700"
             >{messages.plans.viewAll}<WorkspaceIcon name="arrow" />
             </Link>
+            </div>
           </div>
 
           {loading ? (

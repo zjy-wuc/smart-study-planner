@@ -1,6 +1,8 @@
 import type { MessageValue } from "../types";
 
 export const dashboard = {
+  greeting: "今天，也向目标靠近一点。",
+  welcomeDescription: "从一件小事开始，把学习慢慢变成习惯。",
   title: "首页工作台",
   subtitle: "学习计划与每日执行情况",
   todaySubtitle: "从今天的安排开始",

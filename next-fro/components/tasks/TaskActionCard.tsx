@@ -1,6 +1,7 @@
 "use client";
 
 import { messages } from "@/messages";
+import { todayTaskMessages } from "@/messages/zh-CN/tasks";
 
 import {
   useEffect,
@@ -8,6 +9,7 @@ import {
 } from "react";
 
 import { useRouter } from "next/navigation";
+import { BookOpen, Check, ClipboardList } from "lucide-react";
 
 import { ApiError } from "@/lib/api/client";
 import { useDailyCheckin } from "@/hooks/useDailyCheckin";
@@ -28,7 +30,9 @@ import type {
 
 type Props = {
   task: DailyTask;
+  planName?: string;
   onChanged: () => void;
+  onCheckinStatus: (taskId: number, checked: boolean) => void;
 };
 
 const statusLabels = {
@@ -58,7 +62,9 @@ function getErrorText(error: unknown): string {
 
 export function TaskActionCard({
   task,
+  planName,
   onChanged,
+  onCheckinStatus,
 }: Props) {
   const router = useRouter();
 
@@ -98,6 +104,15 @@ export function TaskActionCard({
     ) &&
     !isRolledOver;
   const daily = useDailyCheckin(task.id, task.task_type === "NUMERIC" && canOperate);
+  const checkedIn = !isRolledOver && (task.status === "COMPLETED" || (canOperate && daily.state === "done"));
+  const label = isRolledOver ? messages.tasks.rolledOver
+    : task.plan_status !== "ACTIVE" && task.status !== "COMPLETED" ? messages.tasks.statusStopped
+    : task.task_type === "NUMERIC" && ["PENDING", "IN_PROGRESS"].includes(task.display_status)
+      ? messages.tasks.statusIncomplete : statusLabels[task.display_status];
+
+  useEffect(() => {
+    onCheckinStatus(task.id, canOperate && daily.state === "done");
+  }, [task.id, canOperate, daily.state, onCheckinStatus]);
 
 
   async function refreshRecords() {
@@ -242,200 +257,169 @@ export function TaskActionCard({
 
   return (
     <article className="task-action-card" data-status={task.display_status}>
-      <div className="task-action-heading">
-        <div>
-          <h2 className="font-semibold">
-            {task.content || task.step_name}
-          </h2>
-
-          <p className="task-action-meta">
-            {task.step_name} · {task.task_date}
-          </p>
-
-          <p className="task-action-type">
-            {task.task_type === "BOOLEAN"
-              ? messages.tasks.booleanType
-              : messages.tasks.numericType}
-          </p>
+      <div className="today-task-row">
+        <div className="today-task-identity">
+          <span className="today-task-icon" data-checked={checkedIn} aria-hidden="true">
+            {checkedIn ? <Check size={18} /> : task.task_type === "NUMERIC" ? <BookOpen size={18} /> : <ClipboardList size={18} />}
+          </span>
+          <div>
+            <h3>{task.content || task.step_name}</h3>
+            <p className="task-action-meta">{planName && <>{planName} / </>}{task.step_name}</p>
+          </div>
         </div>
-
-        <span className="workspace-task-status" data-status={task.display_status}>
-          {task.task_type === "NUMERIC" && ["PENDING", "IN_PROGRESS"].includes(task.display_status) ? messages.tasks.statusIncomplete : statusLabels[task.display_status]}
-        </span>
-      </div>
-
-      {task.task_type === "NUMERIC" && (
-        <div className="task-quantity-summary">
-          <p>
-            <span>{messages.tasks.actualQuantity}</span><strong>{task.actual_quantity}</strong>
-          </p>
-
-          <p>
-            <span>{messages.tasks.effectiveTarget}</span>
-            <strong>{task.effective_target_quantity ?? task.target_quantity ?? 0}</strong>
-          </p>
-
-          <p>
-            <span>{messages.tasks.remaining}</span><strong>{task.remaining_quantity ?? 0}</strong>
-          </p>
-
-          {task.rollover_out_quantity > 0 && (
-            <p>
-              <span>{messages.tasks.rolledOut}</span><strong>{task.rollover_out_quantity}</strong>
-            </p>
-          )}
+        <div className="today-task-state">
+          {task.task_type === "NUMERIC" && <strong>{task.actual_quantity} / {task.effective_target_quantity ?? task.target_quantity ?? 0}</strong>}
+          <span className="workspace-task-status" data-status={isRolledOver ? "ROLLED_OVER" : task.display_status}>{label}</span>
         </div>
-      )}
-
-      {isRolledOver && (
-        <p className="workspace-feedback workspace-feedback--warning">{messages.tasks.rolloverLockedHint}</p>
-      )}
-
-      {error && (
-        <p role="alert" className="workspace-feedback workspace-feedback--error">
-          {error}
-        </p>
-      )}
-
-      {notice && (
-        <p role="status" className="workspace-feedback workspace-feedback--success">
-          {notice}
-        </p>
-      )}
-
-      {canOperate && (
-        <div className="task-action-controls">
-          {task.task_type === "BOOLEAN" ? (
-            <button
-              type="button"
-              onClick={handleBooleanComplete}
-              disabled={busy}
-              className="workspace-button workspace-button--primary"
-            >
+        <div className="today-task-actions">
+          {checkedIn && <span className="checkin-success-text">{messages.tasks.encouragement}</span>}
+          {canOperate && !checkedIn && (task.task_type === "BOOLEAN" ? (
+            <button type="button" onClick={handleBooleanComplete} disabled={busy} className="workspace-button workspace-button--primary">
               {busy ? messages.common.processing : messages.tasks.checkin}
             </button>
-          ) : daily.state === "done" ? (
-            <span className="checkin-success-text">{messages.tasks.encouragement}</span>
           ) : (
             <div className="task-progress-form">
-              <div>
-                <label
-                  htmlFor={`actual-${task.id}`}
-                  className="workspace-field-label"
-                >{messages.tasks.currentQuantity}</label>
-
-                <input
-                  id={`actual-${task.id}`}
-                  type="text"
-                  inputMode="numeric"
-                  value={actualText}
-                  onChange={(event) =>
-                    setActualText(event.target.value)
-                  }
-                  disabled={busy || daily.state !== "available"}
-                  className="task-action-input"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleNumericProgress}
+              <input
+                aria-label={messages.tasks.quantityLabel(task.content || task.step_name)}
+                title={messages.tasks.currentQuantity}
+                type="text" inputMode="numeric" value={actualText}
+                onChange={(event) => setActualText(event.target.value)}
                 disabled={busy || daily.state !== "available"}
-                className="workspace-button workspace-button--primary"
-              >
+                className="task-action-input"
+              />
+              <button type="button" onClick={handleNumericProgress} disabled={busy || daily.state !== "available"} className="workspace-button workspace-button--primary">
                 {busy ? messages.common.savingShort : daily.state === "loading" ? messages.tasks.confirming : messages.tasks.checkin}
               </button>
               {daily.state === "error" && <button type="button" onClick={daily.retry} className="workspace-text-link">{messages.tasks.confirmRetry}</button>}
             </div>
-          )}
+          ))}
+        </div>
+        <details className="today-task-details">
+          <summary>{todayTaskMessages.expandTaskDetails}</summary>
+          <div className="today-task-detail-content">
+            <p className="task-action-meta">
+              {task.task_type === "BOOLEAN" ? messages.tasks.booleanType : messages.tasks.numericType} · <time>{task.task_date}</time>
+            </p>
 
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setError(null);
-              setShowRollover((value) => !value);
-            }}
-            className="workspace-text-link task-rollover-toggle"
-          >
-            {showRollover ? messages.tasks.cancelRollover : messages.tasks.rollover}
-          </button>
+            {task.task_type === "NUMERIC" && (
+              <div className="task-quantity-summary">
+                <p>
+                  <span>{messages.tasks.actualQuantity}</span><strong>{task.actual_quantity}</strong>
+                </p>
 
-          {showRollover && (
-            <div className="task-rollover-form">
-              <label
-                htmlFor={`rollover-${task.id}`}
-                className="workspace-field-label"
-              >{messages.tasks.rolloverDate}</label>
+                <p>
+                  <span>{messages.tasks.effectiveTarget}</span>
+                  <strong>{task.effective_target_quantity ?? task.target_quantity ?? 0}</strong>
+                </p>
 
-              <input
-                id={`rollover-${task.id}`}
-                type="date"
-                value={targetDate}
-                max={task.plan_end_date}
-                onChange={(event) =>
-                  setTargetDate(event.target.value)
-                }
-                disabled={busy}
-                className="task-action-input"
-              />
+                <p>
+                  <span>{messages.tasks.remaining}</span><strong>{task.remaining_quantity ?? 0}</strong>
+                </p>
 
-              <p className="task-action-help">{messages.tasks.rolloverDateHint}</p>
+                {task.rollover_out_quantity > 0 && (
+                  <p>
+                    <span>{messages.tasks.rolledOut}</span><strong>{task.rollover_out_quantity}</strong>
+                  </p>
+                )}
+              </div>
+            )}
 
+            {isRolledOver && (
+              <p className="workspace-feedback workspace-feedback--warning">{messages.tasks.rolloverLockedHint}</p>
+            )}
+
+            {canOperate && (
+              <div className="task-action-controls">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setError(null);
+                    setShowRollover((value) => !value);
+                  }}
+                  className="workspace-text-link task-rollover-toggle"
+                >
+                  {showRollover ? messages.tasks.cancelRollover : messages.tasks.rollover}
+                </button>
+
+                {showRollover && (
+                  <div className="task-rollover-form">
+                    <label
+                      htmlFor={`rollover-${task.id}`}
+                      className="workspace-field-label"
+                    >{messages.tasks.rolloverDate}</label>
+
+                    <input
+                      id={`rollover-${task.id}`}
+                      type="date"
+                      value={targetDate}
+                      max={task.plan_end_date}
+                      onChange={(event) =>
+                        setTargetDate(event.target.value)
+                      }
+                      disabled={busy}
+                      className="task-action-input"
+                    />
+
+                    <p className="task-action-help">{messages.tasks.rolloverDateHint}</p>
+
+                    <button
+                      type="button"
+                      onClick={handleRollover}
+                      disabled={busy}
+                      className="workspace-button workspace-button--secondary"
+                    >{messages.tasks.confirmRollover}</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="task-records">
               <button
                 type="button"
-                onClick={handleRollover}
-                disabled={busy}
-                className="workspace-button workspace-button--secondary"
-              >{messages.tasks.confirmRollover}</button>
+                onClick={() => void toggleRecords()}
+                className="workspace-text-link"
+              >
+                {showRecords ? messages.history.collapseFull : messages.history.viewFull}
+              </button>
+
+              {showRecords && (
+                <div className="task-records-content">
+                  {recordsLoading ? (
+                    <p className="workspace-muted">{messages.history.loadingFull}</p>
+                  ) : recordsError ? (
+                    <p role="alert" className="workspace-feedback workspace-feedback--error">
+                      {recordsError}
+                    </p>
+                  ) : records.length === 0 ? (
+                    <p className="workspace-muted">{messages.history.emptyRecords}</p>
+                  ) : (
+                    <ul className="task-records-list">
+                      {records.map((record) => (
+                        <li
+                          key={record.id}
+                          className="task-record-item"
+                        >
+                          <p>
+                            {record.event_type === "BOOLEAN_COMPLETE"
+                              ? messages.tasks.booleanCheckin
+                              : messages.tasks.recordedTotalWithColon(record.recorded_value ?? 0)}
+                          </p>
+
+                          <p className="task-record-time">{messages.history.recordedAt(record.recorded_at)}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
-
-      {!canOperate && !isRolledOver && task.status === "COMPLETED" && <span className="checkin-success-text">{messages.tasks.encouragement}</span>}
-
-      <div className="task-records">
-        <button
-          type="button"
-          onClick={() => void toggleRecords()}
-          className="workspace-text-link"
-        >
-          {showRecords ? messages.history.collapseFull : messages.history.viewFull}
-        </button>
-
-        {showRecords && (
-          <div className="task-records-content">
-            {recordsLoading ? (
-              <p className="workspace-muted">{messages.history.loadingFull}</p>
-            ) : recordsError ? (
-              <p role="alert" className="workspace-feedback workspace-feedback--error">
-                {recordsError}
-              </p>
-            ) : records.length === 0 ? (
-              <p className="workspace-muted">{messages.history.emptyRecords}</p>
-            ) : (
-              <ul className="task-records-list">
-                {records.map((record) => (
-                  <li
-                    key={record.id}
-                    className="task-record-item"
-                  >
-                    <p>
-                      {record.event_type === "BOOLEAN_COMPLETE"
-                        ? messages.tasks.booleanCheckin
-                        : messages.tasks.recordedTotalWithColon(record.recorded_value ?? 0)}
-                    </p>
-
-                    <p className="task-record-time">{messages.history.recordedAt(record.recorded_at)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
-        )}
+        </details>
       </div>
+      {error && <p role="alert" className="workspace-feedback workspace-feedback--error">{error}</p>}
+      {notice && <p role="status" className="workspace-feedback workspace-feedback--success">{notice}</p>}
     </article>
   );
 }

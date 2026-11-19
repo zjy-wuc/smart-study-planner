@@ -1,10 +1,11 @@
 "use client";
 
 import { messages } from "@/messages";
+import { historyRangeSummary } from "@/messages/zh-CN/history";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, CalendarDays } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { ApiError } from "@/lib/api/client";
 import { listPlans } from "@/services/plans.service";
 import { getPlanSteps } from "@/services/steps.service";
@@ -149,19 +150,86 @@ export default function HistoryPage() {
   }, [entries, range, asOf]);
   const incomplete = planErrors > 0 || plans.some((plan) => plan.incomplete);
 
+  const recordCount = grouped.reduce((total, [, records]) => total + records.length, 0);
+
   return <div className="workspace-page history-page">
-    <header className="history-page-header"><div><h1>{messages.navigation.history}</h1><p>{messages.history.subtitle}</p></div><button className="history-refresh" type="button" onClick={reload} disabled={loading}>{messages.history.refresh}</button></header>
+    <header className="history-page-header">
+      <div>
+        <h1>{messages.navigation.history}</h1>
+        <p aria-live="polite">
+          {loading || error || incomplete ? messages.history.subtitle : historyRangeSummary(grouped.length, recordCount)}
+        </p>
+      </div>
+      <button className="history-refresh" type="button" onClick={reload} disabled={loading}>{messages.history.refresh}</button>
+    </header>
     {loading ? <p role="status" className="workspace-loading">{messages.history.loading}</p> : error ? <div role="alert" className="workspace-feedback workspace-feedback--error">{error} <button type="button" onClick={reload}>{messages.common.retry}</button></div> : <>
       {incomplete && <div role="alert" className="history-warning">{messages.history.partialFailure}<button type="button" onClick={reload}>{messages.common.reload}</button></div>}
       <div className="history-layout">
         <section className="history-panel" aria-labelledby="history-timeline-title">
           <div className="history-panel-title"><div><h2 id="history-timeline-title">{messages.history.recordsTitle}</h2><p>{messages.history.recordsSubtitle}</p></div></div>
-          <div className="history-filters" role="group" aria-label={messages.history.rangeLabel}>{([7, 30, "all"] as const).map((value) => <button key={value} type="button" aria-pressed={range === value} onClick={() => setRange(value)}>{value === "all" ? messages.common.all : messages.common.recentDays(value)}</button>)}</div>
-          {grouped.length === 0 ? <p className="history-empty">{incomplete ? messages.history.partialRetry : messages.history.emptyRange}</p> : <div className="history-timeline">{grouped.map(([day, dayEntries]) => <section className="history-day" key={day}><div className="history-day-heading"><h3><CalendarDays size={17} aria-hidden="true" />{formatHistoryDate(day, asOf)}</h3><span>{messages.history.checkinCount(dayEntries.length)}</span></div><ul>{dayEntries.map(({ plan, task, record, path }) => <li className="history-entry" key={record.id}><span className="history-entry-icon" aria-hidden="true"><Check size={19} strokeWidth={2.6} /></span><div><strong>{task.content || task.step_name}</strong><p>{plan.name} / {path.join(" / ")}</p><small>{record.event_type === "BOOLEAN_COMPLETE" ? messages.tasks.booleanCheckin : messages.tasks.recordedTotal(record.recorded_value ?? 0)}</small></div><time>{record.recorded_at.slice(11, 16)}</time></li>)}</ul></section>)}</div>}
+          <div className="history-filters" data-range={range} role="group" aria-label={messages.history.rangeLabel}>
+            {([7, 30, "all"] as const).map((value) => (
+              <button key={value} type="button" aria-pressed={range === value} onClick={() => setRange(value)}>
+                {value === "all" ? messages.common.all : messages.common.recentDays(value)}
+              </button>
+            ))}
+          </div>
+          {grouped.length === 0 ? (
+            <p className="history-empty">{incomplete ? messages.history.partialRetry : messages.history.emptyRange}</p>
+          ) : (
+            <div className="history-timeline" key={range}>
+              {grouped.map(([day, dayEntries]) => (
+                <section className="history-day" key={day}>
+                  <div className="history-day-heading">
+                    <h3><time dateTime={day}>{formatHistoryDate(day, asOf)}</time></h3>
+                    <span>{messages.history.checkinCount(dayEntries.length)}</span>
+                  </div>
+                  <ul>
+                    {dayEntries.map(({ plan, task, record, path }) => (
+                      <li className="history-entry" key={record.id}>
+                        <span className="history-entry-icon" aria-hidden="true"><Check size={16} strokeWidth={2.4} /></span>
+                        <div>
+                          <strong>{task.content || task.step_name}</strong>
+                          <p>{plan.name} / {path.join(" / ")}</p>
+                          <small>{record.event_type === "BOOLEAN_COMPLETE" ? messages.tasks.booleanCheckin : messages.tasks.recordedTotal(record.recorded_value ?? 0)}</small>
+                        </div>
+                        <time>{record.recorded_at.slice(11, 16)}</time>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
         </section>
         <section className="history-panel" aria-labelledby="history-plans-title"><div className="history-panel-title"><div><h2 id="history-plans-title">{messages.history.plansTitle}</h2><p>{messages.history.plansSubtitle}</p></div></div>
           <p className="history-explanation">{messages.history.streakExplanation}</p>
-          {plans.length === 0 ? <p className="history-empty">{messages.plans.empty}</p> : <div className="history-plans">{plans.map((item) => { const counts = countDays(item.entries, asOf); return <details className="history-plan" key={item.plan.id}><summary><span className="history-plan-name">{item.plan.name}<small>{item.steps.length ? messages.history.expandSteps : messages.steps.empty}</small></span><span className="history-plan-metrics">{item.incomplete ? <small>{messages.history.incompleteData}</small> : <><span><strong>{counts.total}</strong><small>{messages.history.totalDays}</small></span><span><strong>{counts.streak}</strong><small>{messages.history.streakDays}</small></span></>}</span></summary><div className="history-plan-body">{item.steps.length ? <ul>{item.steps.map((node) => <StepItem key={node.id} node={node} entries={item.entries} today={asOf} incomplete={item.incomplete} />)}</ul> : <p>{messages.history.emptyPlanSteps}</p>}</div></details>; })}</div>}
+          {plans.length === 0 ? <p className="history-empty">{messages.plans.empty}</p> : (
+            <div className="history-plans">
+              {plans.map((item) => {
+                const counts = countDays(item.entries, asOf);
+                return (
+                  <details className="history-plan" key={item.plan.id}>
+                    <summary>
+                      <span className="history-plan-name">{item.plan.name}</span>
+                      <span className="history-plan-metrics">
+                        {item.incomplete ? <small>{messages.history.incompleteData}</small> : <>
+                          <span><strong>{counts.total}</strong><small>{messages.history.totalDays}</small></span>
+                          <span><strong>{counts.streak}</strong><small>{messages.history.streakDays}</small></span>
+                        </>}
+                      </span>
+                      <ChevronDown className="history-plan-chevron" size={16} aria-hidden="true" />
+                    </summary>
+                    <div className="history-plan-body">
+                      {item.steps.length ? (
+                        <ul>{item.steps.map((node) => <StepItem key={node.id} node={node} entries={item.entries} today={asOf} incomplete={item.incomplete} />)}</ul>
+                      ) : <p>{messages.history.emptyPlanSteps}</p>}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          )}
         </section>
       </div>
       <p className="history-footnote">{messages.history.dataScope}</p>

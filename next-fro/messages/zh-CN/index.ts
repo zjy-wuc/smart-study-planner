@@ -1,4 +1,5 @@
 import { common } from "./common";
+import { knowledge } from "./knowledge";
 import { history } from "./history";
 import { auth } from "./auth";
 import { navigation } from "./navigation";
@@ -12,8 +13,12 @@ import { dashboard } from "./dashboard";
 import { progress } from "./progress";
 import { schedule } from "./schedule";
 import { validation } from "./validation";
+import { focus } from "./focus";
+import { reminders } from "./reminders";
+
 
 export const zhCN = {
+  knowledge,
   common,
   history,
   auth,
@@ -28,4 +33,6 @@ export const zhCN = {
   progress,
   schedule,
   validation,
+  focus,
+  reminders,
 };

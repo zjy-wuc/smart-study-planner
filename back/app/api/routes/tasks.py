@@ -30,6 +30,21 @@ def list_today_tasks(
     return success(data=tasks)
 
 
+
+@router.get("/today/unchecked-count")
+def get_today_unchecked_count(
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    result = task_service.get_today_unchecked_count(
+        db=db,
+        user_id=user["id"],
+    )
+
+    return success(data=result)
+
+
+
 @router.get("/{task_id}")
 def get_task(
     task_id: int,

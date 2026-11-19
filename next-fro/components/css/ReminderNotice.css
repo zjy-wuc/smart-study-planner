@@ -1,0 +1,147 @@
+
+/* V2.4 F3：全局右上角学习提醒 */
+
+.reminder-notice {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1100;
+
+  width: min(350px, calc(100vw - 32px));
+  padding: 18px;
+
+  border: 1px solid #d9eaf8;
+  border-radius: 16px;
+
+  background: #ffffff;
+  box-shadow: 0 14px 40px rgba(35, 87, 135, 0.16);
+
+  animation: reminder-notice-enter 0.22s ease-out;
+}
+
+.reminder-notice-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reminder-notice-header strong {
+  color: #244d70;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.reminder-notice-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+
+  border-radius: 11px;
+  background: #e8f4ff;
+  color: #2586ce;
+}
+
+.reminder-notice-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+
+  border: none;
+  border-radius: 8px;
+
+  background: transparent;
+  color: #7c94a8;
+  cursor: pointer;
+}
+
+.reminder-notice-close:hover {
+  background: #f0f6fb;
+  color: #365f82;
+}
+
+.reminder-notice-message {
+  margin: 16px 0;
+  color: #506c83;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.reminder-notice-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+.reminder-notice-later {
+  padding: 9px 12px;
+  border: none;
+  border-radius: 9px;
+
+  background: transparent;
+  color: #7890a4;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.reminder-notice-later:hover {
+  background: #f3f8fc;
+}
+
+.reminder-notice-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  padding: 9px 13px;
+  border-radius: 9px;
+
+  background: #e5f2ff;
+  color: #237dbd;
+
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.reminder-notice-link:hover {
+  background: #d5eafd;
+}
+
+.reminder-notice :is(button, a):focus-visible {
+  outline: 2px solid #2586ce;
+  outline-offset: 3px;
+}
+
+@keyframes reminder-notice-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reminder-notice {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .reminder-notice {
+    top: 12px;
+    right: 12px;
+  }
+}

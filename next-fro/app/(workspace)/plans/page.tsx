@@ -3,20 +3,39 @@
 import { messages } from "@/messages";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { PlanCard } from "@/components/dashboard/PlanCard";
 import { WorkspaceIcon } from "@/components/ui/WorkspaceIcon";
 import { LandscapeScene } from "@/components/common/LandscapeScene";
+import type { PlanStatus } from "@/types/plan";
+
+import "@/components/css/PlansPage.css";
 
 
 export default function PlansPage() {
+  const [status, setStatus] = useState<PlanStatus | "ALL">("ALL");
+  const [sort, setSort] = useState<"UPDATED" | "START" | "END">("UPDATED");
   const {
     plans,
+    tasks,
     plansError,
     loading,
     reload,
   } = useDashboardData();
+
+  const visiblePlans = useMemo(() => plans
+    .filter((plan) => status === "ALL" || plan.status === status)
+    .sort((left, right) => {
+      const key = sort === "START" ? "start_date" : sort === "END" ? "end_date" : "updated_at";
+      return right[key].localeCompare(left[key]);
+    }), [plans, sort, status]);
+
+  const counts = useMemo(() => ({
+    active: plans.filter((plan) => plan.status === "ACTIVE").length,
+    ended: plans.filter((plan) => plan.status === "ENDED").length,
+  }), [plans]);
 
   return (
     <section className="workspace-page plans-landscape-page">
@@ -35,18 +54,34 @@ export default function PlansPage() {
         </div>
       </div>
 
+      {!loading && !plansError && (
+        <>
+          <section className="plans-overview" aria-label={messages.plans.listDescription}>
+            <article><span>{messages.plans.overviewActive}</span><strong>{counts.active}</strong></article>
+            <article><span>{messages.plans.overviewToday}</span><strong>{tasks.filter((task) => task.status !== "COMPLETED" && !task.is_rolled_over).length}</strong></article>
+            <article><span>{messages.plans.overviewEnded}</span><strong>{counts.ended}</strong></article>
+          </section>
+          <div className="plans-toolbar">
+            <div className="plans-filter" role="group" aria-label={messages.plans.filterLabel}>
+              {(["ALL", "ACTIVE", "DRAFT", "ENDED"] as const).map((value) => <button key={value} type="button" aria-pressed={status === value} onClick={() => setStatus(value)}>{value === "ALL" ? messages.plans.filterAll : value === "ACTIVE" ? messages.common.statusActive : value === "DRAFT" ? messages.plans.statusDraft : messages.plans.statusEnded}</button>)}
+            </div>
+            <label className="plans-sort"><span>{messages.plans.sortLabel}</span><select value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}><option value="UPDATED">{messages.plans.sortUpdated}</option><option value="START">{messages.plans.sortStart}</option><option value="END">{messages.plans.sortEnd}</option></select></label>
+          </div>
+        </>
+      )}
+
       {loading ? (
         <p role="status" className="workspace-loading">{messages.plans.loading}</p>
       ) : plansError ? (
         <p role="alert" className="workspace-feedback workspace-feedback--error">
           {plansError}
         </p>
-      ) : plans.length === 0 ? (
-        <p className="workspace-empty-state">{messages.plans.empty}</p>
+      ) : visiblePlans.length === 0 ? (
+        <p className="workspace-empty-state">{plans.length ? messages.plans.noFilteredPlans : messages.plans.empty}</p>
       ) : (
         <div className="workspace-plan-grid">
-          {plans.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} />
+          {visiblePlans.map((plan) => (
+            <PlanCard key={plan.id} plan={plan} variant="list" />
           ))}
         </div>
       )}

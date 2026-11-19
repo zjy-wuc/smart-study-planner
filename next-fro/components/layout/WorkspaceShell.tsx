@@ -1,6 +1,9 @@
 "use client";
 
 import { messages } from "@/messages";
+import { ReminderNotice } from
+  "@/components/reminders/ReminderNotice";
+
 
 import {
   createContext,
@@ -12,6 +15,7 @@ import {
 } from "react";
 
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { getAccessToken } from "@/lib/auth/token";
@@ -23,6 +27,11 @@ import {
 } from "@/components/ui/WorkspaceIcon";
 
 import "@/components/css/Workspace.css";
+import "@/components/css/WorkspaceRefresh.css";
+
+import {
+  ReminderSettingsProvider,
+} from "@/components/reminders/ReminderSettingsProvider";
 
 
 type WorkspaceSearchContextValue = {
@@ -52,15 +61,18 @@ const navigation: {
   label: string;
   icon: WorkspaceIconName;
 }[] = [
-  { href: "/", label: messages.navigation.home, icon: "home" },
-  { href: "/plans", label: messages.navigation.plans, icon: "calendar" },
+  { href: "/", label: messages.navigation.workspace, icon: "home" },
   { href: "/task/today", label: messages.navigation.today, icon: "tasks" },
+  { href: "/focus", label: messages.navigation.focus, icon: "timer" },
+  { href: "/plans", label: messages.navigation.plans, icon: "calendar" },
+  { href: "/knowledge", label: messages.knowledge.title, icon: "book" },
   { href: "/history", label: messages.navigation.history, icon: "book" },
 
   // V2.1 新增：学习统计中心
   { href: "/statistics", label: messages.navigation.statistics, icon: "calendar" },
 
-  { href: "/profile", label: messages.navigation.profile, icon: "user" },
+  { href: "/reminders", label: messages.navigation.reminders, icon: "bell" },
+{ href: "/profile", label: messages.navigation.profile, icon: "user" },
 ];
 
 
@@ -74,6 +86,10 @@ export function WorkspaceShell({
 
   const [authChecked, setAuthChecked] = useState(false);
   const [search, setSearch] = useState("");
+  const [navigationOpen, setNavigationOpen] = useState(false);
+  const currentPage = navigation.find((item) =>
+    pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`)),
+  );
 
 
   useEffect(() => {
@@ -94,20 +110,32 @@ export function WorkspaceShell({
 
 
   return (
+  <ReminderSettingsProvider>
     <WorkspaceSearchContext.Provider
       value={{ search, setSearch }}
     >
       <ScrollPositionManager />
-      <div className="workspace-app">
+    
+
+<ReminderNotice />
+
+
+      <div className="workspace-app workspace-refresh" data-home={pathname === "/"}>
         <header className="workspace-header">
-          <div className="workspace-brand">
-            <span className="workspace-brand-icon">
-              <WorkspaceIcon name="book" />
-            </span>
-
-            <strong>{messages.common.appName}</strong>
-
-            <span className="workspace-brand-tagline">{messages.navigation.tagline}</span>
+          <div className="workspace-breadcrumb">
+            <button
+              type="button"
+              className="workspace-menu-toggle"
+              aria-label={messages.navigation.toggleMenu}
+              aria-controls="workspace-navigation"
+              aria-expanded={navigationOpen}
+              onClick={() => setNavigationOpen((open) => !open)}
+            >
+              {navigationOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <WorkspaceIcon name="home" />
+            <span aria-hidden="true">/</span>
+            <strong>{currentPage?.label}</strong>
           </div>
 
           <div>
@@ -132,12 +160,22 @@ export function WorkspaceShell({
 
 
         <div className="workspace-layout">
-          <aside className="workspace-sidebar">
+          <aside
+            className={`workspace-sidebar${navigationOpen ? " is-open" : ""}`}
+            id="workspace-navigation"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setNavigationOpen(false);
+            }}
+          >
+            <Link href="/" className="workspace-brand" onClick={() => setNavigationOpen(false)}>
+              <span className="workspace-brand-icon"><WorkspaceIcon name="book" /></span>
+              <span><strong>{messages.common.appName}</strong><small>{messages.navigation.tagline}</small></span>
+            </Link>
             <nav
               aria-label={messages.navigation.mainLabel}
               className="workspace-nav"
             >
-              <div className="workspace-sidebar-label">{messages.navigation.spaceLabel}</div>
+              <div className="workspace-sidebar-label">{messages.navigation.dailyGroup}</div>
 
               {navigation.map((item) => {
                 const active =
@@ -149,7 +187,10 @@ export function WorkspaceShell({
 
                 return (
                   <Fragment key={item.href}>
-                    {item.href === "/profile" && (
+                    {item.href === "/history" && (
+                      <div className="workspace-sidebar-label workspace-review-label">{messages.navigation.reviewGroup}</div>
+                    )}
+                    {item.href === "/reminders" && (
                       <>
                         <div className="workspace-nav-divider" />
 
@@ -159,6 +200,7 @@ export function WorkspaceShell({
 
                     <Link
                       href={item.href}
+                      onClick={() => setNavigationOpen(false)}
                       aria-current={
                         active ? "page" : undefined
                       }
@@ -181,6 +223,7 @@ export function WorkspaceShell({
           </main>
         </div>
       </div>
-    </WorkspaceSearchContext.Provider>
-  );
+        </WorkspaceSearchContext.Provider>
+  </ReminderSettingsProvider>
+);
 }

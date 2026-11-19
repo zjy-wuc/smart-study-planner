@@ -17,7 +17,7 @@ const statusLabels = {
 };
 
 
-function PlanProgressView({ plan }: { plan: Plan }) {
+function PlanProgressView({ plan, compact = false }: { plan: Plan; compact?: boolean }) {
   const [progress, setProgress] =
     useState<PlanProgress | null>(null);
 
@@ -75,15 +75,15 @@ function PlanProgressView({ plan }: { plan: Plan }) {
           >
             <div className="workspace-progress-fill" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
           </div>
-          <p className="workspace-progress-caption">
-            {messages.progress.leafCount(progress?.computable_leaf_count, progress?.leaf_count)}</p>
+          {!compact && <p className="workspace-progress-caption">
+            {messages.progress.leafCount(progress?.computable_leaf_count, progress?.leaf_count)}</p>}
         </>
       )}
     </div>
   );
 }
 
-export function PlanCard({ plan }: { plan: Plan }) {
+export function PlanCard({ plan, variant = "default" }: { plan: Plan; variant?: "default" | "list" }) {
   return (
     <article className="workspace-plan-card" data-status={plan.status}>
       <div className="workspace-plan-card-heading">
@@ -104,7 +104,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
       </p>
 
       {plan.status === "ACTIVE" && (
-        <PlanProgressView key={plan.id} plan={plan} />
+        <PlanProgressView key={plan.id} plan={plan} compact={variant === "list"} />
       )}
 
       {plan.status === "DRAFT" && (
@@ -113,6 +113,16 @@ export function PlanCard({ plan }: { plan: Plan }) {
 
       {plan.status === "ENDED" && (
         <p className="workspace-plan-note">{messages.plans.endedTitle}</p>
+      )}
+
+      {variant === "list" && (
+        <div className="plans-card-actions">
+          <Link href={`/plans/${plan.id}`} className="plans-card-primary">
+            {plan.status === "DRAFT" ? messages.plans.continueEditing : plan.status === "ACTIVE" ? messages.plans.enterPlan : messages.plans.viewHistory}
+            <WorkspaceIcon name="arrow" />
+          </Link>
+          <span>{plan.status === "DRAFT" ? messages.plans.improveSteps : plan.status === "ACTIVE" ? messages.plans.viewTasks : messages.plans.endedTitle}</span>
+        </div>
       )}
     </article>
   );

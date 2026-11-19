@@ -13,7 +13,12 @@ export type WorkspaceIconName =
   | "plus"
   | "shield"
   | "screen"
-  | "power";
+  | "power"
+  | "timer"
+  | "bell";
+
+
+
 
 const paths: Record<WorkspaceIconName, ReactNode> = {
   book: <path d="M12 6C9 3.5 5.5 3.5 3 5v13c3-1.5 6-1.5 9 1.5M12 6c3-2.5 6.5-2.5 9-1v13c-3-1.5-6-1.5-9 1.5M12 6v13.5" />,
@@ -29,6 +34,13 @@ const paths: Record<WorkspaceIconName, ReactNode> = {
   shield: <><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" /><path d="m9 12 2 2 4-4" /></>,
   screen: <><rect x="3" y="4" width="18" height="13" rx="1.5" /><path d="M8 21h8M12 17v4" /></>,
   power: <path d="M12 2v10M7 5a9 9 0 1 0 10 0" />,
+  timer: <><circle cx="12" cy="13" r="8" /><path d="M12 9v4l3 2M9 2h6M12 5V2" /></>,
+  bell: (
+  <>
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+    <path d="M10 21h4" />
+  </>
+),
 };
 
 /** 仅用于展示，沿用个人中心的线性图标风格。 */

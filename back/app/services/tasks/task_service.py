@@ -195,6 +195,29 @@ def list_today_tasks(
     ]
 
 
+
+def get_today_unchecked_count(
+    db: Session,
+    user_id: int,
+) -> dict:
+    """获取当前用户今日未打卡任务数量"""
+
+    today = business_today()
+
+    count = task_repository.count_today_unchecked_tasks(
+        db=db,
+        user_id=user_id,
+        today=today,
+    )
+
+    return {
+        "date": today.isoformat(),
+        "unchecked_count": count,
+    }
+
+
+
+
 def complete_boolean_task(
     db: Session,
     task_id: int,

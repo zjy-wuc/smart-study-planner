@@ -1,6 +1,15 @@
 import type { MessageValue } from "../types";
 
+export const todayTaskMessages = {
+  todayPendingGroup: "待打卡",
+  todayCheckedGroup: "已打卡",
+  todayClosedGroup: "已顺延或已停止",
+  expandTaskDetails: "详情",
+  todaySummary: (total: number, checked: number) => `共 ${total} 项 · 已打卡 ${checked} 项`,
+};
+
 export const tasks = {
+  ...todayTaskMessages,
   booleanCheckin: "完成打卡",
   recordedTotal: (quantity: MessageValue): string =>
     `累计完成 ${quantity}`,

@@ -3,7 +3,7 @@ import { messages } from "@/messages";
 import { apiFetch } from "@/lib/api/client";
 import type { ApiResponse } from "@/types/api";
 import type { DailyTask } from "@/types/task";
-
+import type { TodayUncheckedCount } from "@/types/reminder";
 
 import type {
   PlanTask,
@@ -22,6 +22,17 @@ export async function listTodayTasks(): Promise<DailyTask[]> {
   return result.data;
 }
 
+
+// 获取今日尚未打卡且仍可打卡的任务数量
+export async function getTodayUncheckedCount():
+  Promise<TodayUncheckedCount> {
+  const response =
+    await apiFetch<ApiResponse<TodayUncheckedCount>>(
+      "/tasks/today/unchecked-count",
+    );
+
+  return response.data;
+}
 
 
 import type {
@@ -159,3 +170,4 @@ export async function deleteTask(
     },
   );
 }
+
