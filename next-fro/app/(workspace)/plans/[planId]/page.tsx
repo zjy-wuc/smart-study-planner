@@ -143,6 +143,11 @@ async function handleStartPlan() {
 
         if (!cancelled) {
           setPlan(result);
+          if (window.sessionStorage.getItem("new-plan-id") === String(result.id)) {
+            window.sessionStorage.removeItem("new-plan-id");
+            setNotice(messages.plans.draftCreated);
+            window.setTimeout(() => document.getElementById("plan-steps")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+          }
         }
 
       } catch (err) {
@@ -364,7 +369,7 @@ function handlePlanEnded(result: EndPlanResult) {
     }
   />
 ) : (
-  <section className="rounded-xl border bg-white p-6">
+  <section id="plan-steps" className="rounded-xl border bg-white p-6 scroll-mt-6">
     <StepTreeEditor
       planId={plan.id}
       status={plan.status}
