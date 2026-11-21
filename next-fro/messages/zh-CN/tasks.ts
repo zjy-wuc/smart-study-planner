@@ -32,6 +32,8 @@ export const tasks = {
     `${name}累计完成数量`,
   confirming: "正在确认…",
   checkin: "打卡",
+  completeAll: "全部完成",
+  numericCheckinHint: "默认提交全部目标；修改数量后按填写的累计数量打卡。",
   confirmRetry: "确认失败，重试",
   encouragement: "坚持就是胜利",
   noScheduledToday: "今天暂无安排的任务",

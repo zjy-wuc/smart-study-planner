@@ -39,7 +39,42 @@
   color: #24364b;
   font: inherit;
 }
-.knowledge-filters, .knowledge-attachments { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; align-items: end; }
+.knowledge-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.8fr) minmax(150px, .7fr) minmax(170px, .8fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 24px;
+  padding: 12px;
+  border: 1px solid #dbe7f2;
+  border-radius: 14px;
+  background: #f7fafd;
+}
+.knowledge-filters label { gap: 5px; }
+.knowledge-filters label > span:first-child {
+  padding-left: 2px;
+  color: #536b82;
+  font-size: 11px;
+  font-weight: 600;
+}
+.knowledge-filter-input { position: relative; display: flex; align-items: center; }
+.knowledge-filter-input > svg { position: absolute; left: 12px; color: #7189a1; pointer-events: none; }
+.knowledge-page .knowledge-filter-input input { padding-left: 38px; }
+.knowledge-filter-actions { display: flex; gap: 8px; }
+.knowledge-page .knowledge-filter-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  white-space: nowrap;
+}
+.knowledge-page .knowledge-filter-reset {
+  padding-inline: 11px;
+  color: #60768b;
+  background: transparent;
+}
+.knowledge-attachments { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; align-items: end; }
 .knowledge-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .knowledge-card, .knowledge-review {
   padding: 24px;
@@ -80,9 +115,13 @@
 .knowledge-tabs { display: none; gap: 8px; }
 @media (max-width: 1100px) {
   .knowledge-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .knowledge-filters { grid-template-columns: minmax(240px, 1.4fr) minmax(150px, .7fr) minmax(170px, .8fr); }
+  .knowledge-filter-actions { grid-column: 1 / -1; justify-content: flex-end; }
 }
 @media (max-width: 700px) {
   .knowledge-cards, .knowledge-filters, .knowledge-attachments, .knowledge-editor-grid { grid-template-columns: minmax(0, 1fr); }
+  .knowledge-filter-actions { grid-column: auto; }
+  .knowledge-filter-actions button { flex: 1; }
   .knowledge-tabs { display: flex; }
   .knowledge-tabs [aria-pressed="true"] { background: #2867ce; color: white; }
   .knowledge-editor-grid[data-tab="edit"] .knowledge-preview,

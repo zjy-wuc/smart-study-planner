@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { RotateCcw, Search } from "lucide-react";
 import { messages } from "@/messages";
 import { useKnowledgeAction, useKnowledgeQuery } from "@/hooks/useKnowledge";
 import { deleteNote, listNotes, restoreNote } from "@/services/knowledge.service";
@@ -46,13 +47,18 @@ export function KnowledgeNoteList({ trash = false }: { trash?: boolean }) {
         event.preventDefault();
         setFilters({ page: 1, page_size: 12, keyword: keyword.trim(), tag: tag.trim(), plan_id: plan ? Number(plan) : undefined });
       }}>
-        <label>{m.search}<input value={keyword} maxLength={100} onChange={(event) => setKeyword(event.target.value)} /></label>
-        <label>{m.tagFilter}<input value={tag} maxLength={50} onChange={(event) => setTag(event.target.value)} /></label>
-        <label>{m.planFilter}<select value={plan} onChange={(event) => setPlan(event.target.value)} disabled={plans.loading || !!plans.error}>
+        <label className="knowledge-filter-search">
+          <span>{m.search}</span>
+          <span className="knowledge-filter-input"><Search size={17} aria-hidden="true" /><input value={keyword} maxLength={100} placeholder={m.search} onChange={(event) => setKeyword(event.target.value)} /></span>
+        </label>
+        <label className="knowledge-filter-control"><span>{m.tagFilter}</span><input value={tag} maxLength={50} placeholder={m.tagFilter} onChange={(event) => setTag(event.target.value)} /></label>
+        <label className="knowledge-filter-control"><span>{m.planFilter}</span><select value={plan} onChange={(event) => setPlan(event.target.value)} disabled={plans.loading || !!plans.error}>
           <option value="">{m.allPlans}</option>{plans.data?.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select></label>
-        <button className="knowledge-primary" type="submit">{m.apply}</button>
-        <button type="button" onClick={() => { setKeyword(""); setTag(""); setPlan(""); setFilters({ page: 1, page_size: 12 }); }}>{m.reset}</button>
+        <div className="knowledge-filter-actions">
+          <button className="knowledge-primary" type="submit"><Search size={16} aria-hidden="true" />{m.apply}</button>
+          <button className="knowledge-filter-reset" type="button" onClick={() => { setKeyword(""); setTag(""); setPlan(""); setFilters({ page: 1, page_size: 12 }); }}><RotateCcw size={15} aria-hidden="true" />{m.reset}</button>
+        </div>
       </form>}
       {plans.error && !trash && <p className="knowledge-error" role="alert">{m.associationError} <button onClick={plans.refresh}>{m.retry}</button></p>}
       {action.error && <p className="knowledge-error" role="alert">{action.error}</p>}

@@ -64,7 +64,7 @@ export default function CreatePlanPage() {
 
     setDirty(false);
     window.sessionStorage.setItem("new-plan-id", String(created.id));
-    router.push(`/plans/${created.id}#plan-steps`);
+    router.push(`/plans/${created.id}/steps`);
   }
 
   return (

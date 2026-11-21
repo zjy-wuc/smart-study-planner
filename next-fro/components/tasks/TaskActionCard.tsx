@@ -67,10 +67,12 @@ export function TaskActionCard({
   onCheckinStatus,
 }: Props) {
   const router = useRouter();
+  const completionQuantity = task.effective_target_quantity ?? task.target_quantity ?? task.actual_quantity;
 
   const [actualText, setActualText] = useState(
-    String(task.actual_quantity),
+    String(completionQuantity),
   );
+  const [quantityEdited, setQuantityEdited] = useState(false);
 
   const [targetDate, setTargetDate] = useState("");
   const [showRollover, setShowRollover] = useState(false);
@@ -84,11 +86,6 @@ export function TaskActionCard({
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [recordsError, setRecordsError] =
     useState<string | null>(null);
-
-  // 后端任务状态更新后，同步累计数量输入框。
-  useEffect(() => {
-    setActualText(String(task.actual_quantity));
-  }, [task.id, task.actual_quantity]);
 
   const isRolledOver =
     task.is_rolled_over ||
@@ -281,14 +278,14 @@ export function TaskActionCard({
             <div className="task-progress-form">
               <input
                 aria-label={messages.tasks.quantityLabel(task.content || task.step_name)}
-                title={messages.tasks.currentQuantity}
+                title={messages.tasks.numericCheckinHint}
                 type="text" inputMode="numeric" value={actualText}
-                onChange={(event) => setActualText(event.target.value)}
+                onChange={(event) => { setActualText(event.target.value); setQuantityEdited(true); }}
                 disabled={busy || daily.state !== "available"}
                 className="task-action-input"
               />
               <button type="button" onClick={handleNumericProgress} disabled={busy || daily.state !== "available"} className="workspace-button workspace-button--primary">
-                {busy ? messages.common.savingShort : daily.state === "loading" ? messages.tasks.confirming : messages.tasks.checkin}
+                {busy ? messages.common.savingShort : daily.state === "loading" ? messages.tasks.confirming : quantityEdited ? messages.tasks.checkin : messages.tasks.completeAll}
               </button>
               {daily.state === "error" && <button type="button" onClick={daily.retry} className="workspace-text-link">{messages.tasks.confirmRetry}</button>}
             </div>

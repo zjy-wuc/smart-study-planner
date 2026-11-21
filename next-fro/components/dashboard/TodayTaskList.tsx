@@ -18,7 +18,9 @@ const statusLabels = {
 
 function TodayTaskRow({ task, planName, onChanged }: { task: DailyTask; planName?: string; onChanged: () => void }) {
   const router = useRouter();
-  const [quantity, setQuantity] = useState(String(task.actual_quantity));
+  const completionQuantity = task.effective_target_quantity ?? task.target_quantity ?? task.actual_quantity;
+  const [quantity, setQuantity] = useState(String(completionQuantity));
+  const [quantityEdited, setQuantityEdited] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const rolledOver = task.is_rolled_over || !!task.has_rollover || task.rollover_out_quantity > 0;
@@ -70,8 +72,8 @@ function TodayTaskRow({ task, planName, onChanged }: { task: DailyTask; planName
       <div className="dashboard-task-actions">
         <span className="workspace-task-status" data-status={task.display_status}>{label}</span>
         {canCheckin && daily.state !== "done" && <form className="dashboard-checkin" onSubmit={(event) => void checkin(event)}>
-          {task.task_type === "NUMERIC" && <input aria-label={messages.tasks.quantityLabel(task.content || task.step_name)} type="text" inputMode="numeric" value={quantity} onChange={(event) => setQuantity(event.target.value)} disabled={busy || daily.state !== "available"} />}
-          <button type="submit" disabled={busy || (task.task_type === "NUMERIC" && daily.state !== "available")}>{busy ? messages.common.savingCompact : daily.state === "loading" ? messages.tasks.confirming : messages.tasks.checkin}</button>
+          {task.task_type === "NUMERIC" && <input aria-label={messages.tasks.quantityLabel(task.content || task.step_name)} title={messages.tasks.numericCheckinHint} type="text" inputMode="numeric" value={quantity} onChange={(event) => { setQuantity(event.target.value); setQuantityEdited(true); }} disabled={busy || daily.state !== "available"} />}
+          <button type="submit" disabled={busy || (task.task_type === "NUMERIC" && daily.state !== "available")}>{busy ? messages.common.savingCompact : daily.state === "loading" ? messages.tasks.confirming : task.task_type === "NUMERIC" && !quantityEdited ? messages.tasks.completeAll : messages.tasks.checkin}</button>
           {daily.state === "error" && task.task_type === "NUMERIC" && <button type="button" onClick={daily.retry}>{messages.tasks.confirmRetry}</button>}
         </form>}
         {!rolledOver && (daily.state === "done" || task.status === "COMPLETED") && <span className="checkin-success-text">{messages.tasks.encouragement}</span>}

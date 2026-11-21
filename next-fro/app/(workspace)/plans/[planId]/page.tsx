@@ -5,6 +5,7 @@ import { messages } from "@/messages";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { Play, Trash2 } from "lucide-react";
 
 import { DraftScheduleEditor } from
   "@/components/plans/DraftScheduleEditor";
@@ -37,6 +38,8 @@ import { PlanLifecyclePanel } from
   "@/components/plans/PlanLifecyclePanel";
 
 import type { EndPlanResult } from "@/types/plan";
+
+import "@/components/css/PlanDetail.css";
 const statusLabels = {
   DRAFT: messages.plans.statusDraft,
   ACTIVE: messages.common.statusActive,
@@ -143,11 +146,6 @@ async function handleStartPlan() {
 
         if (!cancelled) {
           setPlan(result);
-          if (window.sessionStorage.getItem("new-plan-id") === String(result.id)) {
-            window.sessionStorage.removeItem("new-plan-id");
-            setNotice(messages.plans.draftCreated);
-            window.setTimeout(() => document.getElementById("plan-steps")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
-          }
         }
 
       } catch (err) {
@@ -303,13 +301,13 @@ function handlePlanEnded(result: EndPlanResult) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="plan-detail-page">
       <Link
         href="/plans"
         className="text-sm text-blue-700"
       >{messages.plans.backToMyPlans}</Link>
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="plan-detail-heading">
         <div>
           <h1 className="text-2xl font-bold">
             {plan.name}
@@ -320,17 +318,9 @@ function handlePlanEnded(result: EndPlanResult) {
         </div>
       </div>
 
-      {notice && (
-        <p role="status" className="text-green-700">
-          {notice}
-        </p>
-      )}
+      {notice && <p role="status" className="plan-detail-notice">{notice}</p>}
 
-      {error && (
-        <p role="alert" className="text-red-600">
-          {error}
-        </p>
-      )}
+      {error && <p role="alert" className="plan-detail-error">{error}</p>}
 
       {plan.status === "ENDED" ? (
         <div className="rounded-xl border bg-white p-6">
@@ -359,54 +349,56 @@ function handlePlanEnded(result: EndPlanResult) {
         </>
       )}
 
-    
+      <section className="plan-detail-action-card" aria-labelledby="plan-action-title">
+        <div className="plan-detail-action-copy">
+          <span data-status={plan.status}>{statusLabels[plan.status]}</span>
+          <h2 id="plan-action-title">{messages.plans.actionTitle}</h2>
+          <p>{plan.status === "DRAFT" ? messages.plans.actionDraftDescription : plan.status === "ACTIVE" ? messages.plans.actionActiveDescription : messages.plans.actionEndedDescription}</p>
+        </div>
+
+        <div className="plan-detail-action-buttons">
+          {plan.status === "DRAFT" && (
+            <button type="button" disabled={starting} onClick={() => void handleStartPlan()} className="plan-detail-start-button">
+              <Play size={17} fill="currentColor" aria-hidden="true" />
+              {starting ? messages.plans.starting : messages.plans.start}
+            </button>
+          )}
+          <button type="button" disabled={deleting} onClick={handleDelete} className="plan-detail-delete-button">
+            <Trash2 size={17} aria-hidden="true" />
+            {deleting ? messages.common.deleting : messages.plans.delete}
+          </button>
+        </div>
+      </section>
 
 {plan.status === "ACTIVE" ? (
   <ActiveStepManager
     plan={plan}
+    manageHref={`/plans/${plan.id}/steps`}
     onChanged={() =>
       setTreeRevision((value) => value + 1)
     }
   />
 ) : (
-  <section id="plan-steps" className="rounded-xl border bg-white p-6 scroll-mt-6">
-    <StepTreeEditor
-      planId={plan.id}
-      status={plan.status}
-      onChanged={() =>
-        setTreeRevision((value) => value + 1)
-      }
-    />
-  </section>
+  <StepTreeEditor
+    planId={plan.id}
+    status={plan.status}
+    manageHref={plan.status === "DRAFT" ? `/plans/${plan.id}/steps` : undefined}
+    onChanged={() =>
+      setTreeRevision((value) => value + 1)
+    }
+  />
 )}
 
 
 {plan.status === "DRAFT" && (
-  <>
+  <div id="plan-schedule" className="plan-detail-anchor">
     <DraftScheduleEditor
       planId={plan.id}
       startDate={plan.start_date}
       endDate={plan.end_date}
       treeRevision={treeRevision}
     />
-
-    <section className="space-y-4 rounded-xl border p-6">
-      <h2 className="text-xl font-semibold">{messages.plans.startTitle}</h2>
-
-      <p className="text-sm">{messages.plans.startChecklist}</p>
-
-      <p className="text-sm">{messages.plans.startValidation}</p>
-
-      <button
-        type="button"
-        disabled={starting}
-        onClick={() => void handleStartPlan()}
-        className="rounded bg-blue-600 px-5 py-3 text-white disabled:opacity-50"
-      >
-        {starting ? messages.plans.starting : messages.plans.start}
-      </button>
-    </section>
-  </>
+  </div>
 )}
 
 {plan.status !== "DRAFT" && (
@@ -425,21 +417,6 @@ function handlePlanEnded(result: EndPlanResult) {
   />
 )}
 
-
-      <section className="rounded-xl border border-red-200 bg-white p-6">
-        <h2 className="font-semibold text-red-700">{messages.plans.delete}</h2>
-
-        <p className="mt-2 text-sm text-slate-600">{messages.plans.deleteDescription}</p>
-
-        <button
-          type="button"
-          disabled={deleting}
-          onClick={handleDelete}
-          className="mt-4 rounded-lg border border-red-300 px-4 py-2 text-red-700 disabled:opacity-50"
-        >
-          {deleting ? messages.common.deleting : messages.plans.delete}
-        </button>
-      </section>
     </div>
   );
 }

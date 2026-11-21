@@ -8,6 +8,14 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import Link from "next/link";
+import {
+  CheckCircle2,
+  ChevronUp,
+  Plus,
+  RefreshCw,
+  X,
+} from "lucide-react";
 
 import {
   getPlanSteps,
@@ -36,6 +44,7 @@ type Props = {
   planId: number;
   status: PlanStatus;
   onChanged?: () => void;
+  manageHref?: string;
 };
 
 type GroupOption = {
@@ -66,6 +75,14 @@ function collectGroups(
   }
 
   return result;
+}
+
+
+function countNodes(nodes: StepNode[]): number {
+  return nodes.reduce(
+    (total, node) => total + 1 + countNodes(node.children),
+    0,
+  );
 }
 
 
@@ -112,12 +129,12 @@ function TreeItem({
   onDelete: (node: StepNode) => void;
 }) {
   return (
-    <li className="my-3">
-      <div className="rounded border border-slate-200 p-3">
-        <div className="flex flex-wrap items-center gap-3">
+    <li className="plan-step-branch">
+      <div className="plan-step-row" data-kind={node.node_type}>
+        <div className="plan-step-row-heading">
           <strong>{node.name}</strong>
 
-          <span className="text-sm text-slate-500">
+          <span>
             {node.node_type === "GROUP"
               ? messages.steps.groupNode
               : `${node.task_type} · ${node.schedule_mode}`}
@@ -125,32 +142,30 @@ function TreeItem({
         </div>
 
         {canEdit && (
-          <div className="mt-3 flex flex-wrap gap-3 text-sm">
+          <div className="plan-step-row-actions">
             <button
               type="button"
               onClick={() => onRename(node)}
-              className="text-blue-700"
             >{messages.steps.rename}</button>
 
             {node.node_type === "LEAF" && (
               <button
                 type="button"
                 onClick={() => onEditRule(node)}
-                className="text-blue-700"
               >{messages.steps.editRule}</button>
             )}
 
             <button
               type="button"
               onClick={() => onDelete(node)}
-              className="text-red-700"
+              className="is-danger"
             >{messages.steps.deleteNode}</button>
           </div>
         )}
       </div>
 
       {node.children.length > 0 && (
-        <ul className="ml-5 border-l border-slate-200 pl-4">
+        <ul className="plan-step-children">
           {node.children.map((child) => (
             <TreeItem
               key={child.id}
@@ -172,6 +187,7 @@ export function StepTreeEditor({
   planId,
   status,
   onChanged,
+  manageHref,
 }: Props) {
   const canEdit = status === "DRAFT";
 
@@ -182,6 +198,8 @@ export function StepTreeEditor({
 
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(!manageHref);
+  const [creationSuccessOpen, setCreationSuccessOpen] = useState(false);
 
   // 创建节点表单
   const [nodeType, setNodeType] = useState<"LEAF" | "GROUP">(
@@ -210,6 +228,17 @@ export function StepTreeEditor({
     () => collectGroups(tree),
     [tree],
   );
+  const stepCount = useMemo(() => countNodes(tree), [tree]);
+
+
+  useEffect(() => {
+    if (!creationSuccessOpen) return;
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setCreationSuccessOpen(false);
+    }
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [creationSuccessOpen]);
 
 
   // 获取真实树形数据
@@ -262,7 +291,7 @@ export function StepTreeEditor({
     try {
       await action();
 
-      setNotice(successMessage);
+      setNotice(successMessage || null);
       setRevision((value) => value + 1);
       onChanged?.();
 
@@ -332,12 +361,13 @@ export function StepTreeEditor({
 
       const success = await runAction(
         () => createStep(planId, payload),
-        messages.steps.created,
+        "",
       );
 
       if (success) {
         setName("");
         setFirstLeafName("");
+        setCreationSuccessOpen(true);
       }
     } catch (err) {
       setError(getErrorText(err));
@@ -346,6 +376,7 @@ export function StepTreeEditor({
 
 
   function beginRename(node: StepNode) {
+    setCreateOpen(false);
     setRuleNode(null);
     setRenamingNode(node);
     setRenameText(node.name);
@@ -384,6 +415,7 @@ export function StepTreeEditor({
 
 
   function beginEditRule(node: StepNode) {
+    setCreateOpen(false);
     setRenamingNode(null);
     setRuleNode(node);
 
@@ -445,217 +477,71 @@ export function StepTreeEditor({
 
 
   return (
-    <section className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">{messages.steps.title}</h2>
-
-        <button
-          type="button"
-          onClick={() =>
-            setRevision((value) => value + 1)
-          }
-          disabled={loading || busy}
-          className="text-sm text-blue-700"
-        >{messages.steps.refresh}</button>
-      </div>
-
-      {error && (
-        <p role="alert" className="text-red-600">
-          {error}
-        </p>
-      )}
-
-      {notice && (
-        <p role="status" className="text-green-700">
-          {notice}
-        </p>
-      )}
-
-      {loading ? (
-        <p>{messages.steps.loadingFull}</p>
-      ) : tree.length === 0 ? (
-        <p className="text-slate-500">{messages.steps.emptyCurrentPlanSentence}</p>
-      ) : (
-        <ul>
-          {tree.map((node) => (
-            <TreeItem
-              key={node.id}
-              node={node}
-              canEdit={canEdit && !busy}
-              onRename={beginRename}
-              onEditRule={beginEditRule}
-              onDelete={handleDelete}
-            />
-          ))}
-        </ul>
-      )}
-
-      {canEdit && renamingNode && (
-        <form
-          onSubmit={handleRename}
-          className="space-y-3 rounded border p-4"
-        >
-          <h3 className="font-semibold">{messages.steps.renameTitle(renamingNode.name)}
-          </h3>
-
-          <input
-            value={renameText}
-            onChange={(event) =>
-              setRenameText(event.target.value)
-            }
-            maxLength={100}
-            className="w-full rounded border p-2"
-          />
-
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={busy}
-              className="text-blue-700"
-            >{messages.steps.saveName}</button>
-
-            <button
-              type="button"
-              onClick={() => setRenamingNode(null)}
-            >{messages.common.cancel}</button>
-          </div>
-        </form>
-      )}
-
-      {canEdit && ruleNode ? (
-        <form
-          onSubmit={handleUpdateRule}
-          className="space-y-4 rounded border p-4"
-        >
-          <h3 className="font-semibold">{messages.steps.editRuleTitle(ruleNode.name)}
-          </h3>
-
-          <p className="text-sm text-amber-700">{messages.steps.ruleChangeWarning}</p>
-
-          <StepRuleFields
-            mode={mode}
-            onModeChange={setMode}
-            repeatContent={repeatContent}
-            onRepeatContentChange={setRepeatContent}
-            totalText={totalText}
-            onTotalTextChange={setTotalText}
-          />
-
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={busy}
-              className="text-blue-700"
-            >{messages.steps.saveRule}</button>
-
-            <button
-              type="button"
-              onClick={() => setRuleNode(null)}
-            >{messages.common.cancel}</button>
-          </div>
-        </form>
-      ) : canEdit ? (
-        <form
-          onSubmit={handleCreate}
-          className="space-y-4 rounded border p-5"
-        >
-          <h3 className="text-lg font-semibold">{messages.steps.createTitle}</h3>
-
+    <>
+      <section id="plan-steps" className="plan-step-card">
+        <header className="plan-step-card-header">
           <div>
-            <label className="mb-1 block">{messages.steps.parentLabel}</label>
-
-            <select
-              value={parentId}
-              onChange={(event) =>
-                setParentId(event.target.value)
-              }
-              className="w-full rounded border p-2"
-            >
-              <option value="">{messages.steps.rootNode}</option>
-
-              {groups.map((group) => (
-                <option
-                  key={group.id}
-                  value={group.id}
-                >
-                  {group.label}
-                </option>
-              ))}
-            </select>
+            <h2>{messages.steps.title}</h2>
+            <p>{messages.steps.stepCount(stepCount)}</p>
           </div>
-
-          <div>
-            <label className="mb-1 block">{messages.steps.nodeType}</label>
-
-            <select
-              value={nodeType}
-              onChange={(event) =>
-                setNodeType(
-                  event.target.value as "LEAF" | "GROUP",
-                )
-              }
-              className="w-full rounded border p-2"
-            >
-              <option value="LEAF">{messages.steps.leafType}</option>
-
-              <option value="GROUP">{messages.steps.groupWithLeaf}</option>
-            </select>
+          <div className="plan-step-header-actions">
+            <button type="button" className="plan-step-refresh" onClick={() => setRevision((value) => value + 1)} disabled={loading || busy} aria-label={messages.steps.refresh}><RefreshCw size={16} aria-hidden="true" /></button>
+            {canEdit && (manageHref ? (
+              <Link className="plan-step-add" href={manageHref}><span><Plus size={16} /></span>{messages.steps.addStep}</Link>
+            ) : (
+              <button type="button" className="plan-step-add" onClick={() => { setCreateOpen((value) => !value); setRenamingNode(null); setRuleNode(null); }}><span>{createOpen ? <ChevronUp size={16} /> : <Plus size={16} />}</span>{createOpen ? messages.steps.collapseCreate : messages.steps.addStep}</button>
+            ))}
           </div>
+        </header>
 
-          <div>
-            <label className="mb-1 block">
-              {nodeType === "GROUP"
-                ? messages.steps.groupName
-                : messages.steps.leafName}
-            </label>
+        {error && <p role="alert" className="plan-step-feedback is-error">{error}</p>}
+        {notice && <p role="status" className="plan-step-feedback is-success">{notice}</p>}
 
-            <input
-              value={name}
-              onChange={(event) =>
-                setName(event.target.value)
-              }
-              maxLength={100}
-              required
-              className="w-full rounded border p-2"
-            />
-          </div>
-
-          {nodeType === "GROUP" && (
-            <div>
-              <label className="mb-1 block">{messages.steps.firstLeafNameLabel}</label>
-
-              <input
-                value={firstLeafName}
-                onChange={(event) =>
-                  setFirstLeafName(event.target.value)
-                }
-                maxLength={100}
-                required
-                className="w-full rounded border p-2"
-              />
+        {canEdit && renamingNode ? (
+          <form onSubmit={handleRename} className="plan-step-editor">
+            <h3>{messages.steps.renameTitle(renamingNode.name)}</h3>
+            <label htmlFor="step-rename">{messages.steps.nodeName}</label>
+            <input id="step-rename" value={renameText} onChange={(event) => setRenameText(event.target.value)} maxLength={100} />
+            <div className="plan-step-editor-actions"><button type="submit" disabled={busy}>{messages.steps.saveName}</button><button type="button" className="is-secondary" onClick={() => setRenamingNode(null)}>{messages.common.cancel}</button></div>
+          </form>
+        ) : canEdit && ruleNode ? (
+          <form onSubmit={handleUpdateRule} className="plan-step-editor">
+            <h3>{messages.steps.editRuleTitle(ruleNode.name)}</h3>
+            <p className="plan-step-warning">{messages.steps.ruleChangeWarning}</p>
+            <StepRuleFields mode={mode} onModeChange={setMode} repeatContent={repeatContent} onRepeatContentChange={setRepeatContent} totalText={totalText} onTotalTextChange={setTotalText} />
+            <div className="plan-step-editor-actions"><button type="submit" disabled={busy}>{messages.steps.saveRule}</button><button type="button" className="is-secondary" onClick={() => setRuleNode(null)}>{messages.common.cancel}</button></div>
+          </form>
+        ) : canEdit && createOpen ? (
+          <form onSubmit={handleCreate} className="plan-step-editor">
+            <h3>{messages.steps.createTitle}</h3>
+            <div className="plan-step-form-grid">
+              <div><label htmlFor="step-parent">{messages.steps.parentLabel}</label><select id="step-parent" value={parentId} onChange={(event) => setParentId(event.target.value)}><option value="">{messages.steps.rootNode}</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.label}</option>)}</select></div>
+              <div><label htmlFor="step-type">{messages.steps.nodeType}</label><select id="step-type" value={nodeType} onChange={(event) => setNodeType(event.target.value as "LEAF" | "GROUP")}><option value="LEAF">{messages.steps.leafType}</option><option value="GROUP">{messages.steps.groupWithLeaf}</option></select></div>
+              <div className="plan-step-form-wide"><label htmlFor="step-name">{nodeType === "GROUP" ? messages.steps.groupName : messages.steps.leafName}</label><input id="step-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={100} required /></div>
+              {nodeType === "GROUP" && <div className="plan-step-form-wide"><label htmlFor="step-first-leaf">{messages.steps.firstLeafNameLabel}</label><input id="step-first-leaf" value={firstLeafName} onChange={(event) => setFirstLeafName(event.target.value)} maxLength={100} required /></div>}
             </div>
-          )}
+            <StepRuleFields mode={mode} onModeChange={setMode} repeatContent={repeatContent} onRepeatContentChange={setRepeatContent} totalText={totalText} onTotalTextChange={setTotalText} />
+            <div className="plan-step-editor-actions"><button type="submit" disabled={busy}><Plus size={16} aria-hidden="true" />{busy ? messages.common.submitting : messages.steps.create}</button></div>
+          </form>
+        ) : !canEdit ? <p className="plan-step-readonly">{messages.steps.readOnlyHint}</p> : null}
 
-          <StepRuleFields
-            mode={mode}
-            onModeChange={setMode}
-            repeatContent={repeatContent}
-            onRepeatContentChange={setRepeatContent}
-            totalText={totalText}
-            onTotalTextChange={setTotalText}
-          />
+        <div className="plan-step-tree-section">
+          <h3>{messages.steps.treeHeading}</h3>
+          {loading ? <p className="plan-step-empty">{messages.steps.loadingFull}</p> : tree.length === 0 ? <p className="plan-step-empty">{messages.steps.emptyCurrentPlanSentence}</p> : <ul className="plan-step-tree">{tree.map((node) => <TreeItem key={node.id} node={node} canEdit={canEdit && !busy} onRename={beginRename} onEditRule={beginEditRule} onDelete={handleDelete} />)}</ul>}
+        </div>
+      </section>
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
-          >
-            {busy ? messages.common.submitting : messages.steps.create}
-          </button>
-        </form>
-      ) : (
-        <p className="text-sm text-slate-500">{messages.steps.readOnlyHint}</p>
+      {creationSuccessOpen && (
+        <div className="plan-step-success-backdrop">
+          <section className="plan-step-success-dialog" role="dialog" aria-modal="true" aria-labelledby="step-success-title">
+            <button type="button" className="plan-step-success-close" onClick={() => setCreationSuccessOpen(false)} aria-label={messages.steps.closeCreatedDialog}><X size={20} /></button>
+            <span className="plan-step-success-mark" aria-hidden="true"><CheckCircle2 size={34} /></span>
+            <h2 id="step-success-title">{messages.steps.createdDialogTitle}</h2>
+            <p>{messages.steps.createdDialogDescription}</p>
+            <button type="button" className="plan-step-success-action" onClick={() => setCreationSuccessOpen(false)} autoFocus>{messages.steps.continueAdding}</button>
+          </section>
+        </div>
       )}
-    </section>
+    </>
   );
 }
