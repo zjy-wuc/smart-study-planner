@@ -82,13 +82,15 @@ def active_counts(
     return int(global_count), int(user_count)
 
 #登记 AI 请求
+
 def insert_request(
     db: Session,
     request_id: str,
     user_id: int,
-    note_id: int,
+    note_id: int | None,
     request_date: date,
     lease_seconds: int,
+    operation: str = "SUMMARY",
 ) -> None:
     db.execute(
         text("""
@@ -105,7 +107,7 @@ def insert_request(
                 :request_id,
                 :user_id,
                 :note_id,
-                'SUMMARY',
+                :operation,
                 :request_date,
                 'RUNNING',
                 DATE_ADD(
@@ -118,6 +120,7 @@ def insert_request(
             "request_id": request_id,
             "user_id": user_id,
             "note_id": note_id,
+            "operation": operation,
             "request_date": request_date,
             "lease_seconds": lease_seconds,
         },

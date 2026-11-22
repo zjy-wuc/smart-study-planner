@@ -36,6 +36,10 @@ export function ScrollPositionManager() {
 
     const restore = () => {
       if (!restoring || target === null) return;
+      if (/^#plan-(basic|actions|schedule)$/.test(window.location.hash)) {
+        stopRestoring();
+        return;
+      }
       const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
       window.scrollTo({ top: Math.min(target, maxScroll), behavior: "instant" });
       if (maxScroll >= target && Math.abs(window.scrollY - target) < 2) {

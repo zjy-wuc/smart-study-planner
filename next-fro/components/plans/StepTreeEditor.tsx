@@ -5,12 +5,15 @@ import { messages } from "@/messages";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
-import Link from "next/link";
 import {
   CheckCircle2,
+  ChevronDown,
+  Ellipsis,
   ChevronUp,
   Plus,
   RefreshCw,
@@ -44,12 +47,12 @@ type Props = {
   planId: number;
   status: PlanStatus;
   onChanged?: () => void;
-  manageHref?: string;
 };
 
 type GroupOption = {
   id: number;
   label: string;
+  name: string;
 };
 
 
@@ -66,6 +69,7 @@ function collectGroups(
 
     result.push({
       id: node.id,
+      name: node.name,
       label: `${"— ".repeat(depth)}${node.name}`,
     });
 
@@ -83,6 +87,15 @@ function countNodes(nodes: StepNode[]): number {
     (total, node) => total + 1 + countNodes(node.children),
     0,
   );
+}
+
+function findStepPath(nodes: StepNode[], id: number): number[] {
+  for (const node of nodes) {
+    if (node.id === id) return [id];
+    const path = findStepPath(node.children, id);
+    if (path.length) return [node.id, ...path];
+  }
+  return [];
 }
 
 
@@ -121,33 +134,68 @@ function TreeItem({
   onRename,
   onEditRule,
   onDelete,
+  controls,
 }: {
   node: StepNode;
   canEdit: boolean;
   onRename: (node: StepNode) => void;
   onEditRule: (node: StepNode) => void;
   onDelete: (node: StepNode) => void;
+  controls: {
+    collapsed: number[];
+    toggle: (id: number) => void;
+    editId?: number;
+    savedId: number | null;
+    editor: ReactNode;
+    addChild: (id: number) => void;
+  };
 }) {
+  const isGroup = node.node_type === "GROUP";
+  const expandable = node.children.length > 0;
+  const open = !controls.collapsed.includes(node.id);
+  const editing = controls.editId === node.id;
+  const saved = controls.savedId === node.id;
+  const ruleLabels = {
+    BOOLEAN_REPEAT: messages.steps.booleanRepeat,
+    BOOLEAN_DAILY_CUSTOM: messages.steps.booleanCustom,
+    NUMERIC_AUTO_DISTRIBUTE: messages.steps.numericAuto,
+    NUMERIC_DAILY_MANUAL: messages.steps.numericManual,
+  };
+
   return (
     <li className="plan-step-branch">
-      <div className="plan-step-row" data-kind={node.node_type}>
+      <div
+        id={`plan-step-row-${node.id}`}
+        className="plan-step-row"
+        data-kind={node.node_type}
+        data-feedback={editing ? "editing" : saved ? "saved" : undefined}
+      >
         <div className="plan-step-row-heading">
+          {expandable && (
+            <button
+              type="button"
+              className="plan-step-disclosure"
+              aria-expanded={open}
+              aria-controls={open ? `plan-step-children-${node.id}` : undefined}
+              aria-label={node.name}
+              onClick={() => controls.toggle(node.id)}
+            ><ChevronDown size={15} aria-hidden="true" /></button>
+          )}
           <strong>{node.name}</strong>
-
           <span>
-            {node.node_type === "GROUP"
+            {isGroup
               ? messages.steps.groupNode
-              : `${node.task_type} · ${node.schedule_mode}`}
+              : ruleLabels[getRuleMode(node)]}
           </span>
+          {editing && <span className="plan-step-row-feedback">{messages.steps.editInProgress}</span>}
+          {saved && <span role="status" className="plan-step-row-feedback">{messages.steps.rowSaved}</span>}
         </div>
 
         {canEdit && (
           <div className="plan-step-row-actions">
-            <button
-              type="button"
-              onClick={() => onRename(node)}
-            >{messages.steps.rename}</button>
-
+            {isGroup && (
+              <button type="button" onClick={() => controls.addChild(node.id)}>{messages.steps.addChild}</button>
+            )}
             {node.node_type === "LEAF" && (
               <button
                 type="button"
@@ -155,17 +203,28 @@ function TreeItem({
               >{messages.steps.editRule}</button>
             )}
 
-            <button
-              type="button"
-              onClick={() => onDelete(node)}
-              className="is-danger"
-            >{messages.steps.deleteNode}</button>
+            <details className="plan-step-row-menu">
+              <summary aria-label={`${node.name} · ${messages.plans.moreActions}`}>
+                <Ellipsis size={16} aria-hidden="true" />
+              </summary>
+              <div>
+                <button type="button" onClick={(event) => {
+                  event.currentTarget.closest("details")?.removeAttribute("open");
+                  onRename(node);
+                }}>{messages.steps.rename}</button>
+                <button type="button" className="is-danger" onClick={(event) => {
+                  event.currentTarget.closest("details")?.removeAttribute("open");
+                  onDelete(node);
+                }}>{messages.steps.deleteNode}</button>
+              </div>
+            </details>
           </div>
         )}
       </div>
+      {editing && controls.editor}
 
-      {node.children.length > 0 && (
-        <ul className="plan-step-children">
+      {expandable && open && (
+        <ul id={`plan-step-children-${node.id}`} className="plan-step-children">
           {node.children.map((child) => (
             <TreeItem
               key={child.id}
@@ -174,6 +233,7 @@ function TreeItem({
               onRename={onRename}
               onEditRule={onEditRule}
               onDelete={onDelete}
+              controls={controls}
             />
           ))}
         </ul>
@@ -187,7 +247,6 @@ export function StepTreeEditor({
   planId,
   status,
   onChanged,
-  manageHref,
 }: Props) {
   const canEdit = status === "DRAFT";
 
@@ -198,8 +257,16 @@ export function StepTreeEditor({
 
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [createOpen, setCreateOpen] = useState(!manageHref);
+  const [createOpen, setCreateOpen] = useState(false);
   const [creationSuccessOpen, setCreationSuccessOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<number[]>([]);
+  const [savedId, setSavedId] = useState<number | null>(null);
+  const [revealId, setRevealId] = useState<number | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const editScroll = useRef(0);
+  const restoredKey = useRef("");
+  const stateKey = `plan-steps:${planId}`;
+  const scrollKey = `${stateKey}:editor:scroll`;
 
   // 创建节点表单
   const [nodeType, setNodeType] = useState<"LEAF" | "GROUP">(
@@ -229,6 +296,58 @@ export function StepTreeEditor({
     [tree],
   );
   const stepCount = useMemo(() => countNodes(tree), [tree]);
+  const editId = renamingNode?.id ?? ruleNode?.id;
+
+  useEffect(() => {
+    if (savedId === null) return;
+    const timer = window.setTimeout(() => setSavedId(null), 2500);
+    return () => window.clearTimeout(timer);
+  }, [savedId]);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (loading || !list) return;
+    if (restoredKey.current !== scrollKey) {
+      restoredKey.current = scrollKey;
+      try {
+        list.scrollTop = Number(sessionStorage.getItem(scrollKey)) || 0;
+      } catch {
+        // The list still works when storage is disabled.
+      }
+    }
+    if (creationSuccessOpen || revealId === null) return;
+    const row = document.getElementById(`plan-step-row-${revealId}`);
+    if (!row || !list.contains(row)) return;
+    const rowBounds = row.getBoundingClientRect();
+    const listBounds = list.getBoundingClientRect();
+    if (rowBounds.top < 0 || rowBounds.bottom > window.innerHeight) {
+      row.scrollIntoView({ block: "nearest" });
+    } else if (rowBounds.top < listBounds.top) {
+      list.scrollTop += rowBounds.top - listBounds.top;
+    } else if (rowBounds.bottom > listBounds.bottom) {
+      list.scrollTop += rowBounds.bottom - listBounds.bottom;
+    }
+    const frame = requestAnimationFrame(() => setRevealId(null));
+    return () => cancelAnimationFrame(frame);
+  }, [creationSuccessOpen, loading, revealId, scrollKey, tree]);
+
+  function updateCollapsed(next: number[]) {
+    setCollapsed(next);
+    try {
+      sessionStorage.setItem(stateKey, JSON.stringify(next));
+    } catch {
+      // Collapse state still applies to the current view.
+    }
+  }
+
+  function beginCreate(parent = "") {
+    setError(null);
+    setParentId(parent);
+    setRenamingNode(null);
+    setRuleNode(null);
+    setCreateOpen(true);
+    requestAnimationFrame(() => document.getElementById("step-name")?.focus());
+  }
 
 
   useEffect(() => {
@@ -254,6 +373,21 @@ export function StepTreeEditor({
 
         if (!cancelled) {
           setTree(result);
+          if (restoredKey.current !== scrollKey) {
+            const parent = new URLSearchParams(window.location.search).get("parent");
+            if (parent && collectGroups(result).some((group) => String(group.id) === parent)) {
+              setParentId(parent);
+              setCreateOpen(true);
+            } else if (canEdit && result.length === 0) {
+              setCreateOpen(true);
+            }
+            try {
+              const stored = JSON.parse(sessionStorage.getItem(stateKey) ?? "[]");
+              if (Array.isArray(stored)) setCollapsed(stored);
+            } catch {
+              // Storage is optional.
+            }
+          }
         }
       } catch (err) {
         if (!cancelled) {
@@ -272,7 +406,7 @@ export function StepTreeEditor({
     return () => {
       cancelled = true;
     };
-  }, [planId, revision]);
+  }, [canEdit, planId, revision, scrollKey, stateKey]);
 
 
   // 统一处理修改操作
@@ -359,12 +493,18 @@ export function StepTreeEditor({
         };
       }
 
+      let createdId = 0;
       const success = await runAction(
-        () => createStep(planId, payload),
+        async () => { createdId = await createStep(planId, payload); },
         "",
       );
 
       if (success) {
+        if (parent !== null) {
+          const path = findStepPath(tree, parent);
+          updateCollapsed(collapsed.filter((id) => !path.includes(id)));
+        }
+        setRevealId(createdId);
         setName("");
         setFirstLeafName("");
         setCreationSuccessOpen(true);
@@ -376,10 +516,14 @@ export function StepTreeEditor({
 
 
   function beginRename(node: StepNode) {
+    editScroll.current = listRef.current?.scrollTop ?? 0;
+    setError(null);
+    setSavedId(null);
     setCreateOpen(false);
     setRuleNode(null);
     setRenamingNode(node);
     setRenameText(node.name);
+    requestAnimationFrame(() => document.getElementById("step-rename")?.focus());
   }
 
 
@@ -409,12 +553,16 @@ export function StepTreeEditor({
     );
 
     if (success) {
-      setRenamingNode(null);
+      setSavedId(renamingNode.id);
+      closeEditor();
     }
   }
 
 
   function beginEditRule(node: StepNode) {
+    editScroll.current = listRef.current?.scrollTop ?? 0;
+    setError(null);
+    setSavedId(null);
     setCreateOpen(false);
     setRenamingNode(null);
     setRuleNode(node);
@@ -422,6 +570,7 @@ export function StepTreeEditor({
     setMode(getRuleMode(node));
     setRepeatContent(node.repeat_content ?? "");
     setTotalText(String(node.total_target ?? 0));
+    requestAnimationFrame(() => document.getElementById("rule-mode")?.focus());
   }
 
 
@@ -447,13 +596,23 @@ export function StepTreeEditor({
       );
 
       if (success) {
-        setRuleNode(null);
+        setSavedId(ruleNode.id);
+        closeEditor();
       }
     } catch (err) {
       setError(getErrorText(err));
     }
   }
 
+  function closeEditor() {
+    setError(null);
+    setRenamingNode(null);
+    setRuleNode(null);
+    const previousScroll = editScroll.current;
+    requestAnimationFrame(() => {
+      if (listRef.current) listRef.current.scrollTop = previousScroll;
+    });
+  }
 
   async function handleDelete(node: StepNode) {
     const confirmed = window.confirm(
@@ -476,9 +635,27 @@ export function StepTreeEditor({
   }
 
 
+  const editor = renamingNode ? (
+    <form onSubmit={handleRename} className="plan-step-editor">
+      <h3>{messages.steps.renameTitle(renamingNode.name)}</h3>
+      {error && <p role="alert" className="plan-step-feedback is-error">{error}</p>}
+      <label htmlFor="step-rename">{messages.steps.nodeName}</label>
+      <input id="step-rename" value={renameText} onChange={(event) => setRenameText(event.target.value)} maxLength={100} />
+      <div className="plan-step-editor-actions"><button type="submit" disabled={busy}>{messages.steps.saveName}</button><button type="button" className="is-secondary" disabled={busy} onClick={closeEditor}>{messages.common.cancel}</button></div>
+    </form>
+  ) : ruleNode ? (
+    <form onSubmit={handleUpdateRule} className="plan-step-editor">
+      <h3>{messages.steps.editRuleTitle(ruleNode.name)}</h3>
+      {error && <p role="alert" className="plan-step-feedback is-error">{error}</p>}
+      <p className="plan-step-warning">{messages.steps.ruleChangeWarning}</p>
+      <StepRuleFields mode={mode} onModeChange={setMode} repeatContent={repeatContent} onRepeatContentChange={setRepeatContent} totalText={totalText} onTotalTextChange={setTotalText} />
+      <div className="plan-step-editor-actions"><button type="submit" disabled={busy}>{messages.steps.saveRule}</button><button type="button" className="is-secondary" disabled={busy} onClick={closeEditor}>{messages.common.cancel}</button></div>
+    </form>
+  ) : null;
+
   return (
     <>
-      <section id="plan-steps" className="plan-step-card">
+      <section id="plan-steps" className="plan-step-card plan-draft-step-card">
         <header className="plan-step-card-header">
           <div>
             <h2>{messages.steps.title}</h2>
@@ -486,34 +663,19 @@ export function StepTreeEditor({
           </div>
           <div className="plan-step-header-actions">
             <button type="button" className="plan-step-refresh" onClick={() => setRevision((value) => value + 1)} disabled={loading || busy} aria-label={messages.steps.refresh}><RefreshCw size={16} aria-hidden="true" /></button>
-            {canEdit && (manageHref ? (
-              <Link className="plan-step-add" href={manageHref}><span><Plus size={16} /></span>{messages.steps.addStep}</Link>
-            ) : (
-              <button type="button" className="plan-step-add" onClick={() => { setCreateOpen((value) => !value); setRenamingNode(null); setRuleNode(null); }}><span>{createOpen ? <ChevronUp size={16} /> : <Plus size={16} />}</span>{createOpen ? messages.steps.collapseCreate : messages.steps.addStep}</button>
-            ))}
+            {canEdit && (
+              <button type="button" className="plan-step-add" onClick={() => createOpen ? setCreateOpen(false) : beginCreate()}><span>{createOpen ? <ChevronUp size={16} /> : <Plus size={16} />}</span>{createOpen ? messages.steps.collapseCreate : messages.steps.addStep}</button>
+            )}
           </div>
         </header>
 
-        {error && <p role="alert" className="plan-step-feedback is-error">{error}</p>}
+        {error && editId === undefined && <p role="alert" className="plan-step-feedback is-error">{error}</p>}
         {notice && <p role="status" className="plan-step-feedback is-success">{notice}</p>}
 
-        {canEdit && renamingNode ? (
-          <form onSubmit={handleRename} className="plan-step-editor">
-            <h3>{messages.steps.renameTitle(renamingNode.name)}</h3>
-            <label htmlFor="step-rename">{messages.steps.nodeName}</label>
-            <input id="step-rename" value={renameText} onChange={(event) => setRenameText(event.target.value)} maxLength={100} />
-            <div className="plan-step-editor-actions"><button type="submit" disabled={busy}>{messages.steps.saveName}</button><button type="button" className="is-secondary" onClick={() => setRenamingNode(null)}>{messages.common.cancel}</button></div>
-          </form>
-        ) : canEdit && ruleNode ? (
-          <form onSubmit={handleUpdateRule} className="plan-step-editor">
-            <h3>{messages.steps.editRuleTitle(ruleNode.name)}</h3>
-            <p className="plan-step-warning">{messages.steps.ruleChangeWarning}</p>
-            <StepRuleFields mode={mode} onModeChange={setMode} repeatContent={repeatContent} onRepeatContentChange={setRepeatContent} totalText={totalText} onTotalTextChange={setTotalText} />
-            <div className="plan-step-editor-actions"><button type="submit" disabled={busy}>{messages.steps.saveRule}</button><button type="button" className="is-secondary" onClick={() => setRuleNode(null)}>{messages.common.cancel}</button></div>
-          </form>
-        ) : canEdit && createOpen ? (
+        {canEdit && createOpen ? (
           <form onSubmit={handleCreate} className="plan-step-editor">
             <h3>{messages.steps.createTitle}</h3>
+            <p className="plan-step-create-target">{messages.steps.addTo(groups.find((group) => String(group.id) === parentId)?.name ?? messages.steps.rootNode)}</p>
             <div className="plan-step-form-grid">
               <div><label htmlFor="step-parent">{messages.steps.parentLabel}</label><select id="step-parent" value={parentId} onChange={(event) => setParentId(event.target.value)}><option value="">{messages.steps.rootNode}</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.label}</option>)}</select></div>
               <div><label htmlFor="step-type">{messages.steps.nodeType}</label><select id="step-type" value={nodeType} onChange={(event) => setNodeType(event.target.value as "LEAF" | "GROUP")}><option value="LEAF">{messages.steps.leafType}</option><option value="GROUP">{messages.steps.groupWithLeaf}</option></select></div>
@@ -525,9 +687,41 @@ export function StepTreeEditor({
           </form>
         ) : !canEdit ? <p className="plan-step-readonly">{messages.steps.readOnlyHint}</p> : null}
 
-        <div className="plan-step-tree-section">
-          <h3>{messages.steps.treeHeading}</h3>
-          {loading ? <p className="plan-step-empty">{messages.steps.loadingFull}</p> : tree.length === 0 ? <p className="plan-step-empty">{messages.steps.emptyCurrentPlanSentence}</p> : <ul className="plan-step-tree">{tree.map((node) => <TreeItem key={node.id} node={node} canEdit={canEdit && !busy} onRename={beginRename} onEditRule={beginEditRule} onDelete={handleDelete} />)}</ul>}
+        <div className="plan-step-tree-section" aria-busy={loading}>
+          {tree.length === 0 ? (
+            <p className="plan-step-empty">{loading ? messages.steps.loadingFull : messages.steps.emptyCurrentPlanSentence}</p>
+          ) : (
+            <ul
+              className="plan-step-tree"
+              ref={listRef}
+              onScroll={(event) => {
+                try {
+                  sessionStorage.setItem(scrollKey, String(event.currentTarget.scrollTop));
+                } catch {
+                  // Scrolling does not depend on storage.
+                }
+              }}
+            >
+              {tree.map((node) => (
+                <TreeItem
+                  key={node.id}
+                  node={node}
+                  canEdit={canEdit && !busy && !loading}
+                  onRename={beginRename}
+                  onEditRule={beginEditRule}
+                  onDelete={handleDelete}
+                  controls={{
+                    collapsed,
+                    toggle: (id) => updateCollapsed(collapsed.includes(id) ? collapsed.filter((item) => item !== id) : [...collapsed, id]),
+                    editId,
+                    savedId,
+                    editor,
+                    addChild: (id) => beginCreate(String(id)),
+                  }}
+                />
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 

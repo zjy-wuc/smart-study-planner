@@ -6,7 +6,7 @@ export const knowledge = {
   noResults: "没有找到匹配的笔记，请调整筛选条件。", emptyTrash: "回收站为空。",
   loading: "正在加载…", failed: "操作失败，请重试。", retry: "重试", refresh: "刷新",
   name: "笔记标题", content: "Markdown 正文", preview: "预览", write: "编辑",
-  previewEmpty: "在左侧写下内容，这里将显示 Markdown 预览。", save: "保存笔记", saving: "正在处理…",
+  previewEmpty: "输入正文后，这里会显示 Markdown 预览。", save: "保存笔记", saving: "正在处理…",
   saved: "笔记已保存。", cancel: "取消", delete: "移入回收站", restore: "恢复笔记",
   deleted: "笔记已移入回收站。", restored: "笔记已恢复，可返回知识中心查看。",
   deleteConfirm: "确定将这篇笔记移入回收站吗？复习历史会保留。",

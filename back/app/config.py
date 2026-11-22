@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     AI_MAX_NOTE_CHARS: int = 12000
     AI_MAX_OUTPUT_CHARS: int = 12000
     AI_STREAM_CHUNK_CHARS: int = 240
+    AI_MAX_OUTPUT_TOKENS: int = 3500
 
     # 共享额度
     AI_USER_DAILY_LIMIT: int = 5

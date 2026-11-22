@@ -42,7 +42,7 @@ async def stream_completion(
             "include_usage": True,
         },
         "thinking": {"type": "disabled"},
-        "max_tokens": 1600,
+        "max_tokens": settings.AI_MAX_OUTPUT_TOKENS,
         "safety_check": {"level": "high"},
     }
 

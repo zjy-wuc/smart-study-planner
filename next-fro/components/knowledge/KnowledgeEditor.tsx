@@ -110,43 +110,58 @@ export function KnowledgeEditor({ initial }: { initial?: KnowledgeNote }) {
     }, m.saved);
   }
 
-  return <div className="knowledge-page">
+  return <div className="knowledge-page knowledge-editor-page">
     <header className="knowledge-heading"><h1>{initial ? m.edit : m.create}</h1><Link href="/knowledge">{m.back}</Link></header>
     {action.error && <p role="alert" className="knowledge-error">{action.error}</p>}
     {action.notice && <p role="status" className="knowledge-success">{action.notice}</p>}
     <form onSubmit={(event) => void save(event)} onChange={() => { skipGuard.current = false; }}>
       <fieldset disabled={action.busy} className="knowledge-fields">
-        <label>{m.name}<input value={form.title} maxLength={200} required onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
-        <div className="knowledge-attachments">
-          <label>{m.tags}<input value={tags} onChange={(event) => setTags(event.target.value)} aria-describedby="knowledge-tags-hint" /><small id="knowledge-tags-hint">{m.tagHint}</small></label>
-          <label>{m.plan}<select value={form.plan_id ?? ""} disabled={plans.loading || !!plans.error} onChange={(event) => setForm({ ...form, plan_id: event.target.value ? Number(event.target.value) : null, step_id: null })}>
-            <option value="">{m.unattached}</option>
-            {form.plan_id !== null && !plans.data?.some((plan) => plan.id === form.plan_id) && <option value={form.plan_id}>{m.unavailable}</option>}
-            {plans.data?.map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}
-          </select></label>
-          <label>{m.step}<select value={form.step_id ?? ""} disabled={form.plan_id === null || steps.loading || !!steps.error || steps.data?.planId !== form.plan_id} onChange={(event) => setForm({ ...form, step_id: event.target.value ? Number(event.target.value) : null })}>
-            <option value="">{form.plan_id === null ? m.unattached : m.planOnly}</option>
-            {form.step_id !== null && !leaves.some((leaf) => leaf.id === form.step_id) && <option value={form.step_id}>{m.unavailable}</option>}
-            {leaves.map((leaf) => <option key={leaf.id} value={leaf.id}>{leaf.name}</option>)}
-          </select></label>
+        <div className="knowledge-metadata">
+          <label>{m.name}<input value={form.title} maxLength={200} required onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
+          <div className="knowledge-attachments">
+            <label>{m.tags}
+              <input value={tags} onChange={(event) => setTags(event.target.value)} aria-describedby="knowledge-tags-hint" />
+              <small id="knowledge-tags-hint">{m.tagHint}</small>
+            </label>
+            <label>{m.plan}
+              <select value={form.plan_id ?? ""} disabled={plans.loading || !!plans.error} onChange={(event) => setForm({ ...form, plan_id: event.target.value ? Number(event.target.value) : null, step_id: null })}>
+                <option value="">{m.unattached}</option>
+                {form.plan_id !== null && !plans.data?.some((plan) => plan.id === form.plan_id) && <option value={form.plan_id}>{m.unavailable}</option>}
+                {plans.data?.map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}
+              </select>
+            </label>
+            <label>{m.step}
+              <select value={form.step_id ?? ""} disabled={form.plan_id === null || steps.loading || !!steps.error || steps.data?.planId !== form.plan_id} onChange={(event) => setForm({ ...form, step_id: event.target.value ? Number(event.target.value) : null })}>
+                <option value="">{form.plan_id === null ? m.unattached : m.planOnly}</option>
+                {form.step_id !== null && !leaves.some((leaf) => leaf.id === form.step_id) && <option value={form.step_id}>{m.unavailable}</option>}
+                {leaves.map((leaf) => <option key={leaf.id} value={leaf.id}>{leaf.name}</option>)}
+              </select>
+            </label>
+          </div>
+          {(plans.error || steps.error) && <p role="alert" className="knowledge-error">{m.associationError} <button type="button" onClick={() => { plans.refresh(); steps.refresh(); }}>{m.retry}</button></p>}
         </div>
-        {(plans.error || steps.error) && <p role="alert" className="knowledge-error">{m.associationError} <button type="button" onClick={() => { plans.refresh(); steps.refresh(); }}>{m.retry}</button></p>}
         <div className="knowledge-tabs" role="group" aria-label={m.content}>
           <button type="button" aria-pressed={tab === "edit"} onClick={() => setTab("edit")}>{m.write}</button>
           <button type="button" aria-pressed={tab === "preview"} onClick={() => setTab("preview")}>{m.preview}</button>
         </div>
         <div className="knowledge-editor-grid" data-tab={tab}>
-          <label className="knowledge-write">{m.content}<textarea value={form.content_md} onChange={(event) => setForm({ ...form, content_md: event.target.value })} spellCheck={false} /></label>
-          <section className="knowledge-preview" aria-label={m.preview}><h2>{m.preview}</h2><KnowledgeMarkdownPreview content={preview} /></section>
+          <label className="knowledge-write">
+            <span className="knowledge-pane-title">{m.content}</span>
+            <textarea value={form.content_md} onChange={(event) => setForm({ ...form, content_md: event.target.value })} spellCheck={false} />
+          </label>
+          <section className="knowledge-preview" aria-label={m.preview} data-empty={!preview.trim()}>
+            <h2 className="knowledge-pane-title">{m.preview}</h2>
+            <KnowledgeMarkdownPreview content={preview} />
+          </section>
         </div>
         <div className="knowledge-actions knowledge-save">
-          <button className="knowledge-primary" type="submit">{action.busy ? m.saving : m.save}</button>
-          <Link href="/knowledge">{m.cancel}</Link>
-          {dirty && <span className="knowledge-meta">{m.unsaved}</span>}
-          {initial && <button type="button" onClick={() => {
+          {initial && <button className="knowledge-note-delete" type="button" onClick={() => {
             if (!window.confirm(m.deleteConfirm)) return;
             void action.run(async () => { await deleteNote(initial.id); skipGuard.current = true; router.replace("/knowledge/trash"); }, m.deleted);
           }}>{m.delete}</button>}
+          {dirty && <span className="knowledge-meta">{m.unsaved}</span>}
+          <Link className="knowledge-note-cancel" href="/knowledge">{m.cancel}</Link>
+          <button className="knowledge-primary" type="submit">{action.busy ? m.saving : m.save}</button>
         </div>
       </fieldset>
     </form>

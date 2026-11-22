@@ -1,0 +1,158 @@
+.plan-workflow-nav[data-view="create"] {
+  margin-bottom: 18px;
+}
+
+.plan-detail-page.plan-workflow-page,
+.plan-create-page.plan-workflow-page,
+.plan-step-workspace.plan-workflow-page {
+  width: min(920px, 100%);
+}
+
+.plan-workflow-header,
+.plan-workflow-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plan-workflow-header {
+  justify-content: space-between;
+}
+
+.plan-workflow-title {
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+
+.plan-workflow-title h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.plan-workflow-title > span {
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: #e1edf9;
+  color: #245fa0;
+  font-size: 12px;
+}
+
+.plan-workflow-stage:not([hidden]) {
+  display: grid;
+  gap: 16px;
+}
+
+.plan-workflow-card {
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid #dce7f2;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.plan-workflow-card h2 {
+  color: #203b53;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.plan-workflow-card > p:not([role]) {
+  color: #526b83;
+}
+
+.plan-workflow-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.plan-workflow-menu {
+  position: relative;
+  flex: none;
+}
+
+.plan-workflow-menu summary {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid #dce7f2;
+  border-radius: 8px;
+  background: #fff;
+  color: #365a7d;
+  cursor: pointer;
+}
+
+.plan-workflow-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan-workflow-menu > div {
+  position: absolute;
+  z-index: 6;
+  inset-inline-end: 0;
+  top: calc(100% + 4px);
+  min-width: max-content;
+  padding: 4px;
+  border: 1px solid #dce7f2;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.plan-workflow-menu button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  color: #983e3e;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.plan-workflow-menu button:hover:not(:disabled) {
+  background: #fff3f3;
+}
+
+.plan-step-workflow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-step-workflow li {
+  color: #526b83;
+  font-size: 12px;
+  text-align: center;
+}
+
+.plan-step-workflow :is(a, span) {
+  display: grid;
+  min-height: 42px;
+  padding: 6px 8px;
+  place-items: center;
+  border-bottom: 2px solid #d8e4ef;
+  color: inherit;
+  text-decoration: none;
+}
+
+.plan-step-workflow a:hover {
+  background: #e7f1fc;
+}
+
+.plan-step-workflow a:focus-visible {
+  outline: 2px solid #286fc3;
+  outline-offset: -2px;
+}
+
+.plan-step-workflow li[data-state="done"] a {
+  border-color: #98bad8;
+}
+
+.plan-step-workflow [aria-current="step"] {
+  border-color: #286fc3;
+  color: #2867ad;
+  font-weight: 700;
+}

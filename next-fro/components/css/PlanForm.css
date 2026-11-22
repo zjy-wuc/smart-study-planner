@@ -35,75 +35,6 @@
   color: #667b90;
 }
 
-.plan-create-progress {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  margin: 0 0 18px;
-  padding: 0;
-  list-style: none;
-}
-
-.plan-create-progress li {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  color: #8393a4;
-}
-
-.plan-create-progress li:not(:last-child)::after {
-  position: absolute;
-  top: 16px;
-  left: 46px;
-  right: 14px;
-  height: 1px;
-  background: #d7e2ed;
-  content: "";
-}
-
-.plan-create-progress li > span {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #d7e2ed;
-  border-radius: 50%;
-  background: #f8fbfd;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.plan-create-progress li[aria-current="step"] {
-  color: #245fae;
-}
-
-.plan-create-progress li[aria-current="step"] > span {
-  border-color: #2d70c5;
-  color: #fff;
-  background: #2d70c5;
-}
-
-.plan-create-progress strong,
-.plan-create-progress small {
-  display: block;
-}
-
-.plan-create-progress strong {
-  color: currentColor;
-  font-size: 13px;
-}
-
-.plan-create-progress small {
-  margin-top: 1px;
-  color: #7890a6;
-  font-size: 10px;
-}
-
 .plan-form {
   overflow: hidden;
   border: 1px solid #dce7f2;
@@ -333,7 +264,23 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
   transition: background 160ms ease, transform 160ms ease;
+}
+
+.plan-form-submit.is-secondary {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid #c6d8ea;
+  border-radius: 7px;
+  background: #fff;
+  color: #365a7d;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.plan-form-submit.is-secondary:hover:not(:disabled) {
+  background: #edf4fb;
 }
 
 .plan-form-submit:hover:not(:disabled) {
@@ -350,18 +297,6 @@
 }
 
 @media (max-width: 640px) {
-  .plan-create-progress li {
-    align-items: flex-start;
-  }
-
-  .plan-create-progress li:not(:last-child)::after {
-    display: none;
-  }
-
-  .plan-create-progress li > div {
-    display: none;
-  }
-
   .plan-form fieldset,
   .plan-form-actions {
     padding-inline: 20px;
@@ -379,6 +314,10 @@
   .plan-form-actions {
     align-items: stretch;
     flex-direction: column-reverse;
+  }
+
+  .plan-form-actions .plan-form-submit.is-secondary {
+    align-self: center;
   }
 
   .plan-form-cancel,

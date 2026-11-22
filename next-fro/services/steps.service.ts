@@ -29,14 +29,15 @@ export async function getPlanSteps(
 export async function createStep(
   planId: number,
   data: StepCreate,
-): Promise<void> {
-  await apiFetch<ApiResponse<unknown>>(
+): Promise<number> {
+  const response = await apiFetch<ApiResponse<{ created_id: number }>>(
     `/plans/${planId}/steps`,
     {
       method: "POST",
       body: JSON.stringify(data),
     },
   );
+  return response.data.created_id;
 }
 
 // 修改节点基本信息

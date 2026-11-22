@@ -7,6 +7,7 @@ import { ArrowLeft, Check } from "lucide-react";
 
 import { ActiveStepManager } from "@/components/plans/ActiveStepManager";
 import { StepTreeEditor } from "@/components/plans/StepTreeEditor";
+import { PlanWorkflowNav } from "@/components/plans/PlanWorkflowNav";
 import { ApiError } from "@/lib/api/client";
 import { messages } from "@/messages";
 import { getPlan } from "@/services/plans.service";
@@ -82,10 +83,24 @@ export default function PlanStepsPage() {
   }
 
   const detailHref = `/plans/${plan.id}`;
-  const finishHref = plan.status === "DRAFT" ? `${detailHref}#plan-schedule` : detailHref;
+  const isDraft = plan.status === "DRAFT";
+  const finishHref = isDraft ? `${detailHref}#plan-actions` : detailHref;
 
   return (
-    <div className="plan-step-workspace">
+    <div className={isDraft ? "plan-step-workspace plan-workflow-page" : "plan-step-workspace"}>
+      {isDraft ? (
+        <header className="plan-workflow-header">
+          <div>
+            <Link href={`${detailHref}#plan-basic`} className="plan-step-workspace-back">
+              <ArrowLeft size={15} aria-hidden="true" />{messages.plans.workflowBasic}
+            </Link>
+            <div className="plan-workflow-title">
+              <h1>{plan.name}</h1>
+              <span>{statusLabels.DRAFT}</span>
+            </div>
+          </div>
+        </header>
+      ) : (
       <header className="plan-step-workspace-header">
         <div>
           <Link href={detailHref} className="plan-step-workspace-back">
@@ -101,18 +116,15 @@ export default function PlanStepsPage() {
           {messages.plans.finishStepSetup}
         </Link>
       </header>
+      )}
 
-      <ol className="plan-step-workflow" aria-label={messages.plans.createTitle}>
-        <li data-state="done">{messages.plans.workflowBasic}</li>
-        <li aria-current="step">{messages.plans.workflowSteps}</li>
-        <li>{messages.plans.workflowConfirm}</li>
-      </ol>
+      {isDraft && <PlanWorkflowNav view="steps" planId={plan.id} />}
 
-      <div className="plan-step-context">
+      {!isDraft && <div className="plan-step-context">
         <strong>{plan.name}</strong>
         <span>{statusLabels[plan.status]}</span>
         <small>{messages.plans.period(plan.start_date, plan.end_date)}</small>
-      </div>
+      </div>}
 
       {notice && <p role="status" className="plan-detail-notice">{notice}</p>}
       {error && <p role="alert" className="plan-detail-error">{error}</p>}
@@ -121,6 +133,13 @@ export default function PlanStepsPage() {
         <ActiveStepManager plan={plan} />
       ) : (
         <StepTreeEditor planId={plan.id} status={plan.status} />
+      )}
+      {isDraft && (
+        <footer className="plan-workflow-footer">
+          <Link href={finishHref} className="plan-step-workspace-finish">
+            <Check size={17} aria-hidden="true" />{messages.plans.finishStepSetup}
+          </Link>
+        </footer>
       )}
     </div>
   );

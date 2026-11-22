@@ -2,7 +2,7 @@
 
 import { messages } from "@/messages";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
@@ -23,6 +23,7 @@ type PlanFormProps = {
   submitLabel?: string;
   datesLocked?: boolean;
   cancelHref?: string;
+  footerAction?: ReactNode;
   onDirtyChange?: (dirty: boolean) => void;
 };
 
@@ -46,6 +47,7 @@ export function PlanForm({
   submitLabel = messages.plans.save,
   datesLocked = false,
   cancelHref,
+  footerAction,
   onDirtyChange,
 }: PlanFormProps) {
 
@@ -276,7 +278,11 @@ export function PlanForm({
 
       <footer className="plan-form-actions">
         {cancelHref && (submitting ? <span className="plan-form-cancel is-disabled" aria-disabled="true">{messages.plans.cancelCreate}</span> : <Link href={cancelHref} className="plan-form-cancel">{messages.plans.cancelCreate}</Link>)}
-        <button type="submit" disabled={submitting} className="plan-form-submit">{submitting ? messages.plans.savingDraft : submitLabel}<ArrowRight size={16} aria-hidden="true" /></button>
+        <button type="submit" disabled={submitting} className={footerAction ? "plan-form-submit is-secondary" : "plan-form-submit"}>
+          {submitting ? messages.plans.savingDraft : submitLabel}
+          {!footerAction && <ArrowRight size={16} aria-hidden="true" />}
+        </button>
+        {!submitting && footerAction}
       </footer>
     </form>
   );

@@ -11,6 +11,7 @@ export const plans = {
   workflowBasic: "基本信息",
   workflowSteps: "学习步骤",
   workflowConfirm: "确认启动",
+  moreActions: "更多操作",
   currentWorkflowStep: "当前步骤",
   draftExplanation: "本页只保存计划草稿，不会立即启动计划或生成每日任务。",
   draftCreated: "草稿已保存。现在为计划拆分学习步骤。",

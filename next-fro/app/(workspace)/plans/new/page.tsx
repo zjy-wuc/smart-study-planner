@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { PlanForm } from "@/components/plans/PlanForm";
+import { PlanWorkflowNav } from "@/components/plans/PlanWorkflowNav";
 import { createPlan } from "@/services/plans.service";
 
 import type { PlanCreate } from "@/types/plan";
@@ -68,21 +69,14 @@ export default function CreatePlanPage() {
   }
 
   return (
-    <div className="plan-create-page">
+    <div className="plan-create-page plan-workflow-page">
       <header className="plan-create-header">
         <Link href="/plans" className="plan-create-back">{messages.plans.backToMyPlans}</Link>
         <h1>{messages.plans.createTitle}</h1>
         <p>{messages.plans.createDescription}</p>
       </header>
 
-      <ol className="plan-create-progress" aria-label={messages.plans.createTitle}>
-        {[messages.plans.workflowBasic, messages.plans.workflowSteps, messages.plans.workflowConfirm].map((label, index) => (
-          <li key={label} aria-current={index === 0 ? "step" : undefined}>
-            <span>{index + 1}</span>
-            <div><strong>{label}</strong>{index === 0 && <small>{messages.plans.currentWorkflowStep}</small>}</div>
-          </li>
-        ))}
-      </ol>
+      <PlanWorkflowNav view="create" />
 
       <PlanForm
         onSubmit={handleCreate}

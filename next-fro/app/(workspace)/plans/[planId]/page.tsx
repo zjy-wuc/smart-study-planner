@@ -5,7 +5,7 @@ import { messages } from "@/messages";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Play, Trash2 } from "lucide-react";
+import { ArrowRight, Ellipsis, Play, Trash2 } from "lucide-react";
 
 import { DraftScheduleEditor } from
   "@/components/plans/DraftScheduleEditor";
@@ -13,6 +13,7 @@ import { DraftScheduleEditor } from
 import { startPlan } from "@/services/plans.service";
 
 import { PlanForm } from "@/components/plans/PlanForm";
+import { PlanWorkflowNav, useDraftPlanView } from "@/components/plans/PlanWorkflowNav";
 import { ApiError } from "@/lib/api/client";
 import { StepTreeEditor } from "@/components/plans/StepTreeEditor";
 import {
@@ -59,6 +60,9 @@ export default function PlanDetailPage() {
 
   const [notice, setNotice] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(false);
+  const [stepCount, setStepCount] = useState<number | null>(null);
+  const draftView = useDraftPlanView();
 
 
 const [treeRevision, setTreeRevision] = useState(0);
@@ -177,6 +181,11 @@ async function handleStartPlan() {
       cancelled = true;
     };
   }, [planId, router]);
+
+  const isDraft = plan?.status === "DRAFT";
+  useEffect(() => {
+    if (isDraft && window.location.hash) window.scrollTo({ top: 0 });
+  }, [draftView, isDraft]);
 
 
 
@@ -300,6 +309,79 @@ function handlePlanEnded(result: EndPlanResult) {
     );
   }
 
+  if (plan.status === "DRAFT") {
+    const stepsHref = `/plans/${plan.id}/steps`;
+    const allowLeave = () => !draftDirty || window.confirm(messages.plans.unsavedConfirm);
+
+    return (
+      <div className="plan-detail-page plan-workflow-page">
+        <header className="plan-workflow-header">
+          <div>
+            <Link href="/plans" className="plan-step-workspace-back" onNavigate={(event) => {
+              if (!allowLeave()) event.preventDefault();
+            }}>{messages.plans.backToMyPlans}</Link>
+            <div className="plan-workflow-title">
+              <h1>{plan.name}</h1>
+              <span>{messages.plans.statusDraft}</span>
+            </div>
+          </div>
+          <details className="plan-workflow-menu">
+            <summary aria-label={messages.plans.moreActions}><Ellipsis size={19} aria-hidden="true" /></summary>
+            <div>
+              <button type="button" disabled={deleting || starting} onClick={(event) => {
+                event.currentTarget.closest("details")?.removeAttribute("open");
+                void handleDelete();
+              }}><Trash2 size={15} aria-hidden="true" />{messages.plans.delete}</button>
+            </div>
+          </details>
+        </header>
+
+        <PlanWorkflowNav view={draftView} planId={plan.id} onLeave={allowLeave} />
+
+        {notice && <p role="status" className="plan-detail-notice">{notice}</p>}
+        {error && <p role="alert" className="plan-detail-error">{error}</p>}
+
+        <div hidden={draftView !== "basic"} className="plan-workflow-stage">
+          <PlanForm
+            key={`${plan.id}-${plan.updated_at}`}
+            initialPlan={plan}
+            onSubmit={handleSave}
+            submitLabel={messages.common.saveChanges}
+            onDirtyChange={setDraftDirty}
+            footerAction={
+              <Link href={stepsHref} className="plan-form-submit" onNavigate={(event) => {
+                if (!allowLeave()) event.preventDefault();
+              }}>{messages.plans.workflowSteps}<ArrowRight size={15} aria-hidden="true" /></Link>
+            }
+          />
+        </div>
+
+        <div hidden={draftView !== "confirm"} className="plan-workflow-stage">
+          <section className="plan-workflow-card">
+            <h2>{messages.plans.workflowConfirm}</h2>
+            <p>{messages.plans.period(plan.start_date, plan.end_date)}</p>
+            {stepCount !== null && <p>{messages.steps.stepCount(stepCount)}</p>}
+          </section>
+          <DraftScheduleEditor
+            planId={plan.id}
+            startDate={plan.start_date}
+            endDate={plan.end_date}
+            treeRevision={treeRevision}
+            onStepCount={setStepCount}
+          />
+          <footer className="plan-workflow-footer">
+            <button type="button" disabled={starting || deleting} onClick={() => {
+              if (allowLeave()) void handleStartPlan();
+            }} className="plan-detail-start-button">
+              <Play size={17} fill="currentColor" aria-hidden="true" />
+              {starting ? messages.plans.starting : messages.plans.start}
+            </button>
+          </footer>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="plan-detail-page">
       <Link
@@ -318,6 +400,7 @@ function handlePlanEnded(result: EndPlanResult) {
         </div>
       </div>
 
+
       {notice && <p role="status" className="plan-detail-notice">{notice}</p>}
 
       {error && <p role="alert" className="plan-detail-error">{error}</p>}
@@ -333,10 +416,8 @@ function handlePlanEnded(result: EndPlanResult) {
         </div>
       ) : (
         <>
-          <h2 className="text-xl font-semibold">
-            {plan.status === "DRAFT"
-              ? messages.plans.editDraft
-              : messages.plans.editDetails}
+          <h2 id="plan-basic" className="plan-detail-anchor text-xl font-semibold">
+            {messages.plans.editDetails}
           </h2>
 
           <PlanForm
@@ -349,20 +430,14 @@ function handlePlanEnded(result: EndPlanResult) {
         </>
       )}
 
-      <section className="plan-detail-action-card" aria-labelledby="plan-action-title">
+      <section id="plan-actions" className="plan-detail-action-card plan-detail-anchor" aria-labelledby="plan-action-title">
         <div className="plan-detail-action-copy">
           <span data-status={plan.status}>{statusLabels[plan.status]}</span>
           <h2 id="plan-action-title">{messages.plans.actionTitle}</h2>
-          <p>{plan.status === "DRAFT" ? messages.plans.actionDraftDescription : plan.status === "ACTIVE" ? messages.plans.actionActiveDescription : messages.plans.actionEndedDescription}</p>
+          <p>{plan.status === "ACTIVE" ? messages.plans.actionActiveDescription : messages.plans.actionEndedDescription}</p>
         </div>
 
         <div className="plan-detail-action-buttons">
-          {plan.status === "DRAFT" && (
-            <button type="button" disabled={starting} onClick={() => void handleStartPlan()} className="plan-detail-start-button">
-              <Play size={17} fill="currentColor" aria-hidden="true" />
-              {starting ? messages.plans.starting : messages.plans.start}
-            </button>
-          )}
           <button type="button" disabled={deleting} onClick={handleDelete} className="plan-detail-delete-button">
             <Trash2 size={17} aria-hidden="true" />
             {deleting ? messages.common.deleting : messages.plans.delete}
@@ -382,7 +457,6 @@ function handlePlanEnded(result: EndPlanResult) {
   <StepTreeEditor
     planId={plan.id}
     status={plan.status}
-    manageHref={plan.status === "DRAFT" ? `/plans/${plan.id}/steps` : undefined}
     onChanged={() =>
       setTreeRevision((value) => value + 1)
     }
@@ -390,24 +464,11 @@ function handlePlanEnded(result: EndPlanResult) {
 )}
 
 
-{plan.status === "DRAFT" && (
-  <div id="plan-schedule" className="plan-detail-anchor">
-    <DraftScheduleEditor
-      planId={plan.id}
-      startDate={plan.start_date}
-      endDate={plan.end_date}
-      treeRevision={treeRevision}
-    />
-  </div>
-)}
-
-{plan.status !== "DRAFT" && (
   <PlanTasksPanel
     key={`${plan.id}-${treeRevision}`}
     planId={plan.id}
     planStatus={plan.status}
   />
-)}
 
 
 {plan.status === "ACTIVE" && (

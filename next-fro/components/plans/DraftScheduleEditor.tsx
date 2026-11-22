@@ -27,7 +27,12 @@ type Props = {
   startDate: string;
   endDate: string;
   treeRevision: number;
+  onStepCount: (count: number | null) => void;
 };
+
+function countSteps(nodes: StepNode[]): number {
+  return nodes.reduce((count, node) => count + 1 + countSteps(node.children), 0);
+}
 
 type CustomRow = {
   id: number;
@@ -82,6 +87,7 @@ export function DraftScheduleEditor({
   startDate,
   endDate,
   treeRevision,
+  onStepCount,
 }: Props) {
   const dates = useMemo(
     () => listPlanDates(startDate, endDate),
@@ -115,6 +121,8 @@ export function DraftScheduleEditor({
   const selectedLeaf = leaves.find(
     (leaf) => leaf.id === selectedStepId,
   );
+  const stepId = selectedLeaf?.id;
+  const mode = selectedLeaf?.schedule_mode;
 
   // 读取当前计划中需要手动排期的叶子节点
   useEffect(() => {
@@ -133,6 +141,7 @@ export function DraftScheduleEditor({
         }
 
         setLeaves(nextLeaves);
+        onStepCount(countSteps(tree));
 
         setSelectedStepId((current) => {
           if (
@@ -148,6 +157,7 @@ export function DraftScheduleEditor({
       } catch (err) {
         if (!cancelled) {
           setLeaves([]);
+          onStepCount(null);
           setSelectedStepId(null);
           setError(errorMessage(err));
         }
@@ -163,23 +173,16 @@ export function DraftScheduleEditor({
     return () => {
       cancelled = true;
     };
-  }, [planId, treeRevision]);
+  }, [onStepCount, planId, treeRevision]);
 
 
   // 切换叶子时，从后端加载它已有的草稿安排
   useEffect(() => {
-    if (!selectedLeaf) {
-      setCustomRows([]);
-      setNumericValues({});
-      return;
-    }
+    if (stepId === undefined) return;
 
     let cancelled = false;
 
-    const stepId = selectedLeaf.id;
-    const mode = selectedLeaf.schedule_mode;
-
-    async function loadEntries() {
+    async function loadEntries(stepId: number) {
       setScheduleLoading(true);
       setError(null);
       
@@ -249,15 +252,15 @@ export function DraftScheduleEditor({
       }
     }
 
-    void loadEntries();
+    void loadEntries(stepId);
 
     return () => {
       cancelled = true;
     };
   }, [
     planId,
-    selectedLeaf?.id,
-    selectedLeaf?.schedule_mode,
+    stepId,
+    mode,
     dates,
     scheduleRevision,
     treeRevision,
@@ -402,8 +405,13 @@ export function DraftScheduleEditor({
   }
 
 
+  if (treeLoading) return <p role="status">{messages.schedule.loadingSteps}</p>;
+  if (!leaves.length) {
+    return error ? <p role="alert" className="plan-detail-error">{error}</p> : null;
+  }
+
   return (
-    <section className="space-y-5 rounded border p-5">
+    <section className="plan-workflow-card space-y-5">
       <h2 className="text-xl font-semibold">{messages.schedule.title}</h2>
 
       <p className="text-sm">{messages.schedule.description}</p>
@@ -420,11 +428,7 @@ export function DraftScheduleEditor({
         </p>
       )}
 
-      {treeLoading ? (
-        <p>{messages.schedule.loadingSteps}</p>
-      ) : leaves.length === 0 ? (
-        <p>{messages.schedule.noManualLeaves}</p>
-      ) : (
+      {(
         <>
           <div>
             <label

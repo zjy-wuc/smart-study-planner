@@ -221,7 +221,7 @@
 }
 
 .plan-detail-anchor {
-  scroll-margin-top: 24px;
+  scroll-margin-top: 66px;
 }
 
 .plan-step-workspace {
@@ -310,33 +310,6 @@
   margin-left: auto;
   color: #71869a;
   font-size: 11px;
-}
-
-.plan-step-workflow {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.plan-step-workflow li {
-  padding: 9px 12px;
-  border-bottom: 2px solid #d8e4ef;
-  color: #8394a5;
-  font-size: 11px;
-  text-align: center;
-}
-
-.plan-step-workflow li[data-state="done"] {
-  color: #4d718f;
-  border-color: #98bad8;
-}
-
-.plan-step-workflow li[aria-current="step"] {
-  color: #2867ad;
-  border-color: #286fc3;
-  font-weight: 700;
 }
 
 .plan-step-add > span {
@@ -587,6 +560,154 @@
 
 .plan-step-row-actions button.is-danger {
   color: #a24c4c;
+}
+
+.plan-draft-step-card .plan-step-card-header {
+  padding: 14px 20px;
+}
+
+.plan-draft-step-card .plan-step-tree-section {
+  padding: 8px 14px 12px;
+}
+
+.plan-draft-step-card .plan-step-empty {
+  margin: 0;
+  padding: 10px 6px;
+}
+
+.plan-draft-step-card .plan-step-tree {
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #b9cee2 transparent;
+  scrollbar-width: thin;
+}
+
+.plan-draft-step-card .plan-step-children {
+  margin-inline-start: 10px;
+  padding-inline-start: 10px;
+}
+
+.plan-draft-step-card .plan-step-branch + .plan-step-branch {
+  margin-top: 0;
+}
+
+.plan-draft-step-card .plan-step-row {
+  min-height: 39px;
+  padding: 5px 8px;
+  gap: 4px 10px;
+  border-bottom: 1px solid #e6edf4;
+  border-radius: 0;
+  background: #fff;
+}
+
+.plan-draft-step-card .plan-step-row[data-kind="GROUP"] {
+  background: #f0f6fd;
+}
+
+.plan-draft-step-card .plan-step-row[data-feedback="editing"] {
+  background: #e8f3ff;
+  box-shadow: inset 1px 0 #276fbd;
+}
+
+.plan-draft-step-card .plan-step-row[data-feedback="saved"] {
+  background: #eaf7ef;
+}
+
+.plan-draft-step-card .plan-step-row-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 8px;
+}
+
+.plan-draft-step-card .plan-step-row-heading span {
+  margin: 0;
+  color: #526b83;
+  font-size: 11px;
+}
+
+.plan-draft-step-card .plan-step-row-feedback {
+  font-weight: 600;
+}
+
+.plan-draft-step-card [data-feedback="editing"] .plan-step-row-feedback {
+  color: #185e9d;
+}
+
+.plan-draft-step-card [data-feedback="saved"] .plan-step-row-feedback {
+  color: #216747;
+}
+
+.plan-step-disclosure {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #365a7d;
+  cursor: pointer;
+}
+
+.plan-step-disclosure[aria-expanded="false"] svg {
+  rotate: -90deg;
+}
+
+.plan-step-disclosure:hover {
+  background: #dce9f7;
+}
+
+.plan-draft-step-card .plan-step-row-actions {
+  gap: 2px 6px;
+  align-items: flex-start;
+}
+
+.plan-step-row-menu summary {
+  display: grid;
+  min-width: 28px;
+  min-height: 24px;
+  place-items: center;
+  border-radius: 4px;
+  color: #365a7d;
+  cursor: pointer;
+}
+
+.plan-step-row-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan-step-row-menu summary:hover {
+  background: #e1edf9;
+}
+
+.plan-step-row-menu > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.plan-draft-step-card .plan-step-row-actions a {
+  padding: 4px;
+  color: #2e6cae;
+  font-size: 11px;
+}
+
+.plan-draft-step-card .plan-step-row-actions :is(a, button):hover {
+  text-decoration: underline;
+}
+
+.plan-draft-step-card .plan-step-branch > .plan-step-editor {
+  margin: 4px 0 8px;
+  padding: 12px;
+}
+
+.plan-step-create-target {
+  margin: 0;
+  color: #526b83;
+  font-size: 13px;
 }
 
 .plan-step-success-backdrop {
