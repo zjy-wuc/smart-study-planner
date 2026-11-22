@@ -125,6 +125,12 @@ async def stream_completion(
                             "MODEL_INVALID_RESPONSE"
                         )
 
+
+                    if isinstance(chunk.get("error"), dict):
+                        raise ProviderError("MODEL_UPSTREAM_ERROR")
+
+
+                        
                     if isinstance(chunk.get("usage"), dict):
                         usage = chunk["usage"]
 

@@ -6,9 +6,11 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.core.deps import get_current_user
-from app.services.knowledge.ai_service import (
-    prepare_summary,
-    stream_summary,
+
+from app.services.knowledge.ai_service import prepare_summary
+from app.services.knowledge.ai_guard_service import (
+    admit_request,
+    metered_summary,
 )
 
 
@@ -36,19 +38,31 @@ def generate_summary(
             detail="AI 模型尚未配置",
         )
 
+    user_id = int(current_user["id"])
+
+    # 1. 读取笔记并验证所有权
     try:
         snapshot = prepare_summary(
             db=db,
             note_id=note_id,
-            user_id=int(current_user["id"]),
+            user_id=user_id,
         )
     finally:
-        # SELECT 开启的事务应在外部模型调用前结束。
-        # 后续异步生成只持有 NoteSnapshot。
+        # 结束笔记读取事务。
+        # 后续外部 AI 请求不持有笔记行锁。
         db.rollback()
 
+    # 2. 原子申请全站 + 用户额度
+    # admit_request 内部负责 commit / rollback
+    admission = admit_request(
+        db=db,
+        user_id=user_id,
+        note_id=note_id,
+    )
+
+    
     return StreamingResponse(
-        stream_summary(snapshot),
+        metered_summary(snapshot, admission),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache, no-transform",
