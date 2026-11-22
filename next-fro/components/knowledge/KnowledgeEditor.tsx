@@ -9,7 +9,10 @@ import { addReview, createNote, deleteNote, getNote, getReviews, updateNote } fr
 import { listPlans } from "@/services/plans.service";
 import { getPlanSteps } from "@/services/steps.service";
 import { knowledgeChanges, knowledgeLeaves, parseKnowledgeTags } from "@/lib/knowledge";
+import { consumeKnowledgeAiDraft, storeKnowledgeAiDraft } from "@/lib/knowledge-ai-draft";
 import type { KnowledgeNote, KnowledgeNoteCreate } from "@/types/knowledge";
+import type { KnowledgeAiDraft } from "@/types/knowledge-ai";
+import { KnowledgeAiPanel } from "./KnowledgeAiPanel";
 import { KnowledgeMarkdownPreview } from "./KnowledgeMarkdownPreview";
 import "@/components/css/Knowledge.css";
 
@@ -46,9 +49,14 @@ function ReviewHistory({ noteId }: { noteId: number }) {
 
 export function KnowledgeEditor({ initial }: { initial?: KnowledgeNote }) {
   const router = useRouter();
-  const [form, setForm] = useState<KnowledgeNoteCreate>(initial ?? empty);
+  const [transfer] = useState(() => initial ? { draft: null, expired: false } : consumeKnowledgeAiDraft());
+  const transferredForm = transfer.draft
+    ? { ...empty, title: transfer.draft.title, content_md: transfer.draft.content_md }
+    : initial ?? empty;
+  const [form, setForm] = useState<KnowledgeNoteCreate>(transferredForm);
   const [baseline, setBaseline] = useState<KnowledgeNoteCreate>(initial ?? empty);
   const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
+  const [aiNotice, setAiNotice] = useState(transfer.draft ? m.ai.applied : "");
   const [tab, setTab] = useState("edit");
   const action = useKnowledgeAction();
   const plans = useKnowledgeQuery(listPlans);
@@ -110,11 +118,30 @@ export function KnowledgeEditor({ initial }: { initial?: KnowledgeNote }) {
     }, m.saved);
   }
 
+  function applyAiDraft(draft: KnowledgeAiDraft) {
+    if (initial) {
+      if (dirty && !window.confirm(m.leaveConfirm)) return;
+      storeKnowledgeAiDraft(draft);
+      skipGuard.current = true;
+      router.push("/knowledge/new");
+      return;
+    }
+    const hasInput = Boolean(form.title.trim() || form.content_md.trim() || tags.trim() || form.plan_id || form.step_id);
+    if (hasInput && !window.confirm(m.ai.overwriteConfirm)) return;
+    setForm({ ...empty, title: draft.title, content_md: draft.content_md });
+    setTags("");
+    setAiNotice(m.ai.applied);
+  }
+
   return <div className="knowledge-page knowledge-editor-page">
     <header className="knowledge-heading"><h1>{initial ? m.edit : m.create}</h1><Link href="/knowledge">{m.back}</Link></header>
+    {transfer.expired && <p role="alert" className="knowledge-error">{m.ai.draftExpired}</p>}
+    {aiNotice && <p role="status" className="knowledge-success">{aiNotice}</p>}
     {action.error && <p role="alert" className="knowledge-error">{action.error}</p>}
     {action.notice && <p role="status" className="knowledge-success">{action.notice}</p>}
-    <form onSubmit={(event) => void save(event)} onChange={() => { skipGuard.current = false; }}>
+    <div className="knowledge-workspace">
+    <main>
+    <form onSubmit={(event) => void save(event)} onChange={() => { skipGuard.current = false; setAiNotice(""); }}>
       <fieldset disabled={action.busy} className="knowledge-fields">
         <div className="knowledge-metadata">
           <label>{m.name}<input value={form.title} maxLength={200} required onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
@@ -166,5 +193,8 @@ export function KnowledgeEditor({ initial }: { initial?: KnowledgeNote }) {
       </fieldset>
     </form>
     {initial && <ReviewHistory noteId={initial.id} />}
+    </main>
+    <KnowledgeAiPanel noteId={initial?.id} dirty={dirty} onApply={applyAiDraft} />
+    </div>
   </div>;
 }

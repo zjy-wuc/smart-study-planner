@@ -103,7 +103,7 @@
 .knowledge-error { background: #fff3f3; color: #a84747; }
 .knowledge-success { background: #e5f5ed; color: #26734e; }
 .knowledge-editor-page {
-  max-width: 1120px;
+  max-width: 1380px;
   container: knowledge-editor / inline-size;
 }
 

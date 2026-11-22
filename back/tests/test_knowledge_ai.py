@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from app.config import settings
 from app.schemas.knowledge_ai import NoteSnapshot
 from app.services.knowledge import (
+    ai_note_service,
     ai_provider,
     ai_service,
 )
@@ -43,8 +44,9 @@ def collect_stream(snapshot):
     async def collect():
         return [
             event
-            async for event in ai_service.stream_summary(
-                snapshot
+            async for event in ai_note_service.stream_summary_note(
+                snapshot,
+                user_id=7,
             )
         ]
 
@@ -52,7 +54,7 @@ def collect_stream(snapshot):
 
 
 def test_summary_structure():
-    result = ai_service.parse_summary(SUMMARY)
+    result = ai_note_service.parse_summary(SUMMARY)
 
     assert "JWT" in result.overview
     assert "Access Token" in result.key_points
@@ -61,7 +63,7 @@ def test_summary_structure():
 
 def test_summary_invalid_structure():
     with pytest.raises(ValueError):
-        ai_service.parse_summary(
+        ai_note_service.parse_summary(
             "这是一段不符合结构的普通文本"
         )
 
@@ -77,12 +79,12 @@ def test_prepare_summary_uses_saved_note(monkeypatch):
         }
 
     monkeypatch.setattr(
-        ai_service,
+        ai_note_service,
         "_require_note",
         fake_require_note,
     )
 
-    snapshot = ai_service.prepare_summary(
+    snapshot = ai_note_service.prepare_note_snapshot(
         db=None,
         note_id=1,
         user_id=7,
@@ -100,13 +102,13 @@ def test_prepare_summary_rejects_missing_note(monkeypatch):
         )
 
     monkeypatch.setattr(
-        ai_service,
+        ai_note_service,
         "_require_note",
         fake_require_note,
     )
 
     with pytest.raises(HTTPException) as exc:
-        ai_service.prepare_summary(
+        ai_note_service.prepare_note_snapshot(
             db=None,
             note_id=999,
             user_id=7,
@@ -117,7 +119,7 @@ def test_prepare_summary_rejects_missing_note(monkeypatch):
 
 def test_prepare_summary_rejects_credentials(monkeypatch):
     monkeypatch.setattr(
-        ai_service,
+        ai_note_service,
         "_require_note",
         lambda **kwargs: {
             "title": "测试笔记",
@@ -126,7 +128,7 @@ def test_prepare_summary_rejects_credentials(monkeypatch):
     )
 
     with pytest.raises(HTTPException) as exc:
-        ai_service.prepare_summary(
+        ai_note_service.prepare_note_snapshot(
             db=None,
             note_id=1,
             user_id=7,
@@ -136,6 +138,12 @@ def test_prepare_summary_rejects_credentials(monkeypatch):
 
 
 def test_summary_stream_success(monkeypatch):
+    def fake_note_version_is_current(snapshot, user_id):
+        assert snapshot.note_id == 1
+        assert snapshot.version == "test-version"
+        assert user_id == 7
+        return True
+
     async def fake_provider(messages):
         yield ProviderEvent(
             kind="delta",
@@ -162,6 +170,11 @@ def test_summary_stream_success(monkeypatch):
         settings,
         "AI_STREAM_CHUNK_CHARS",
         16,
+    )
+    monkeypatch.setattr(
+        ai_note_service,
+        "note_version_is_current",
+        fake_note_version_is_current,
     )
 
     events = collect_stream(make_snapshot())

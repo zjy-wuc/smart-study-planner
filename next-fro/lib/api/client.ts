@@ -125,8 +125,47 @@ async function sendRequest(
 
 // API 请求的额外配置，用于控制是否跳过刷新
 // 默认不跳过刷新
-interface ApiFetchOptions extends RequestInit {
+export interface ApiFetchOptions extends RequestInit {
   skipAuthRefresh?: boolean;
+}
+
+// 返回原始 Response，供 SSE 等非 JSON 接口复用同一套双 Token 刷新逻辑。
+export async function authenticatedFetch(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<Response> {
+  const originalToken = getAccessToken();
+  const { skipAuthRefresh = false, ...requestOptions } = options;
+  let response = await sendRequest(path, requestOptions, originalToken);
+
+  let errorBody: unknown = null;
+  if (response.status === 401) {
+    try {
+      errorBody = await response.clone().json();
+    } catch {
+      errorBody = null;
+    }
+  }
+
+  const accessExpired =
+    response.status === 401 &&
+    (errorBody as { detail?: { code?: string } } | null)?.detail?.code === "ACCESS_EXPIRED";
+
+  if (!accessExpired || skipAuthRefresh) return response;
+
+  const currentToken = getAccessToken();
+  const newAccessToken =
+    originalToken && currentToken && originalToken !== currentToken
+      ? currentToken
+      : await refreshAccessToken();
+
+  if (!newAccessToken) {
+    removeTokenPair();
+    return response;
+  }
+
+  response = await sendRequest(path, requestOptions, newAccessToken);
+  return response;
 }
 
 
@@ -137,63 +176,8 @@ export async function apiFetch<T>(
   options: ApiFetchOptions = {},
 ): Promise<T> {
 
-  // 记录第一次请求使用的 Token
-  const originalToken = getAccessToken();
-
-
-  const {
-  skipAuthRefresh = false,
-  ...requestOptions
-} = options;
-  // 第一次请求
-  let response = await sendRequest(
-    path,
-    requestOptions,
-    originalToken,
-  );
-
-  let body = await response.json();
-
-  // 只有 Access Token 确认过期，才尝试刷新
-  const accessExpired =
-    response.status === 401 &&
-    body?.detail?.code === "ACCESS_EXPIRED";
-
-  if (accessExpired && !skipAuthRefresh) {
-    const currentToken = getAccessToken();
-
-    let newAccessToken: string | null = null;
-
-    // 情况一：
-    // 当前 Token 已经和第一次请求时不同
-    // 说明其他请求可能已经完成了刷新
-    if (
-      originalToken &&
-      currentToken &&
-      originalToken !== currentToken
-    ) {
-      newAccessToken = currentToken;
-    } else {
-      // 情况二：
-      // 还没有其他请求完成刷新，执行或等待刷新任务
-      newAccessToken = await refreshAccessToken();
-    }
-
-    if (newAccessToken) {
-      // 使用新 Token 重试一次
-      response = await sendRequest(
-        path,
-        requestOptions,
-        newAccessToken,
-      );
-
-      body = await response.json();
-
-    } else {
-      // 刷新失败，清理双 Token
-      removeTokenPair();
-    }
-  }
+  const response = await authenticatedFetch(path, options);
+  const body = await response.json();
 
   // 最终响应仍然失败，就抛出错误
   

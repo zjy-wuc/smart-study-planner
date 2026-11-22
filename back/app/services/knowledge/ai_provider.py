@@ -1,7 +1,7 @@
 
 import json
 from dataclasses import dataclass
-from typing import AsyncIterator, Literal
+from typing import AsyncGenerator, Literal
 
 import httpx
 
@@ -28,7 +28,7 @@ class ProviderEvent:
 
 async def stream_completion(
     messages: list[dict[str, str]],
-) -> AsyncIterator[ProviderEvent]:
+) -> AsyncGenerator[ProviderEvent, None]:
     api_key = settings.DEEPSEEK_API_KEY
 
     if not api_key:
