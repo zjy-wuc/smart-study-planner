@@ -434,10 +434,25 @@
   gap: 12px;
   max-height: 440px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 16px;
   border-radius: 10px;
   background: #fff;
+  scrollbar-color: #b9cee2 transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
+
+.plan-step-daily-fields::-webkit-scrollbar,
+.plan-detail-page .plan-step-tree::-webkit-scrollbar { width: 8px; }
+.plan-step-daily-fields::-webkit-scrollbar-thumb,
+.plan-detail-page .plan-step-tree::-webkit-scrollbar-thumb {
+  border: 2px solid #fff;
+  border-radius: 8px;
+  background: #b9cee2;
+}
+.plan-step-daily-fields::-webkit-scrollbar-track,
+.plan-detail-page .plan-step-tree::-webkit-scrollbar-track { background: transparent; }
 
 .plan-step-daily-fields h4,
 .plan-step-daily-fields p {
@@ -495,6 +510,16 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.plan-detail-page .plan-step-tree {
+  max-height: 370px;
+  padding-right: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #b9cee2 transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
 .plan-step-children {

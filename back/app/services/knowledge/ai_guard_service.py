@@ -1,10 +1,10 @@
-##限额服务
+
 import asyncio
 import json
 import logging
 from dataclasses import dataclass
+from typing import AsyncIterator, Callable
 from uuid import uuid4
-from typing import AsyncIterator
 
 import anyio
 from fastapi import HTTPException
@@ -16,8 +16,8 @@ from app.database import SessionLocal
 from app.repositories.knowledge import ai_guard_repository
 from app.schemas.knowledge_ai import NoteSnapshot
 from app.services.knowledge.ai_service import (
-    stream_summary,
     _sse,
+    stream_summary,
 )
 
 
@@ -30,7 +30,7 @@ class Admission:
     user_id: int
     note_id: int
 
-#统一拒绝额度不足的请求
+
 def _reject_limit(code: str, message: str) -> None:
     raise HTTPException(
         status_code=429,
@@ -46,13 +46,10 @@ def admit_request(
     user_id: int,
     note_id: int,
 ) -> Admission:
-    """
-    使用 MySQL 事务原子申请 AI 调用名额。
-
-    每个成功准入的请求都会占用一次日额度；
-    调用失败也不返还本次准入次数。
-    """
-    if settings.AI_LEASE_SECONDS <= settings.AI_MAX_STREAM_SECONDS:
+    if (
+        settings.AI_LEASE_SECONDS
+        <= settings.AI_MAX_STREAM_SECONDS
+    ):
         raise RuntimeError(
             "AI lease must exceed stream timeout"
         )
@@ -129,34 +126,34 @@ def _finish_request_record(
     status: str,
     usage: dict | None,
 ) -> None:
-    """
-    在独立的短事务中记录完成状态。
-    不复用流开始前的数据库 Session。
-    """
     usage = usage or {}
 
     prompt_tokens = usage.get("prompt_tokens")
     completion_tokens = usage.get("completion_tokens")
-#结束时重新创建一个短生命周期的 Session
+
+    def valid_token_count(value: object) -> int | None:
+        if (
+            isinstance(value, int)
+            and not isinstance(value, bool)
+            and value >= 0
+        ):
+            return value
+        return None
+
     with SessionLocal() as db:
         try:
             ai_guard_repository.finish_request(
                 db=db,
                 request_id=request_id,
                 status=status,
-                prompt_tokens=(
+                prompt_tokens=valid_token_count(
                     prompt_tokens
-                    if isinstance(prompt_tokens, int)
-                    and prompt_tokens >= 0
-                    else None
                 ),
-                completion_tokens=(
+                completion_tokens=valid_token_count(
                     completion_tokens
-                    if isinstance(completion_tokens, int)
-                    and completion_tokens >= 0
-                    else None
                 ),
             )
+
             db.commit()
 
         except Exception:
@@ -165,8 +162,11 @@ def _finish_request_record(
 
 
 def _event_name(frame: str) -> str:
-    first_line = frame.split("\n", 1)[0]
-    return first_line.removeprefix("event: ").strip()
+    return (
+        frame.split("\n", 1)[0]
+        .removeprefix("event: ")
+        .strip()
+    )
 
 
 def _event_data(frame: str) -> dict:
@@ -174,43 +174,108 @@ def _event_data(frame: str) -> dict:
         if line.startswith("data: "):
             value = json.loads(line[6:])
             return value if isinstance(value, dict) else {}
+
     return {}
 
-#给 AI 流添加计量和生命周期管理
+
 async def metered_summary(
     snapshot: NoteSnapshot,
     admission: Admission,
+    version_check: Callable[
+        [NoteSnapshot, int], bool
+    ] | None = None,
 ) -> AsyncIterator[str]:
     """
-    包装原有总结流，添加：
-    - 整体执行超时
-    - 成功/失败/取消状态
-    - Token 用量记录
-    - 并发名额释放
+    核心原则：
+    只有完成所有业务检查和 SUCCESS 数据库提交，
+    才允许向前端发送 done。
 
-   
+    其他终止状态记录到 ai_requests。
     """
     final_status = "ERROR"
-    usage = None
+    usage: dict | None = None
+    recorded = False
+
+    async def settle(status: str) -> None:
+        nonlocal final_status, recorded
+
+        final_status = status
+
+        await anyio.to_thread.run_sync(
+            _finish_request_record,
+            admission.request_id,
+            status,
+            usage,
+        )
+
+        recorded = True
 
     try:
-        async with asyncio.timeout(#限制整个代码块执行的总时间
+        async with asyncio.timeout(
             settings.AI_MAX_STREAM_SECONDS
         ):
             async for frame in stream_summary(snapshot):
                 event = _event_name(frame)
 
+                if event not in {
+                    "done", "blocked", "error"
+                }:
+                    yield frame
+                    continue
+
+                payload = _event_data(frame)
+                event_usage = payload.get("usage")
+
+                if isinstance(event_usage, dict):
+                    usage = event_usage
+
                 if event == "done":
-                    final_status = "SUCCESS"
-                    usage = _event_data(frame).get("usage")
+                    if version_check is not None:
+                        is_current = (
+                            await anyio.to_thread.run_sync(
+                                version_check,
+                                snapshot,
+                                admission.user_id,
+                            )
+                        )
 
-                elif event == "blocked":
-                    final_status = "BLOCKED"
+                        if not is_current:
+                            await settle("STALE")
+                            yield _sse(
+                                "error",
+                                {
+                                    "code": "NOTE_CHANGED",
+                                    "message": (
+                                        "笔记已修改或删除，"
+                                        "本次总结已失效"
+                                    ),
+                                },
+                            )
+                            return
 
-                elif event == "error":
-                    final_status = "ERROR"
+                    # 先提交数据库，再宣布成功。
+                    await settle("SUCCESS")
+                    yield frame
+                    return
 
+                if event == "blocked":
+                    await settle("BLOCKED")
+                    yield frame
+                    return
+
+                await settle("ERROR")
                 yield frame
+                return
+
+            # 正常退出循环却没有终止事件
+            await settle("ERROR")
+            yield _sse(
+                "error",
+                {
+                    "code": "AI_STREAM_INTERRUPTED",
+                    "message": "AI 响应提前结束",
+                },
+            )
 
     except TimeoutError:
         final_status = "TIMEOUT"
@@ -241,17 +306,20 @@ async def metered_summary(
         )
 
     finally:
-        try:
-            await anyio.to_thread.run_sync(
-                _finish_request_record,
-                admission.request_id,
-                final_status,
-                usage,
-            )
-        except Exception:
-            # 记录失败不能泄露密钥或原始笔记。
-            # 租约过期后仍可释放并发名额。
-            logger.exception(
-                "ai_request_finalization_failed request_id=%s",
-                admission.request_id,
-            )
+        if not recorded:
+            try:
+                # 即使请求被取消，也尽可能完成状态结算。
+                with anyio.CancelScope(shield=True):
+                    await anyio.to_thread.run_sync(
+                        _finish_request_record,
+                        admission.request_id,
+                        final_status,
+                        usage,
+                    )
+
+            except Exception:
+                logger.exception(
+                    "ai_request_finalization_failed "
+                    "request_id=%s",
+                    admission.request_id,
+                )

@@ -7,7 +7,10 @@ from app.config import settings
 from app.database import get_db
 from app.core.deps import get_current_user
 
-from app.services.knowledge.ai_service import prepare_summary
+from app.services.knowledge.ai_service import (
+    prepare_summary,
+    note_version_is_current,
+)
 from app.services.knowledge.ai_guard_service import (
     admit_request,
     metered_summary,
@@ -40,7 +43,6 @@ def generate_summary(
 
     user_id = int(current_user["id"])
 
-    # 1. 读取笔记并验证所有权
     try:
         snapshot = prepare_summary(
             db=db,
@@ -48,21 +50,20 @@ def generate_summary(
             user_id=user_id,
         )
     finally:
-        # 结束笔记读取事务。
-        # 后续外部 AI 请求不持有笔记行锁。
         db.rollback()
 
-    # 2. 原子申请全站 + 用户额度
-    # admit_request 内部负责 commit / rollback
     admission = admit_request(
         db=db,
         user_id=user_id,
         note_id=note_id,
     )
 
-    
     return StreamingResponse(
-        metered_summary(snapshot, admission),
+        metered_summary(
+            snapshot,
+            admission,
+            version_check=note_version_is_current,
+        ),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache, no-transform",

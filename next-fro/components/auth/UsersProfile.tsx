@@ -3,14 +3,12 @@
 import { messages } from "@/messages";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser, logoutAllSessions, logoutUser } from "@/services/auth.service";
 import { ApiError } from "@/lib/api/client";
 import { removeTokenPair } from "@/lib/auth/token";
 import type { User } from "@/types/auth";
 import { WorkspaceIcon as Icon } from "@/components/ui/WorkspaceIcon";
-import { ScrollPositionManager } from "@/components/common/ScrollPositionManager";
 import { LandscapeScene } from "@/components/common/LandscapeScene";
 import "@/components/css/Profile.css";
 
@@ -56,51 +54,7 @@ export default function UserProfile() {
   const avatar = Array.from(displayName)[0] || messages.profile.defaultAvatar;
 
   return (
-    <div className="profile-app">
-      <ScrollPositionManager />
-      <header className="profile-header">
-        <div className="profile-brand">
-          <span className="profile-brand-icon"><Icon name="book" /></span>
-          <strong>{messages.common.appName}</strong>
-          <span className="profile-brand-tagline">{messages.navigation.tagline}</span>
-        </div>
-        <div className="profile-header-user">
-          <span className="profile-avatar-small">{avatar}</span>
-          <span className="profile-header-name" title={user ? displayName : messages.navigation.profile}>
-            {user ? displayName : messages.navigation.profile}
-          </span>
-        </div>
-      </header>
-      <div className="profile-layout">
-        <aside className="profile-sidebar">
-          <nav aria-label={messages.navigation.mainLabel}>
-            <div className="profile-sidebar-label">{messages.navigation.spaceLabel}</div>
-            <Link className="profile-nav-item" href="/">
-              <Icon name="home" />{messages.navigation.home}</Link>
-            <Link className="profile-nav-item" href="/plans">
-              <Icon name="calendar" />{messages.navigation.plans}</Link>
-            <Link className="profile-nav-item" href="/task/today">
-              <Icon name="tasks" />{messages.navigation.today}</Link>
-            <Link className="profile-nav-item" href="/history">
-              <Icon name="book" />{messages.navigation.history}</Link>
-            <Link className="profile-nav-item" href="/statistics">
-              <Icon name="calendar" />{messages.navigation.statistics}</Link>
-            <div className="profile-nav-divider" />
-            <div className="profile-sidebar-label">{messages.navigation.accountLabel}</div>
-            <Link
-  className="profile-nav-item"
-  href="/reminders"
->
-  <Icon name="bell" />
-  {messages.navigation.reminders}
-</Link>
-            <Link className="profile-nav-item profile-nav-active" href="/profile" aria-current="page">
-              <Icon name="user" />{messages.navigation.profile}</Link>
-          </nav>
-          <div className="profile-sidebar-note">{messages.navigation.mottoFirstLine}<br />{messages.navigation.mottoSecondLine}<span aria-hidden="true">✦</span>
-          </div>
-        </aside>
-        <main className="profile-main">
+    <div className="profile-page">
           <LandscapeScene variant="ocean" />
           <div className="profile-heading">
             <h1>{messages.navigation.profile}</h1>
@@ -147,8 +101,6 @@ export default function UserProfile() {
             </section>
           </div>
           <p className="profile-bottom">{messages.profile.footerMotto}<span>✦</span></p>
-        </main>
-      </div>
     </div>
   );
 }

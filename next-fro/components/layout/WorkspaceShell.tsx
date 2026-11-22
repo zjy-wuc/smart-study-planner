@@ -87,6 +87,7 @@ export function WorkspaceShell({
   const [authChecked, setAuthChecked] = useState(false);
   const [search, setSearch] = useState("");
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const section = pathname.split("/").filter(Boolean)[0] ?? "home";
   const currentPage = navigation.find((item) =>
     pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`)),
   );
@@ -120,7 +121,7 @@ export function WorkspaceShell({
 <ReminderNotice />
 
 
-      <div className="workspace-app workspace-refresh" data-home={pathname === "/"}>
+      <div className="workspace-app workspace-refresh" data-home={pathname === "/"} data-section={section}>
         <header className="workspace-header">
           <div className="workspace-breadcrumb">
             <button

@@ -13,6 +13,10 @@
   background: #f6f9fc;
 }
 
+.workspace-app.workspace-refresh:is([data-section="plans"], [data-section="knowledge"]) {
+  background: #f1f6fc;
+}
+
 .workspace-app.workspace-refresh .workspace-header {
   min-height: 76px;
   margin-left: 224px;

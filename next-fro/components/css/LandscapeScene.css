@@ -44,69 +44,6 @@
   background-size: 100% 100%;
 }
 
-/* 我的计划：山峰留在卡片外围，下方小径延伸向远处。 */
-.landscape-scene--mountains .landscape-scene-art {
-  background-image: url("/illustrations/plan-mountains.svg");
-}
-
-.workspace-app:has(.plans-landscape-page) {
-  background: #e7f3fc;
-}
-
-.workspace-app:has(.plans-landscape-page) .workspace-sidebar {
-  border-right-color: #d5e8f5;
-  background: linear-gradient(180deg, #f3faff, #e7f3fc);
-}
-
-.workspace-app .workspace-main:has(.plans-landscape-page) {
-  position: relative;
-  isolation: isolate;
-  padding-bottom: 150px;
-}
-
-.workspace-app .plans-landscape-page .workspace-plan-card {
-  background: #fff;
-  box-shadow: 0 14px 32px -16px rgb(37 88 126 / 28%);
-}
-
-.plans-landscape-page > :not(.landscape-scene),
-.profile-main:has(.landscape-scene--ocean) > :not(.landscape-scene) {
-  position: relative;
-  z-index: 1;
-}
-
-.workspace-app .plans-landscape-page .workspace-page-heading p {
-  color: #52758c;
-}
-
-.workspace-app .plans-landscape-page .workspace-back-link {
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: rgb(255 255 255 / 88%);
-}
-
-/* 个人中心：海景填满内容背景，照片、资料和账户按钮保留原布局。 */
-.profile-app:has(.landscape-scene--ocean) {
-  background: #e8f5fb;
-}
-
-.profile-app:has(.landscape-scene--ocean) .profile-sidebar {
-  border-right-color: #d5e8f5;
-  background: linear-gradient(180deg, #f3faff, #e7f3fc);
-}
-
-.profile-main:has(.landscape-scene--ocean) {
-  position: relative;
-  isolation: isolate;
-  max-width: none;
-  padding-bottom: 100px;
-}
-
-.profile-main:has(.landscape-scene--ocean) > :not(.landscape-scene) {
-  max-width: 1500px;
-  margin-inline: auto;
-}
-
 .landscape-scene--ocean {
   background:
     radial-gradient(ellipse at 75% 5%, #fcfefd, transparent 40%),
@@ -120,13 +57,13 @@
   background-image: url("/illustrations/profile-ocean.svg");
 }
 
-.profile-main:has(.landscape-scene--ocean) .profile-card {
+.profile-page .profile-card {
   border-color: rgb(255 255 255 / 90%);
   box-shadow: 0 14px 32px -16px rgb(37 88 126 / 26%);
 }
 
-.profile-main:has(.landscape-scene--ocean) .profile-heading p,
-.profile-main:has(.landscape-scene--ocean) .profile-bottom {
+.profile-page .profile-heading p,
+.profile-page .profile-bottom {
   color: #52758c;
 }
 

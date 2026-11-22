@@ -16,6 +16,22 @@
 .statistics-range-button:focus-visible, .statistics-trend-details summary:focus-visible { outline: 2px solid #10a9de; outline-offset: 3px; }
 .statistics-trend-details { margin-top: 18px; color: #648298; font-size: 14px; }
 .statistics-trend-details summary { cursor: pointer; }
-.statistics-trend-table-wrap { max-height: 256px; overflow: auto; margin-top: 12px; }
+.statistics-trend-table-wrap {
+  max-height: 256px;
+  margin-top: 12px;
+  padding-right: 8px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #b9cee2 transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.statistics-trend-table-wrap::-webkit-scrollbar { width: 8px; }
+.statistics-trend-table-wrap::-webkit-scrollbar-thumb {
+  border: 2px solid #fff;
+  border-radius: 8px;
+  background: #b9cee2;
+}
+.statistics-trend-table-wrap::-webkit-scrollbar-track { background: transparent; }
 .statistics-trend-table-wrap table { width: 100%; border-collapse: collapse; text-align: left; }
 .statistics-trend-table-wrap th, .statistics-trend-table-wrap td { padding: 8px 0; border-bottom: 1px solid #e7f0f6; }

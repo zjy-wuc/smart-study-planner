@@ -243,6 +243,30 @@
   color: #426a9c;
 }
 
+.workspace-refresh .dashboard-refresh .workspace-step-tree {
+  max-height: 320px;
+  padding-right: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #b9cee2 transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.workspace-refresh .dashboard-refresh .workspace-step-tree::-webkit-scrollbar {
+  width: 8px;
+}
+
+.workspace-refresh .dashboard-refresh .workspace-step-tree::-webkit-scrollbar-thumb {
+  border: 2px solid #fff;
+  border-radius: 8px;
+  background: #b9cee2;
+}
+
+.workspace-refresh .dashboard-refresh .workspace-step-tree::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 @keyframes workspace-book-arrival {
   from { opacity: .4; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }

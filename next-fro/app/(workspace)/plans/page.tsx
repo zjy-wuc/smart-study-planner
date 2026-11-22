@@ -8,7 +8,6 @@ import { useMemo, useState } from "react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { PlanCard } from "@/components/dashboard/PlanCard";
 import { WorkspaceIcon } from "@/components/ui/WorkspaceIcon";
-import { LandscapeScene } from "@/components/common/LandscapeScene";
 import type { PlanStatus } from "@/types/plan";
 
 import "@/components/css/PlansPage.css";
@@ -38,8 +37,7 @@ export default function PlansPage() {
   }), [plans]);
 
   return (
-    <section className="workspace-page plans-landscape-page">
-      <LandscapeScene variant="mountains" />
+    <section className="workspace-page plans-page">
       <div className="workspace-page-heading">
         <div>
           <h1 className="text-2xl font-bold">{messages.navigation.plans}</h1>

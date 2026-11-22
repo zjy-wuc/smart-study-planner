@@ -203,10 +203,24 @@
 .workspace-app .task-records-list {
   display: grid;
   gap: 10px;
+  max-height: 286px;
   margin: 0;
-  padding: 0;
+  padding: 0 8px 0 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #b9cee2 transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
   list-style: none;
 }
+
+.workspace-app .task-records-list::-webkit-scrollbar { width: 8px; }
+.workspace-app .task-records-list::-webkit-scrollbar-thumb {
+  border: 2px solid #fff;
+  border-radius: 8px;
+  background: #b9cee2;
+}
+.workspace-app .task-records-list::-webkit-scrollbar-track { background: transparent; }
 
 .workspace-app .task-record-item {
   padding: 12px 16px;
