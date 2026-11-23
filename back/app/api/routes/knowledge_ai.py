@@ -3,6 +3,7 @@
 
 from typing import AsyncGenerator
 
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -10,7 +11,10 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.core.deps import get_current_user
 from app.database import get_db
-from app.schemas.knowledge_ai import GenerateNoteRequest
+from app.schemas.knowledge_ai import (
+    GenerateNoteRequest,
+    AskNoteRequest,
+)
 
 from app.services.knowledge.ai_guard_service import (
     admit_request,
@@ -23,6 +27,12 @@ from app.services.knowledge.ai_note_service import (
     stream_organize_note,
     stream_summary_note,
     validate_generate_input,
+)
+
+
+from app.services.knowledge.ai_qa_service import (
+    validate_qa_input,
+    stream_ask_note,
 )
 
 
@@ -173,3 +183,55 @@ def generate_summary(
             ),
         )
     )
+
+
+@router.post("/{note_id}/ai/ask")
+def ask_note(
+    note_id: int,
+    data: AskNoteRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """针对当前已保存笔记进行 AI 问答，支持最近三轮追问。"""
+
+    # 第一阶段：校验功能开关和输入。
+    # 校验失败时不能消耗 AI 额度。
+    require_ai_available()
+    validate_qa_input(data)
+
+    user_id = int(current_user["id"])
+
+    # 第二阶段：读取笔记快照。
+    # 复用 A3 的权限、非空、长度和凭据检查。
+    try:
+        snapshot = prepare_note_snapshot(
+            db=db,
+            note_id=note_id,
+            user_id=user_id,
+        )
+    finally:
+        # 不让笔记读取事务持续到 AI 生成结束。
+        db.rollback()
+
+    # 第三阶段：申请共享 AI 额度。
+    # ASK 使用独立的 operation 标识。
+    admission = admit_request(
+        db=db,
+        user_id=user_id,
+        note_id=note_id,
+        operation="ASK",
+    )
+
+    # 第四阶段：交给公共 Guard 管理整个 SSE 生命周期。
+    return stream_response(
+        metered_ai_stream(
+            admission=admission,
+            event_stream=stream_ask_note(
+                snapshot=snapshot,
+                user_id=user_id,
+                data=data,
+            ),
+        )
+    )
+
+

@@ -45,7 +45,7 @@ def prepare_note_snapshot(
     content = str(note["content_md"] or "")
 
     if not content.strip():
-        raise HTTPException(status_code=422, detail="笔记内容为空，无法生成总结")
+        raise HTTPException(status_code=422, detail="笔记内容为空，无法使用 AI 功能")
     if len(content) > settings.AI_MAX_NOTE_CHARS:
         raise HTTPException(status_code=413, detail="笔记内容超过本次 AI 输入限制")
     if _contains_credentials(title + "\n" + content):

@@ -51,7 +51,7 @@ export function KnowledgeAiPanel({ noteId, dirty, onApply }: Props) {
   }
 
   function applyDraft() {
-    if (!ai.result?.markdown || !ai.result.mode) return;
+    if (!ai.result?.markdown || (ai.result.mode !== "generate" && ai.result.mode !== "organize")) return;
     onApply({
       title: ai.result.suggested_title?.trim() || topic.trim(),
       content_md: ai.result.markdown,

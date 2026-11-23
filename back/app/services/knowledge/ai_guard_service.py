@@ -50,7 +50,7 @@ def admit_request(
     多进程通过 ai_guard_mutex 的 FOR UPDATE 串行准入；
     在调用 DeepSeek 之前 COMMIT，避免模型生成期间占用数据库行锁。
     """
-    if operation not in {"SUMMARY", "GENERATE", "ORGANIZE"}:
+    if operation not in {"SUMMARY", "GENERATE", "ORGANIZE", "ASK"}:
         raise ValueError("Unsupported AI operation")
 
     if settings.AI_LEASE_SECONDS <= settings.AI_MAX_STREAM_SECONDS:
@@ -313,6 +313,7 @@ async def metered_ai_stream(
             try:
                 # shield 降低取消信号打断结算的风险；
                 # 但不能抵御进程强制终止。
+                #，就再尝试把状态写入数据库
                 with anyio.CancelScope(shield=True):
                     await anyio.to_thread.run_sync(
                         _finish_request_record,

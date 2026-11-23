@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
+import { MessageCircle } from "lucide-react";
 import { messages } from "@/messages";
 import { useKnowledgeAction, useKnowledgeQuery } from "@/hooks/useKnowledge";
 import { addReview, createNote, deleteNote, getNote, getReviews, updateNote } from "@/services/knowledge.service";
@@ -13,6 +14,7 @@ import { consumeKnowledgeAiDraft, storeKnowledgeAiDraft } from "@/lib/knowledge-
 import type { KnowledgeNote, KnowledgeNoteCreate } from "@/types/knowledge";
 import type { KnowledgeAiDraft } from "@/types/knowledge-ai";
 import { KnowledgeAiPanel } from "./KnowledgeAiPanel";
+import { KnowledgeQaPanel } from "./KnowledgeQaPanel";
 import { KnowledgeMarkdownPreview } from "./KnowledgeMarkdownPreview";
 import "@/components/css/Knowledge.css";
 
@@ -20,14 +22,26 @@ const m = messages.knowledge;
 const empty: KnowledgeNoteCreate = { title: "", content_md: "", tags: [], plan_id: null, step_id: null };
 
 export function KnowledgeEditorPage({ noteId }: { noteId: number }) {
+  const [qaStaleNotice, setQaStaleNotice] = useState("");
   const load = useCallback(() => {
     if (!Number.isSafeInteger(noteId) || noteId <= 0) return Promise.reject(new Error(m.invalidId));
     return getNote(noteId);
   }, [noteId]);
   const note = useKnowledgeQuery(load);
+  const refreshNote = note.refresh;
+  const handleQaStale = useCallback(() => {
+    setQaStaleNotice(m.qa.stale);
+    refreshNote();
+  }, [refreshNote]);
   if (note.loading) return <p role="status">{m.loading}</p>;
   if (note.error) return <div className="knowledge-page"><p role="alert">{note.error}</p><button onClick={note.refresh}>{m.retry}</button> <Link href="/knowledge">{m.back}</Link></div>;
-  return note.data ? <KnowledgeEditor key={note.data.id} initial={note.data} /> : null;
+  return note.data ? <KnowledgeEditor
+    key={`${note.data.id}:${note.data.updated_at}`}
+    initial={note.data}
+    qaStaleNotice={qaStaleNotice}
+    onQaStale={handleQaStale}
+    onQaResume={() => setQaStaleNotice("")}
+  /> : null;
 }
 
 function ReviewHistory({ noteId }: { noteId: number }) {
@@ -47,7 +61,17 @@ function ReviewHistory({ noteId }: { noteId: number }) {
   </section>;
 }
 
-export function KnowledgeEditor({ initial }: { initial?: KnowledgeNote }) {
+export function KnowledgeEditor({
+  initial,
+  qaStaleNotice = "",
+  onQaStale = () => {},
+  onQaResume = () => {},
+}: {
+  initial?: KnowledgeNote;
+  qaStaleNotice?: string;
+  onQaStale?: () => void;
+  onQaResume?: () => void;
+}) {
   const router = useRouter();
   const [transfer] = useState(() => initial ? { draft: null, expired: false } : consumeKnowledgeAiDraft());
   const transferredForm = transfer.draft
@@ -57,6 +81,8 @@ export function KnowledgeEditor({ initial }: { initial?: KnowledgeNote }) {
   const [baseline, setBaseline] = useState<KnowledgeNoteCreate>(initial ?? empty);
   const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
   const [aiNotice, setAiNotice] = useState(transfer.draft ? m.ai.applied : "");
+  const [qaOpen, setQaOpen] = useState(false);
+  const [qaVersion, setQaVersion] = useState(0);
   const [tab, setTab] = useState("edit");
   const action = useKnowledgeAction();
   const plans = useKnowledgeQuery(listPlans);
@@ -108,12 +134,14 @@ export function KnowledgeEditor({ initial }: { initial?: KnowledgeNote }) {
       const title = form.title.trim();
       if (!title || Array.from(title).length > 200) throw new Error(m.invalidTitle);
       const payload = { ...form, title, tags: parseKnowledgeTags(tags) };
+      const savedSourceChanged = Boolean(initial && (payload.title !== baseline.title || payload.content_md !== baseline.content_md));
       // 编辑时只提交改变的字段，避免用旧关联覆盖后台已解除的关联。
       const result = initial ? await updateNote(initial.id, knowledgeChanges(baseline, payload)) : await createNote(payload);
       skipGuard.current = true;
       setForm(result);
       setBaseline(result);
       setTags(result.tags.join(", "));
+      if (savedSourceChanged) setQaVersion((version) => version + 1);
       if (!initial) router.replace(`/knowledge/${result.id}`);
     }, m.saved);
   }
@@ -134,11 +162,15 @@ export function KnowledgeEditor({ initial }: { initial?: KnowledgeNote }) {
   }
 
   return <div className="knowledge-page knowledge-editor-page">
-    <header className="knowledge-heading"><h1>{initial ? m.edit : m.create}</h1><Link href="/knowledge">{m.back}</Link></header>
+    <header className="knowledge-heading"><h1>{initial ? m.edit : m.create}</h1><div className="knowledge-heading-actions">
+      {initial && <button type="button" className="knowledge-qa-open" onClick={() => setQaOpen(true)}><MessageCircle size={16} aria-hidden="true" />{m.qa.open}</button>}
+      <Link href="/knowledge">{m.back}</Link>
+    </div></header>
     {transfer.expired && <p role="alert" className="knowledge-error">{m.ai.draftExpired}</p>}
     {aiNotice && <p role="status" className="knowledge-success">{aiNotice}</p>}
     {action.error && <p role="alert" className="knowledge-error">{action.error}</p>}
     {action.notice && <p role="status" className="knowledge-success">{action.notice}</p>}
+    <div className="knowledge-qa-layout" data-open={qaOpen}>
     <div className="knowledge-workspace">
     <main>
     <form onSubmit={(event) => void save(event)} onChange={() => { skipGuard.current = false; setAiNotice(""); }}>
@@ -195,6 +227,18 @@ export function KnowledgeEditor({ initial }: { initial?: KnowledgeNote }) {
     {initial && <ReviewHistory noteId={initial.id} />}
     </main>
     <KnowledgeAiPanel noteId={initial?.id} dirty={dirty} onApply={applyAiDraft} />
+    </div>
+    {initial && <KnowledgeQaPanel
+      key={`${initial.id}:${qaVersion}`}
+      noteId={initial.id}
+      open={qaOpen}
+      dirty={dirty}
+      savedContentEmpty={!baseline.content_md.trim()}
+      staleNotice={qaStaleNotice}
+      onStale={onQaStale}
+      onResume={onQaResume}
+      onClose={() => setQaOpen(false)}
+    />}
     </div>
   </div>;
 }

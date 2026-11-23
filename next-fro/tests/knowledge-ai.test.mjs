@@ -114,3 +114,72 @@ test("AI stream cancellation aborts the active read", async () => {
   controller.abort();
   await assert.rejects(pending, { name: "AbortError" });
 });
+
+test("knowledge QA sends the note route and only its explicit history payload", async () => {
+  const sse = load("../lib/api/sse.ts");
+  let call;
+  const service = load("../services/knowledge-ai.service.ts", {
+    "@/lib/api/client": {
+      ApiError: class ApiError extends Error {},
+      authenticatedFetch: async (path, options) => {
+        call = { path, options };
+        return new Response('event: done\ndata: {"status":"success","mode":"ask","markdown":"回答"}\n\n');
+      },
+    },
+    "@/lib/api/sse": sse,
+  });
+  const history = [{ question: "上一问", answer: "上一答" }];
+  const terminal = await service.streamKnowledgeAi(
+    { operation: "ask", noteId: 7, question: "为什么？", history },
+    () => {},
+    new AbortController().signal,
+  );
+  assert.equal(call.path, "/notes/7/ai/ask");
+  assert.deepEqual(JSON.parse(call.options.body), { question: "为什么？", history });
+  assert.equal(terminal.event, "done");
+});
+
+test("knowledge QA history keeps only the latest three successes in the current context", () => {
+  const { recentSuccessfulQaHistory } = load("../lib/knowledge-qa.ts");
+  const make = (id, status, contextId = 2) => ({
+    id, contextId, status, question: `q${id}`, answer: `a${id}`, historySnapshot: [],
+  });
+  const selected = recentSuccessfulQaHistory([
+    make(1, "success", 1), make(2, "success"), make(3, "error"),
+    make(4, "success"), make(5, "cancelled"), make(6, "success"), make(7, "success"),
+  ], 2);
+  assert.deepEqual(selected, [
+    { question: "q4", answer: "a4" },
+    { question: "q6", answer: "a6" },
+    { question: "q7", answer: "a7" },
+  ]);
+});
+
+test("knowledge QA counts Unicode code points without native maxlength truncation", () => {
+  const { unicodeLength } = load("../lib/knowledge-qa.ts");
+  assert.equal(unicodeLength("中文😀"), 3);
+  assert.equal(unicodeLength("😀".repeat(1000)), 1000);
+  assert.equal(unicodeLength("😀".repeat(1001)), 1001);
+});
+
+test("AI HTTP errors support FastAPI 422 detail arrays and existing detail forms", () => {
+  const service = load("../services/knowledge-ai.service.ts", {
+    "@/lib/api/client": { ApiError: class ApiError extends Error {} },
+    "@/lib/api/sse": { readSseEvents: async function* () {} },
+  });
+  assert.equal(service.aiResponseErrorMessage({ detail: [
+    { loc: ["body", "question"], msg: "问题不能为空", type: "string_too_short" },
+    { loc: ["body", "history"], msg: "历史格式无效", type: "list_type" },
+  ] }, 422), "问题不能为空；历史格式无效");
+  assert.equal(service.aiResponseErrorMessage({ detail: "输入可能包含敏感凭据" }, 422), "输入可能包含敏感凭据");
+  assert.equal(service.aiResponseErrorMessage({ detail: { message: "请求过于频繁", stack: "internal" } }, 429), "请求过于频繁");
+  assert.equal(service.aiResponseErrorMessage({ detail: [{ stack: "internal" }] }, 422), "AI 请求失败（422）");
+});
+
+test("knowledge QA recognizes both NOTE_CHANGED and STALE as invalid context", () => {
+  const { isKnowledgeQaStale } = load("../lib/knowledge-qa.ts");
+  assert.equal(isKnowledgeQaStale({ event: "error", data: { code: "NOTE_CHANGED" } }), true);
+  assert.equal(isKnowledgeQaStale({ event: "error", data: { status: "STALE" } }), true);
+  assert.equal(isKnowledgeQaStale({ event: "error", data: { code: "AI_INTERNAL_ERROR" } }), false);
+  assert.equal(isKnowledgeQaStale({ event: "blocked", data: { status: "STALE" } }), false);
+});
