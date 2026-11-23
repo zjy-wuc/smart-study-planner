@@ -8,14 +8,9 @@ from app.response import success
 from app.schemas.focus import FocusStart
 from app.services.focus import focus_service
 
-from enum import IntEnum
+from typing import Literal
 
 from app.services.focus import focus_statistics_service
-
-
-class TrendDays(IntEnum):
-    SEVEN = 7
-    THIRTY = 30
 
 router = APIRouter(
     prefix="/focus",
@@ -158,14 +153,14 @@ def list_focus_history(
 
 @router.get("/statistics")
 def get_focus_statistics(
-    days: TrendDays = Query(default=TrendDays.SEVEN),
+    days: Literal["7", "30"] = Query(default="7"),
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     result = focus_statistics_service.get_focus_statistics(
         db=db,
         user_id=user["id"],
-        days=days.value,
+        days=int(days),
     )
 
     return success(data=result)

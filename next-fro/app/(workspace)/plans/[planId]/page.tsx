@@ -37,6 +37,8 @@ import { ActiveStepManager } from
 
 import { PlanLifecyclePanel } from
   "@/components/plans/PlanLifecyclePanel";
+import { PlanReadOnlyOverview } from
+  "@/components/plans/PlanReadOnlyOverview";
 
 import type { EndPlanResult } from "@/types/plan";
 
@@ -61,6 +63,7 @@ export default function PlanDetailPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [draftDirty, setDraftDirty] = useState(false);
+  const [managing, setManaging] = useState(false);
   const [stepCount, setStepCount] = useState<number | null>(null);
   const draftView = useDraftPlanView();
 
@@ -382,12 +385,23 @@ function handlePlanEnded(result: EndPlanResult) {
     );
   }
 
+  if (!managing) {
+    return (
+      <PlanReadOnlyOverview
+        plan={plan}
+        onManage={() => setManaging(true)}
+      />
+    );
+  }
+
   return (
     <div className="plan-detail-page">
-      <Link
-        href="/plans"
-        className="text-sm text-blue-700"
-      >{messages.plans.backToMyPlans}</Link>
+      <div className="plan-detail-navigation">
+        <Link href="/plans">{messages.plans.backToMyPlans}</Link>
+        <button type="button" onClick={() => setManaging(false)}>
+          {messages.plans.backToPreview}
+        </button>
+      </div>
 
       <div className="plan-detail-heading">
         <div>

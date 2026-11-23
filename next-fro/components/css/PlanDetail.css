@@ -18,6 +18,36 @@
   text-underline-offset: 4px;
 }
 
+.plan-detail-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.plan-detail-navigation a,
+.plan-detail-navigation button {
+  color: #3472bd;
+  font: inherit;
+  font-size: 13px;
+}
+
+.plan-detail-navigation a {
+  text-decoration: none;
+}
+
+.plan-detail-navigation button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.plan-detail-navigation :is(a, button):hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 .plan-detail-heading {
   display: flex;
   align-items: center;

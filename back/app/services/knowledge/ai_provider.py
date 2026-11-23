@@ -19,7 +19,7 @@ class ProviderError(Exception):
         self.usage = usage
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True)#统一流式事件
 class ProviderEvent:
     kind: Literal["delta", "finish"]
     text: str = ""
@@ -43,7 +43,7 @@ async def stream_completion(
         },
         "thinking": {"type": "disabled"},
         "max_tokens": settings.AI_MAX_OUTPUT_TOKENS,
-        "safety_check": {"level": "high"},
+        "safety_check": {"level": "high"},#启用高级别内容安全检查
     }
 
     timeout = httpx.Timeout(
@@ -94,8 +94,11 @@ async def stream_completion(
                     raise ProviderError(
                         "MODEL_UPSTREAM_ERROR"
                     )
+#data: {"choices":[{"delta":{"content":"你好"}}]}  返回格式
+#data: {"choices":[{"delta":{"content":""},"finish_reason":"stop"}],"usage":{"total_tokens":30}}
 
-                async for line in response.aiter_lines():
+#data: [DONE]
+                async for line in response.aiter_lines():#一行一行读取这些数据
                     if not line.startswith("data:"):
                         continue
 
@@ -104,12 +107,12 @@ async def stream_completion(
                     if not data:
                         continue
 
-                    if data == "[DONE]":
+                    if data == "[DONE]":#表示服务器已经发送流式结束标记
                         received_done = True
                         break
 
                     try:
-                        chunk = json.loads(data)
+                        chunk = json.loads(data)#把 JSON 字符串解析为字典
                     except json.JSONDecodeError as exc:
                         raise ProviderError(
                             "MODEL_INVALID_RESPONSE",

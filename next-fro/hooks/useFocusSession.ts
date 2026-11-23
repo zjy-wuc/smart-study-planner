@@ -40,35 +40,46 @@ export function useFocusSession() {
   const [statistics, setStatistics] = useState<FocusStatistics | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const mounted = useRef(true);
   const settlementRequested = useRef<number | null>(null);
+  const synchronizationSequence = useRef(0);
 
   const refreshSupportingData = useCallback(async () => {
-    const [nextHistory, nextStatistics] = await Promise.all([
+    const [nextHistory, nextStatistics] = await Promise.allSettled([
       getFocusHistory(),
       getFocusStatistics(7),
     ]);
-    if (!mounted.current) return;
-    setHistory(nextHistory);
-    setStatistics(nextStatistics);
+    if (!mounted.current) return false;
+    if (nextHistory.status === "fulfilled") setHistory(nextHistory.value);
+    if (nextStatistics.status === "fulfilled") setStatistics(nextStatistics.value);
+    return nextHistory.status === "fulfilled" && nextStatistics.status === "fulfilled";
   }, []);
 
   const synchronize = useCallback(async () => {
+    const sequence = ++synchronizationSequence.current;
+    setSyncing(true);
+    setError("");
+
     try {
       const result = await syncFocus();
-      if (!mounted.current) return;
-      setError("");
+      if (!mounted.current || sequence !== synchronizationSequence.current) return;
       setSession(result.current);
       if (result.auto_completed) setCompleted(result.auto_completed);
-      await refreshSupportingData();
+      const supportingDataLoaded = await refreshSupportingData();
+      if (!mounted.current || sequence !== synchronizationSequence.current) return;
+      setError(supportingDataLoaded ? "" : messages.focus.supportingDataFailed);
     } catch (reason) {
-      if (mounted.current) {
+      if (mounted.current && sequence === synchronizationSequence.current) {
         setError(reason instanceof Error ? reason.message : messages.focus.syncFailed);
       }
     } finally {
-      if (mounted.current) setLoading(false);
+      if (mounted.current && sequence === synchronizationSequence.current) {
+        setLoading(false);
+        setSyncing(false);
+      }
     }
   }, [refreshSupportingData]);
 
@@ -111,7 +122,10 @@ export function useFocusSession() {
       } else {
         setSession(result);
       }
-      await refreshSupportingData();
+      const supportingDataLoaded = await refreshSupportingData();
+      if (mounted.current) {
+        setError(supportingDataLoaded ? "" : messages.focus.supportingDataFailed);
+      }
     } catch (reason) {
       if (mounted.current) setError(reason instanceof Error ? reason.message : messages.common.operationFailedRetry);
     } finally {
@@ -155,6 +169,7 @@ export function useFocusSession() {
     history,
     statistics,
     loading,
+    syncing,
     working,
     error,
     focusedSeconds,

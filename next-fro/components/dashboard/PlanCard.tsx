@@ -118,7 +118,7 @@ export function PlanCard({ plan, variant = "default" }: { plan: Plan; variant?: 
       {variant === "list" && (
         <div className="plans-card-actions">
           <Link href={`/plans/${plan.id}`} className="plans-card-primary">
-            {plan.status === "DRAFT" ? messages.plans.continueEditing : plan.status === "ACTIVE" ? messages.plans.enterPlan : messages.plans.viewHistory}
+            {plan.status === "DRAFT" ? messages.plans.continueEditing : messages.plans.previewPlan}
             <WorkspaceIcon name="arrow" />
           </Link>
           <span>{plan.status === "DRAFT" ? messages.plans.improveSteps : plan.status === "ACTIVE" ? messages.plans.viewTasks : messages.plans.endedTitle}</span>

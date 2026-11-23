@@ -1,12 +1,12 @@
-
 from fastapi import APIRouter
 
 from app.api.routes import (
     auth, system, users, plans, steps, tasks, rollovers,
     active_tasks, active_steps, progress, plan_lifecycle,
     schedules, daily_tasks, statistics, knowledge, focus,
-    knowledge_ai,
+    knowledge_ai, ai_practice,
 )
+
 
 api_router = APIRouter()
 
@@ -39,6 +39,9 @@ api_router.include_router(statistics.router)
 # 知识笔记
 api_router.include_router(knowledge.router)
 api_router.include_router(knowledge_ai.router)
+
+# A5 AI 智能练习
+api_router.include_router(ai_practice.router)
 
 # 专注闹钟
 api_router.include_router(focus.router)

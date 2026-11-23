@@ -50,7 +50,16 @@ def admit_request(
     多进程通过 ai_guard_mutex 的 FOR UPDATE 串行准入；
     在调用 DeepSeek 之前 COMMIT，避免模型生成期间占用数据库行锁。
     """
-    if operation not in {"SUMMARY", "GENERATE", "ORGANIZE", "ASK"}:
+    allowed_operations = {
+        "SUMMARY",
+        "GENERATE",
+        "ORGANIZE",
+        "ASK",
+        "PRACTICE_GENERATE",
+        "PRACTICE_GRADE",
+    }
+
+    if operation not in allowed_operations:
         raise ValueError("Unsupported AI operation")
 
     if settings.AI_LEASE_SECONDS <= settings.AI_MAX_STREAM_SECONDS:
@@ -67,6 +76,23 @@ def admit_request(
             request_date=today,
             user_id=user_id,
         )
+
+        # A5 练习生成至少需要剩余两次请求额度：
+        # 一次用于题目生成，一次用于后续简答题批改。
+        # 这里只检查，不预留额度。
+        if operation == "PRACTICE_GENERATE":
+            if user_daily + 2 > settings.AI_USER_DAILY_LIMIT:
+                _reject_limit(
+                    "AI_PRACTICE_QUOTA_INSUFFICIENT",
+                    "至少需要剩余 2 次 AI 调用额度才能生成练习",
+                )
+
+            if global_daily + 2 > settings.AI_GLOBAL_DAILY_LIMIT:
+                _reject_limit(
+                    "AI_PRACTICE_GLOBAL_QUOTA_INSUFFICIENT",
+                    "全站剩余 AI 调用额度不足，暂时无法生成练习",
+                )
+
 
         if global_daily >= settings.AI_GLOBAL_DAILY_LIMIT:
             _reject_limit(

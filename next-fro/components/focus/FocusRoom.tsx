@@ -357,7 +357,7 @@ export function FocusRoom() {
 
       {focus.loading ? <p className="focus-loading" role="status">{messages.focus.loading}</p> : (
         <>
-          {focus.error && <div className="focus-error" role="alert"><span>{focus.error}</span><button type="button" onClick={() => void focus.synchronize()}>{messages.focus.retrySync}</button></div>}
+          {focus.error && <div className="focus-error" role="alert"><span>{focus.error}</span><button type="button" disabled={focus.syncing} onClick={() => void focus.synchronize()}>{focus.syncing ? messages.focus.syncing : messages.focus.retrySync}</button></div>}
           <div className="focus-workbench">
             <main className="focus-timer-panel">
               <div className="focus-mode-switch" role="group" aria-label={messages.focus.modeLabel}>

@@ -1,3 +1,8 @@
+.workspace-app.workspace-refresh[data-section="focus"] .workspace-main {
+  display: grid;
+  padding: 0;
+}
+
 .focus-page {
   --focus-scene-image: url("/focus/images/study-room.jpg");
   --focus-blue: #2867ce;
@@ -7,16 +12,18 @@
   --focus-border: #dfe9f4;
   --focus-soft: #edf4ff;
   position: relative;
-  max-width: 1360px;
-  margin: 0 auto;
-  min-height: calc(100vh - 64px);
-  padding: 28px;
-  border-radius: 18px;
+  min-width: 0;
+  padding: 28px clamp(18px, 3vw, 42px);
   color: var(--focus-ink);
   background-image: linear-gradient(145deg, rgb(232 242 253 / 82%), rgb(247 251 255 / 88%)), var(--focus-scene-image);
   background-position: center;
   background-size: cover;
   overflow: hidden;
+}
+
+.focus-page:not(.is-immersive) > :not(.focus-summary-backdrop) {
+  width: min(1360px, 100%);
+  margin-inline: auto;
 }
 
 .focus-page[data-scene="rain"] { --focus-scene-image: url("/focus/images/rain.jpg"); }
@@ -589,6 +596,11 @@
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.focus-error button:disabled {
+  opacity: .58;
+  cursor: progress;
 }
 
 .focus-summary-backdrop {
