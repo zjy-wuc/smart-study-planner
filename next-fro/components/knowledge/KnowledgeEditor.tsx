@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { messages } from "@/messages";
+import { aiPractice } from "@/messages/zh-CN/ai-practice";
 import { useKnowledgeAction, useKnowledgeQuery } from "@/hooks/useKnowledge";
 import { addReview, createNote, deleteNote, getNote, getReviews, updateNote } from "@/services/knowledge.service";
 import { listPlans } from "@/services/plans.service";
@@ -163,6 +164,8 @@ export function KnowledgeEditor({
 
   return <div className="knowledge-page knowledge-editor-page">
     <header className="knowledge-heading"><h1>{initial ? m.edit : m.create}</h1><div className="knowledge-heading-actions">
+      {initial && <Link href={`/ai/practice?note_id=${initial.id}`}>{aiPractice.practice}</Link>}
+      {initial && <Link href={`/ai/practice/history?note_id=${initial.id}`}>{aiPractice.history}</Link>}
       {initial && <button type="button" className="knowledge-qa-open" onClick={() => setQaOpen(true)}><MessageCircle size={16} aria-hidden="true" />{m.qa.open}</button>}
       <Link href="/knowledge">{m.back}</Link>
     </div></header>

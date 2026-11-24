@@ -1,6 +1,7 @@
 "use client";
 
 import { messages } from "@/messages";
+import { aiPractice } from "@/messages/zh-CN/ai-practice";
 import { ReminderNotice } from
   "@/components/reminders/ReminderNotice";
 
@@ -66,6 +67,7 @@ const navigation: {
   { href: "/focus", label: messages.navigation.focus, icon: "timer" },
   { href: "/plans", label: messages.navigation.plans, icon: "calendar" },
   { href: "/knowledge", label: messages.knowledge.title, icon: "book" },
+  { href: "/ai", label: aiPractice.title, icon: "steps" },
   { href: "/history", label: messages.navigation.history, icon: "book" },
 
   // V2.1 新增：学习统计中心

@@ -13,7 +13,7 @@
   background: #f6f9fc;
 }
 
-.workspace-app.workspace-refresh:is([data-section="plans"], [data-section="knowledge"]) {
+.workspace-app.workspace-refresh:is([data-section="plans"], [data-section="knowledge"], [data-section="ai"]) {
   background: #f1f6fc;
 }
 

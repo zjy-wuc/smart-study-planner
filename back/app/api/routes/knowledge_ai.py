@@ -185,6 +185,11 @@ def generate_summary(
     )
 
 
+
+
+
+
+
 @router.post("/{note_id}/ai/ask")
 def ask_note(
     note_id: int,

@@ -15,6 +15,7 @@ import { schedule } from "./schedule";
 import { validation } from "./validation";
 import { focus } from "./focus";
 import { reminders } from "./reminders";
+import { aiPractice } from "./ai-practice";
 
 
 export const zhCN = {
@@ -35,4 +36,5 @@ export const zhCN = {
   validation,
   focus,
   reminders,
+  aiPractice,
 };

@@ -28,12 +28,12 @@ class Settings(BaseSettings):
     AI_MAX_OUTPUT_TOKENS: int = 3500
 
     # 共享额度
-    AI_USER_DAILY_LIMIT: int = 5
-    AI_GLOBAL_DAILY_LIMIT: int = 50
+    AI_USER_DAILY_LIMIT: int = 10
+    AI_GLOBAL_DAILY_LIMIT: int = 80
 
     # 共享并发
     AI_USER_CONCURRENCY: int = 1
-    AI_GLOBAL_CONCURRENCY: int = 3
+    AI_GLOBAL_CONCURRENCY: int = 2
 
     # 整条流的最大执行时间与租约有效期
     AI_MAX_STREAM_SECONDS: int = 120
