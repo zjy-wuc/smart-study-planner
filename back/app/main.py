@@ -65,12 +65,20 @@ async def validation_exception_handler(
     request: Request,
     exc: RequestValidationError,
 ):
+    errors = [
+        {
+            "loc": item["loc"],
+            "type": item["type"],
+            "msg": "Invalid input",
+        }
+        for item in exc.errors()
+    ]
+
     return error(
         code=422,
         message="Request validation failed",
-        data=exc.errors(),
+        data=errors,
     )
-
 
 # 统一处理未捕获异常
 @app.exception_handler(Exception)
