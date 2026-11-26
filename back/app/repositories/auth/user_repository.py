@@ -121,3 +121,51 @@ def insert_user(
     )
 
     return int(result.lastrowid)
+
+def find_profile(
+    db: Session,
+    user_id: int,
+) -> dict | None:
+
+    row = db.execute(
+        text("""
+            SELECT
+                id,
+                username,
+                nickname,
+                email,
+                avatar_url,
+                email_verified_at,
+                is_active,
+                created_at,
+                updated_at
+            FROM users
+            WHERE id = :user_id
+        """),
+        {"user_id": user_id},
+    ).mappings().first()
+
+    return dict(row) if row is not None else None
+
+
+def update_nickname(
+    db: Session,
+    *,
+    user_id: int,
+    nickname: str,
+) -> int:
+
+    result = db.execute(
+        text("""
+            UPDATE users
+            SET nickname = :nickname,
+                updated_at = NOW()
+            WHERE id = :user_id
+        """),
+        {
+            "user_id": user_id,
+            "nickname": nickname,
+        },
+    )
+
+    return result.rowcount

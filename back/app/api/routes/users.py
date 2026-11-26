@@ -1,144 +1,124 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import text
+from fastapi import (
+    APIRouter,
+    Depends,
+    Request,
+)
+
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.response import success, error
+from app.response import success
 from app.core.deps import get_current_user
-from app.schemas.user import UserCreate, UserUpdate
 
-from sqlalchemy.exc import IntegrityError
-from app.core.security import hash_password
+from app.core.auth_cookie import (
+    require_auth_request,
+    get_request_ip,
+    create_auth_response,
+)
+
+from app.schemas.user import (
+    UserCreate,
+    UserUpdate,
+)
+
+from app.services.auth import (
+    auth_service,
+    user_service,
+)
 
 
 router = APIRouter()
 
 
-@router.post("/users", status_code=201)
+# ==================== 注册并自动登录 ====================
+
+
+@router.post(
+    "/users",
+    status_code=201,
+    dependencies=[Depends(require_auth_request)],
+)
 def create_user(
-    user: UserCreate,
+    data: UserCreate,
+    request: Request,
     db: Session = Depends(get_db),
 ):
-    stored_hash = hash_password(user.password)
 
-    sql = text("""
-        INSERT INTO users
-        (username, password_hash, nickname, created_at, updated_at)
-        VALUES (:username, :password_hash, :nickname, NOW(), NOW())
-    """)
+    pair, user = auth_service.register(
+        db,
+        data=data,
+        ip=get_request_ip(request),
+        user_agent=request.headers.get(
+            "user-agent",
+        ),
+    )
 
-    try:
-        result = db.execute(sql, {
-            "username": user.username,
-            "password_hash": stored_hash,
-            "nickname": user.nickname,
-        })
-        db.commit()
-
-        return success({
-            "id": result.lastrowid,
-            "username": user.username,
-            "nickname": user.nickname,
-        }, message="User created", code=201)
-
-    except IntegrityError:
-        db.rollback()
-        return error(409, "用户名已存在")
-
-    except Exception:
-        db.rollback()
-        raise
+    return create_auth_response(
+        pair,
+        user=user,
+        message="注册成功",
+        code=201,
+    )
 
 
-@router.get("/users")
-def get_users(db: Session = Depends(get_db)):
-    sql = text("""
-        SELECT id, username, nickname, created_at, updated_at
-        FROM users
-    """)
-
-    result = db.execute(sql)
-    users = [dict(row) for row in result.mappings().all()]
-
-    return success(users)
+# ==================== 当前用户信息 ====================
 
 
 @router.get("/users/me")
-def get_me(current_user=Depends(get_current_user)):
-    return success(current_user)
+def get_me(
+    current_user: dict = Depends(
+        get_current_user,
+    ),
+):
+
+    return success(
+        data=auth_service.public_user(
+            current_user,
+        ),
+    )
+
+
+# ==================== 用户资料 ====================
 
 
 @router.get("/users/{user_id}")
 def get_user(
     user_id: int,
-    current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(
+        get_current_user,
+    ),
 ):
-    if user_id != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Forbidden")
 
-    sql = text("""
-        SELECT id, username, nickname, created_at, updated_at
-        FROM users
-        WHERE id = :user_id
-    """)
+    profile = user_service.get_profile(
+        db,
+        user_id=user_id,
+        current_user_id=current_user["id"],
+    )
 
-    result = db.execute(sql, {"user_id": user_id})
-    user = result.mappings().first()
+    return success(data=profile)
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
 
-    return success(dict(user))
+# ==================== 修改昵称 ====================
 
 
 @router.put("/users/{user_id}")
 def update_user(
     user_id: int,
-    user: UserUpdate,
-    current_user=Depends(get_current_user),
+    data: UserUpdate,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(
+        get_current_user,
+    ),
 ):
-    if user_id != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Forbidden")
 
-    sql = text("""
-        UPDATE users
-        SET nickname = :nickname, updated_at = NOW()
-        WHERE id = :user_id
-    """)
+    user_service.update_nickname(
+        db,
+        user_id=user_id,
+        current_user_id=current_user["id"],
+        nickname=data.nickname,
+    )
 
-    result = db.execute(sql, {
-        "nickname": user.nickname,
-        "user_id": user_id,
-    })
-
-    if result.rowcount == 0:
-        db.rollback()
-        raise HTTPException(status_code=404, detail="User not found")
-
-    db.commit()
-    return success(message="User updated")
-
-
-@router.delete("/users/{user_id}")
-def delete_user(
-    user_id: int,
-    current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    if user_id != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    sql = text("DELETE FROM users WHERE id = :user_id")
-
-    result = db.execute(sql, {"user_id": user_id})
-
-    if result.rowcount == 0:
-        db.rollback()
-        raise HTTPException(status_code=404, detail="User not found")
-
-    db.commit()
-    return success(message="User deleted")
-
-
+    return success(
+        message="昵称修改成功",
+    )

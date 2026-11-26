@@ -1,496 +1,763 @@
-
 from datetime import datetime, timezone
-from typing import Any, TypedDict, cast
 
-from fastapi import HTTPException, status
-from sqlalchemy import text
-from sqlalchemy.engine import CursorResult
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.core.clock import utc_db_now
+
 from app.core.security import (
+    hash_password,
+    verify_password,
     create_access_token,
     create_refresh_token,
-    create_family_id,
-    hash_refresh_token,
+    decode_access_token,
     decode_refresh_token,
+    hash_refresh_token,
 )
-from app.schemas.auth import TokenPair
+
+from app.schemas.auth import (
+    EmailCodePurpose,
+    TokenPair,
+)
+
+from app.schemas.user import (
+    UserCreate,
+    UserPublic,
+    normalize_email,
+)
+
+from app.repositories.auth import (
+    user_repository,
+    session_repository,
+    token_repository,
+    auth_event_repository,
+)
+
+from app.services.auth import (
+    session_service,
+    verification_service,
+    rate_limit_service,
+)
 
 
-class TokenData(TypedDict):
-    token_pair: dict[str, Any]
-    token_hash: str
-    expires_at: datetime
+reject_auth = session_service.reject_auth
 
 
-def _utc_now() -> datetime:
-    """返回 UTC 时间，适配数据库中的无时区 DATETIME"""
+# 用于不存在账号时的模拟密码验证，
+# 减少通过响应时间判断账号是否存在的风险。
+DUMMY_PASSWORD_HASH = hash_password(
+    "ssp-dummy-password-not-a-real-account"
+)
 
-    return datetime.now(
-        timezone.utc
-    ).replace(tzinfo=None)
+
+# ==================== 公共用户信息 ====================
+
+
+def public_user(user: dict) -> dict:
+    """只返回允许对外公开的用户字段"""
+
+    data = dict(user)
+
+    verified_at = data["email_verified_at"]
+
+    if verified_at.tzinfo is None:
+        data["email_verified_at"] = (
+            verified_at.replace(tzinfo=timezone.utc)
+        )
+
+    return UserPublic.model_validate(
+        data,
+    ).model_dump(mode="json")
+
+
+# ==================== 密码规则 ====================
+
+
+def validate_new_password(password: str) -> None:
+
+    common_passwords = {
+        "12345678",
+        "123456789",
+        "1234567890",
+        "password",
+        "password123",
+        "qwerty123",
+        "11111111",
+        "00000000",
+        "87654321",
+        "abcdefgh",
+        "iloveyou",
+    }
+
+    if (
+        not 8 <= len(password) <= 64
+        or password.lower() in common_passwords
+        or len(set(password)) == 1
+    ):
+        reject_auth(
+            "INVALID_PASSWORD",
+            "密码不符合安全要求",
+            status_code=400,
+        )
+
+
+# ==================== Token 签发 ====================
 
 
 def _build_token_pair(
+    *,
     user_id: int,
     family_id: str,
-) -> TokenData:
-    """
-    创建 Access Token 和 Refresh Token。
+    absolute_expires_at: datetime,
+) -> tuple[TokenPair, datetime]:
 
-    本函数不执行数据库操作。
-    """
+    # 数据库中的 UTC naive 时间转换为 aware 时间
+    deadline = absolute_expires_at.replace(
+        tzinfo=timezone.utc,
+    )
 
-    access_token = create_access_token({
-        "sub": str(user_id),
-    })
-
-    refresh_token = create_refresh_token({
+    claims = {
         "sub": str(user_id),
         "family_id": family_id,
-    })
+    }
 
-    token_hash = hash_refresh_token(refresh_token)
+    access_token = create_access_token(
+        claims,
+        expires_at=deadline,
+    )
 
-    payload = decode_refresh_token(refresh_token)
+    refresh_token = create_refresh_token(
+        claims,
+        expires_at=deadline,
+    )
 
-    if payload is None:
-        raise ValueError(
-            "Refresh Token generation failed"
-        )
+    access_payload = decode_access_token(
+        access_token,
+    )
 
-    expires_at = datetime.fromtimestamp(
-        payload["exp"],
+    refresh_payload = decode_refresh_token(
+        refresh_token,
+    )
+
+    if (
+        access_payload is None
+        or refresh_payload is None
+    ):
+        raise RuntimeError("Token 签发失败")
+
+    refresh_expires_at = datetime.fromtimestamp(
+        refresh_payload["exp"],
         tz=timezone.utc,
     ).replace(tzinfo=None)
 
-    token_pair = TokenPair(
+    expires_in = max(
+        0,
+        access_payload["exp"]
+        - int(datetime.now(timezone.utc).timestamp()),
+    )
+
+    pair = TokenPair(
         access_token=access_token,
         refresh_token=refresh_token,
-        token_type="Bearer",
-        expires_in=(
-            settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        expires_in=expires_in,
+    )
+
+    return pair, refresh_expires_at
+
+
+def _create_login(
+    db: Session,
+    *,
+    user: dict,
+    user_agent: str | None,
+    ip: str,
+    now: datetime,
+) -> tuple[TokenPair, dict]:
+    """
+    在当前事务中创建会话与双 Token。
+
+    不主动提交事务。
+    """
+
+    session = session_service.create_session(
+        db,
+        user_id=user["id"],
+        user_agent=user_agent,
+        now=now,
+    )
+
+    family_id = session["family_id"]
+
+    pair, expires_at = _build_token_pair(
+        user_id=user["id"],
+        family_id=family_id,
+        absolute_expires_at=(
+            session["absolute_expires_at"]
         ),
     )
 
-    return {
-        "token_pair": token_pair.model_dump(),
-        "token_hash": token_hash,
-        "expires_at": expires_at,
-    }
-
-
-def _insert_refresh_token(
-    db: Session,
-    user_id: int,
-    family_id: str,
-    token_hash: str,
-    expires_at: datetime,
-) -> None:
-    """向数据库保存 Refresh Token 摘要"""
-
-    sql = text("""
-        INSERT INTO tb_refresh_token (
-            user_id,
-            token_hash,
-            family_id,
-            expires_at
-        )
-        VALUES (
-            :user_id,
-            :token_hash,
-            :family_id,
-            :expires_at
-        )
-    """)
-
-    db.execute(
-        sql,
-        {
-            "user_id": user_id,
-            "token_hash": token_hash,
-            "family_id": family_id,
-            "expires_at": expires_at,
-        },
-    )
-
-
-def issue_token_pair(
-    db: Session,
-    user_id: int,
-) -> dict:
-    """新登录：创建 family 并签发 Token Pair"""
-
-    family_id = create_family_id()
-
-    token_data = _build_token_pair(
-        user_id=user_id,
+    token_repository.insert_token(
+        db,
+        user_id=user["id"],
         family_id=family_id,
+        token_hash=hash_refresh_token(
+            pair.refresh_token,
+        ),
+        expires_at=expires_at,
+        now=now,
     )
+
+    auth_event_repository.insert_event(
+        db,
+        event_type="LOGIN_SUCCESS",
+        user_id=user["id"],
+        family_id=family_id,
+        ip=ip,
+        now=now,
+    )
+
+    return pair, public_user(user)
+
+
+# ==================== 邮箱注册 ====================
+
+
+def register(
+    db: Session,
+    *,
+    data: UserCreate,
+    ip: str,
+    user_agent: str | None,
+) -> tuple[TokenPair, dict]:
+
+    rate_limit_service.reserve_email_code_attempt(ip)
+
+    validate_new_password(data.password)
 
     try:
-        _insert_refresh_token(
-            db=db,
-            user_id=user_id,
-            family_id=family_id,
-            token_hash=token_data["token_hash"],
-            expires_at=token_data["expires_at"],
-        )
+        with db.begin():
 
-        db.commit()
+            record = (
+                verification_service.check_verification(
+                    db,
+                    email=data.email,
+                    purpose=EmailCodePurpose.REGISTER,
+                    code=data.code,
+                )
+            )
 
-    except Exception:
-        db.rollback()
+            if record is None:
+
+                # 当前还没有账号等业务写入，
+                # 仅持久化可能增加的错误次数。
+                db.commit()
+
+                verification_service.reject_invalid_code()
+
+            now = utc_db_now()
+
+            user_id = user_repository.insert_user(
+                db,
+                username=data.username,
+                email=data.email,
+                password_hash=hash_password(
+                    data.password,
+                ),
+                nickname=(
+                    data.nickname or data.username
+                ),
+                now=now,
+            )
+
+            user = user_repository.find_by_id(
+                db,
+                user_id=user_id,
+            )
+
+            if user is None:
+                raise RuntimeError("新建用户查询失败")
+
+            consumed = (
+                verification_service.consume_verification(
+                    db,
+                    record["id"],
+                )
+            )
+
+            if not consumed:
+                verification_service.reject_invalid_code()
+
+            auth_event_repository.insert_event(
+                db,
+                event_type="REGISTER_SUCCESS",
+                user_id=user_id,
+                ip=ip,
+                now=now,
+            )
+
+            result = _create_login(
+                db,
+                user=user,
+                user_agent=user_agent,
+                ip=ip,
+                now=now,
+            )
+
+        return result
+
+    except IntegrityError as exc:
+
+        # MySQL 1062：唯一约束冲突
+        args = exc.orig.args
+
+        if args and args[0] == 1062:
+
+            constraint = str(exc.orig)
+
+            if "uk_users_username" in constraint:
+                reject_auth(
+                    "USERNAME_EXISTS",
+                    "用户名已存在",
+                    status_code=409,
+                )
+
+            if "uk_users_email" in constraint:
+                reject_auth(
+                    "EMAIL_UNAVAILABLE",
+                    "邮箱不可用于注册",
+                    status_code=409,
+                )
+
         raise
 
-    return token_data["token_pair"]
+
+# ==================== 密码登录 ====================
+
+
+def _find_login_user(
+    db: Session,
+    identifier: str,
+) -> dict | None:
+    """支持用户名或邮箱登录，并锁定用户行"""
+
+    identifier = identifier.strip()
+
+    if "@" in identifier:
+
+        try:
+            email = normalize_email(identifier)
+
+        except ValueError:
+            return None
+
+        return user_repository.find_by_email(
+            db,
+            email=email,
+            for_update=True,
+        )
+
+    return user_repository.find_by_username(
+        db,
+        username=identifier,
+        for_update=True,
+    )
+
+
+def login_with_password(
+    db: Session,
+    *,
+    identifier: str,
+    password: str,
+    ip: str,
+    user_agent: str | None,
+) -> tuple[TokenPair, dict]:
+
+    rate_limit_service.reserve_password_attempt(ip)
+
+    if (
+        not 1 <= len(identifier) <= 254
+        or not 8 <= len(password) <= 64
+    ):
+        reject_auth(
+            "INVALID_CREDENTIALS",
+            "账号或密码错误",
+        )
+
+    with db.begin():
+
+        user = _find_login_user(
+            db,
+            identifier,
+        )
+
+        if user is None:
+
+            verify_password(
+                password,
+                DUMMY_PASSWORD_HASH,
+            )
+
+            reject_auth(
+                "INVALID_CREDENTIALS",
+                "账号或密码错误",
+            )
+
+        user_id = user["id"]
+        now = utc_db_now()
+
+        if rate_limit_service.is_password_locked(
+            db,
+            user_id,
+            now,
+        ):
+            rate_limit_service.reject_rate_limit(
+                "密码尝试次数过多，请稍后重试",
+            )
+
+        correct = verify_password(
+            password,
+            user["password_hash"],
+        )
+
+        if not correct:
+
+            rate_limit_service.record_password_failure(
+                db,
+                user_id=user_id,
+                identifier=user["username"],
+                ip=ip,
+                now=utc_db_now(),
+            )
+
+            # 密码失败事件必须持久化
+            db.commit()
+
+            reject_auth(
+                "INVALID_CREDENTIALS",
+                "账号或密码错误",
+            )
+
+        if not user["is_active"]:
+            reject_auth(
+                "ACCOUNT_DISABLED",
+                "账号已被禁用",
+                status_code=403,
+            )
+
+        rate_limit_service.clear_password_failures(
+            db,
+            user_id=user_id,
+            now=utc_db_now(),
+        )
+
+        result = _create_login(
+            db,
+            user=user,
+            user_agent=user_agent,
+            ip=ip,
+            now=utc_db_now(),
+        )
+
+    return result
+
+
+# ==================== 邮箱验证码登录 ====================
+
+
+def login_with_email(
+    db: Session,
+    *,
+    email: str,
+    code: str,
+    ip: str,
+    user_agent: str | None,
+) -> tuple[TokenPair, dict]:
+
+    rate_limit_service.reserve_email_code_attempt(ip)
+
+    with db.begin():
+
+        user = user_repository.find_by_email(
+            db,
+            email=normalize_email(email),
+            for_update=True,
+        )
+
+        if user is None or not user["is_active"]:
+            verification_service.reject_invalid_code()
+
+        record = (
+            verification_service.check_verification(
+                db,
+                email=user["email"],
+                purpose=EmailCodePurpose.LOGIN,
+                code=code,
+                user_id=user["id"],
+            )
+        )
+
+        if record is None:
+
+            db.commit()
+
+            verification_service.reject_invalid_code()
+
+        consumed = (
+            verification_service.consume_verification(
+                db,
+                record["id"],
+            )
+        )
+
+        if not consumed:
+            verification_service.reject_invalid_code()
+
+        result = _create_login(
+            db,
+            user=user,
+            user_agent=user_agent,
+            ip=ip,
+            now=utc_db_now(),
+        )
+
+    return result
+
+
+# ==================== Refresh Token 轮换 ====================
 
 
 def rotate_refresh_token(
     db: Session,
+    *,
     refresh_token: str,
-) -> dict:
-    """
-    使用旧 Refresh Token 换取新 Token Pair。
+    ip: str,
+) -> TokenPair:
 
-    检测到已轮换 Token 再次使用时，
-    撤销整个 family。
-
-    重放检测后的撤销必须先提交事务，
-    再向客户端返回 401。
-    """
-
-    # 1. 验证 JWT
     payload = decode_refresh_token(refresh_token)
 
     if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
+        reject_auth(
+            "REFRESH_INVALID",
+            "Refresh Token 无效或已过期",
         )
 
-    raw_user_id = payload.get("sub")
-    family_id = payload.get("family_id")
+    user_id = int(payload["sub"])
+    family_id = payload["family_id"]
 
-    if raw_user_id is None or not isinstance(
-        family_id, str
-    ) or not family_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token payload",
+    token_hash = hash_refresh_token(
+        refresh_token,
+    )
+
+    with db.begin():
+
+        # 统一加锁顺序：
+        # 用户 -> Session -> Refresh Token
+
+        user = user_repository.find_by_id(
+            db,
+            user_id=user_id,
+            for_update=True,
         )
-
-    try:
-        user_id = int(raw_user_id)
-
-    except (ValueError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user id",
-        )
-
-    token_hash = hash_refresh_token(refresh_token)
-
-    replay_detected = False
-
-    token_pair: dict[str, Any] | None = None
-
-    try:
-        # 2. 锁定旧 Refresh Token
-        select_sql = text("""
-            SELECT
-                id,
-                user_id,
-                family_id,
-                expires_at,
-                revoked_at,
-                replaced_by
-            FROM tb_refresh_token
-            WHERE token_hash = :token_hash
-            FOR UPDATE
-        """)
-
-        old_token = db.execute(
-            select_sql,
-            {"token_hash": token_hash},
-        ).mappings().first()
-
-        if old_token is None:
-            raise HTTPException(
-                status_code=401,
-                detail="Refresh token not found",
-            )
-
-        # 3. 验证 JWT 与数据库记录是否匹配
-        if (
-            old_token["user_id"] != user_id
-            or old_token["family_id"] != family_id
-        ):
-            raise HTTPException(
-                status_code=401,
-                detail="Refresh token mismatch",
-            )
-
-        # 4. 检查用户账号是否有效
-        user_sql = text("""
-            SELECT is_active
-            FROM users
-            WHERE id = :user_id
-            FOR UPDATE
-        """)
-
-        user = db.execute(
-            user_sql,
-            {"user_id": user_id},
-        ).mappings().first()
 
         if user is None:
-            raise HTTPException(
-                status_code=401,
-                detail={
-                    "code": "USER_NOT_FOUND",
-                    "message": "User not found",
-                },
+            reject_auth(
+                "REFRESH_INVALID",
+                "登录用户不存在",
             )
 
         if not user["is_active"]:
-            raise HTTPException(
+            reject_auth(
+                "ACCOUNT_DISABLED",
+                "账号已被禁用",
                 status_code=403,
-                detail={
-                    "code": "ACCOUNT_DISABLED",
-                    "message": "Account is disabled",
-                },
             )
 
-        # 获取锁之后再读取当前时间
-        now = _utc_now()
-
-        # 5. 检查 Token 是否发生重放
-        if old_token["replaced_by"] is not None:
-
-            replay_detected = True
-
-            # 撤销整个 family 的有效 Refresh Token
-            revoke_sql = text("""
-                UPDATE tb_refresh_token
-                SET revoked_at = :now
-                WHERE user_id = :user_id
-                  AND family_id = :family_id
-                  AND revoked_at IS NULL
-            """)
-
-            db.execute(
-                revoke_sql,
-                {
-                    "now": now,
-                    "user_id": user_id,
-                    "family_id": family_id,
-                },
-            )
-
-        # 6. 普通失效检查
-        elif (
-            old_token["revoked_at"] is not None
-            or old_token["expires_at"] <= now
-        ):
-            raise HTTPException(
-                status_code=401,
-                detail="Refresh token already revoked or expired",
-            )
-
-        else:
-            # 7. 正常轮换：生成新的 Token Pair
-            token_data = _build_token_pair(
-                user_id=user_id,
-                family_id=family_id,
-            )
-
-            new_token_hash = token_data["token_hash"]
-
-            # 8. 更新旧 Token
-            update_sql = text("""
-                UPDATE tb_refresh_token
-                SET
-                    revoked_at = :now,
-                    replaced_by = :new_token_hash
-                WHERE id = :id
-                  AND revoked_at IS NULL
-                  AND replaced_by IS NULL
-                  AND expires_at > :now
-            """)
-
-            update_result = cast(
-                CursorResult[Any],
-                db.execute(
-                    update_sql,
-                    {
-                        "now": now,
-                        "new_token_hash": new_token_hash,
-                        "id": old_token["id"],
-                    },
-                ),
-            )
-
-            if update_result.rowcount != 1:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Refresh token has already been used",
-                )
-
-            # 9. 保存新 Refresh Token
-            _insert_refresh_token(
-                db=db,
-                user_id=user_id,
-                family_id=family_id,
-                token_hash=new_token_hash,
-                expires_at=token_data["expires_at"],
-            )
-
-            token_pair = token_data["token_pair"]
-
-        # 10. 统一提交事务
-        # 重放撤销和正常轮换都在这里提交
-        db.commit()
-
-    except Exception:
-        db.rollback()
-        raise
-
-    # 11. 重放发生时，撤销操作已经提交
-    if replay_detected:
-        raise HTTPException(
-            status_code=401,
-            detail=(
-                "Refresh token replay detected; "
-                "session revoked"
-            ),
+        session = session_repository.find_session(
+            db,
+            user_id=user_id,
+            family_id=family_id,
+            for_update=True,
         )
 
-    if token_pair is None:
-        raise RuntimeError(
-            "Refresh Token rotation did not produce a token pair"
+        record = token_repository.find_by_hash(
+            db,
+            token_hash=token_hash,
+            for_update=True,
         )
 
-    return token_pair
+        now = utc_db_now()
 
-
-def revoke_current_session(
-    db: Session,
-    refresh_token: str,
-) -> None:
-    """
-    撤销当前 Refresh Token 所属的整个 family。
-    """
-
-    payload = decode_refresh_token(refresh_token)
-
-    if payload is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or expired refresh token",
+        session = session_service.require_active_session(
+            session,
+            now,
         )
-
-    raw_user_id = payload.get("sub")
-    family_id = payload.get("family_id")
-
-    if raw_user_id is None or not isinstance(
-        family_id, str
-    ) or not family_id:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid refresh token payload",
-        )
-
-    try:
-        user_id = int(raw_user_id)
-
-    except (ValueError, TypeError):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid refresh token payload",
-        )
-
-    token_hash = hash_refresh_token(refresh_token)
-
-    try:
-        # 1. 锁定并验证当前 Token
-        select_sql = text("""
-            SELECT user_id, family_id
-            FROM tb_refresh_token
-            WHERE token_hash = :token_hash
-            FOR UPDATE
-        """)
-
-        record = db.execute(
-            select_sql,
-            {"token_hash": token_hash},
-        ).mappings().first()
 
         if (
             record is None
             or record["user_id"] != user_id
             or record["family_id"] != family_id
         ):
-            raise HTTPException(
-                status_code=401,
-                detail="Refresh token not found",
+            reject_auth(
+                "REFRESH_INVALID",
+                "Refresh Token 不存在",
             )
 
-        now = _utc_now()
+        # ==================== 重放检测 ====================
 
-        # 2. 撤销当前 family 全部有效 Token
-        revoke_sql = text("""
-            UPDATE tb_refresh_token
-            SET revoked_at = :now
-            WHERE user_id = :user_id
-              AND family_id = :family_id
-              AND revoked_at IS NULL
-        """)
+        if record["replaced_by"] is not None:
 
-        db.execute(
-            revoke_sql,
-            {
-                "now": now,
-                "user_id": user_id,
-                "family_id": family_id,
-            },
+            session_service.revoke_session(
+                db,
+                user_id=user_id,
+                family_id=family_id,
+                now=now,
+                reason="REFRESH_REPLAY",
+            )
+
+            auth_event_repository.insert_event(
+                db,
+                event_type="REFRESH_REPLAY",
+                user_id=user_id,
+                family_id=family_id,
+                ip=ip,
+                now=now,
+            )
+
+            # 必须先提交撤销，再返回异常。
+            db.commit()
+
+            reject_auth(
+                "SESSION_REVOKED",
+                "登录会话存在异常，请重新登录",
+            )
+
+        if (
+            record["revoked_at"] is not None
+            or record["expires_at"] <= now
+        ):
+            reject_auth(
+                "REFRESH_INVALID",
+                "Refresh Token 无效或已过期",
+            )
+
+        # ==================== 正常轮换 ====================
+
+        pair, expires_at = _build_token_pair(
+            user_id=user_id,
+            family_id=family_id,
+            absolute_expires_at=(
+                session["absolute_expires_at"]
+            ),
         )
 
-        # 3. 提交事务
-        db.commit()
+        new_hash = hash_refresh_token(
+            pair.refresh_token,
+        )
 
-    except Exception:
-        db.rollback()
-        raise
+        affected = token_repository.mark_rotated(
+            db,
+            token_id=record["id"],
+            new_token_hash=new_hash,
+            now=now,
+        )
+
+        if affected != 1:
+            reject_auth(
+                "REFRESH_INVALID",
+                "Refresh Token 轮换失败",
+            )
+
+        token_repository.insert_token(
+            db,
+            user_id=user_id,
+            family_id=family_id,
+            token_hash=new_hash,
+            expires_at=expires_at,
+            now=now,
+        )
+
+    return pair
 
 
-def revoke_all_sessions(
+# ==================== 退出当前会话 ====================
+
+
+def revoke_current_session(
     db: Session,
-    user_id: int,
+    *,
+    refresh_token: str | None,
+    ip: str,
 ) -> None:
-    """撤销当前用户的所有 Refresh Token"""
 
-    now = _utc_now()
+    if not refresh_token:
+        return
 
-    try:
-        sql = text("""
-            UPDATE tb_refresh_token
-            SET revoked_at = :now
-            WHERE user_id = :user_id
-              AND revoked_at IS NULL
-        """)
+    payload = decode_refresh_token(
+        refresh_token,
+    )
 
-        db.execute(
-            sql,
-            {
-                "now": now,
-                "user_id": user_id,
-            },
+    if payload is None:
+        return
+
+    user_id = int(payload["sub"])
+    family_id = payload["family_id"]
+
+    with db.begin():
+
+        user = user_repository.find_by_id(
+            db,
+            user_id=user_id,
+            for_update=True,
         )
 
-        db.commit()
+        if user is None:
+            return
 
-    except Exception:
-        db.rollback()
-        raise
+        session = session_repository.find_session(
+            db,
+            user_id=user_id,
+            family_id=family_id,
+            for_update=True,
+        )
+
+        if session is None:
+            return
+
+        record = token_repository.find_by_hash(
+            db,
+            token_hash=hash_refresh_token(
+                refresh_token,
+            ),
+            for_update=True,
+        )
+
+        if (
+            record is None
+            or record["user_id"] != user_id
+            or record["family_id"] != family_id
+        ):
+            return
+
+        if session["revoked_at"] is not None:
+            return
+
+        now = utc_db_now()
+
+        session_service.revoke_session(
+            db,
+            user_id=user_id,
+            family_id=family_id,
+            now=now,
+            reason="LOGOUT",
+        )
+
+        auth_event_repository.insert_event(
+            db,
+            event_type="LOGOUT",
+            user_id=user_id,
+            family_id=family_id,
+            ip=ip,
+            now=now,
+        )

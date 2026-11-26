@@ -82,8 +82,3 @@ class AccessTokenResponse(BaseModel):
 class LoginResponse(AccessTokenResponse):
     user: UserPublic
 
-
-# ==================== 临时兼容旧接口 ====================
-
-class RefreshRequest(BaseModel):
-    refresh_token: str

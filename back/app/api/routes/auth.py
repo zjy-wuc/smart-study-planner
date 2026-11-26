@@ -1,138 +1,209 @@
-import time
-from collections import defaultdict
+from fastapi import (
+    APIRouter,
+    Depends,
+    Request,
+)
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import text
+from fastapi.security import (
+    OAuth2PasswordRequestForm,
+)
+
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.core.security import verify_password
-from app.services.auth.auth_service import issue_token_pair
 from app.response import success
 
-from app.schemas.auth import RefreshRequest
-from app.services.auth.auth_service import (
-    issue_token_pair,
-    rotate_refresh_token,
-    revoke_current_session,
-    revoke_all_sessions,
+from app.core.deps import (
+    oauth2_scheme,
+    authenticate_access,
+)
+
+from app.core.auth_cookie import (
+    require_auth_request,
+    get_request_ip,
+    get_refresh_cookie,
+    clear_refresh_cookie,
+    create_auth_response,
+)
+
+from app.schemas.auth import (
+    EmailCodeRequest,
+    EmailCodePurpose,
+    EmailLoginRequest,
+)
+
+from app.services.auth import (
+    auth_service,
+    verification_service,
+    session_service,
 )
 
 
-from app.core.deps import get_current_user
-
 router = APIRouter()
-#登录接口,返回令牌和token种类
 
-@router.post("/auth/login")
+
+# ==================== 发送邮箱验证码 ====================
+
+
+@router.post(
+    "/auth/email-code",
+    dependencies=[Depends(require_auth_request)],
+)
+def send_email_code(
+    data: EmailCodeRequest,
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
+):
+
+    user_id = None
+    family_id = None
+
+    # 邮箱换绑必须处于有效登录状态
+    if data.purpose in {
+        EmailCodePurpose.CHANGE_EMAIL_OLD,
+        EmailCodePurpose.CHANGE_EMAIL_NEW,
+    }:
+
+        current_user = authenticate_access(token)
+
+        user_id = current_user["id"]
+        family_id = current_user["family_id"]
+
+    verification_service.request_email_code(
+        email=data.email,
+        purpose=data.purpose,
+        request_ip=get_request_ip(request),
+        current_user_id=user_id,
+        current_family_id=family_id,
+    )
+
+    return success(
+        message=(
+            "如果该邮箱符合当前操作条件，"
+            "您将收到验证码"
+        ),
+    )
+
+
+# ==================== 密码登录 ====================
+
+
+@router.post(
+    "/auth/login",
+    dependencies=[Depends(require_auth_request)],
+)
 def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    #  查询用户
-    sql = text("""
-        SELECT id, username, password_hash, nickname, is_active
-        FROM users
-        WHERE username = :username
-    """)
 
-    result = db.execute(
-        sql,
-        {"username": form_data.username},
+    pair, user = auth_service.login_with_password(
+        db,
+        identifier=form_data.username,
+        password=form_data.password,
+        ip=get_request_ip(request),
+        user_agent=request.headers.get(
+            "user-agent",
+        ),
     )
 
-    user = result.mappings().first()
+    return create_auth_response(
+        pair,
+        user=user,
+        message="登录成功",
+    )
 
-    #  验证账号密码
-    if user is None or not verify_password(
-        form_data.password,
-        user["password_hash"],
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+
+# ==================== 邮箱验证码登录 ====================
+
+
+@router.post(
+    "/auth/login/email",
+    dependencies=[Depends(require_auth_request)],
+)
+def email_login(
+    data: EmailLoginRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+
+    pair, user = auth_service.login_with_email(
+        db,
+        email=data.email,
+        code=data.code,
+        ip=get_request_ip(request),
+        user_agent=request.headers.get(
+            "user-agent",
+        ),
+    )
+
+    return create_auth_response(
+        pair,
+        user=user,
+        message="登录成功",
+    )
+
+
+# ==================== Refresh Token 轮换 ====================
+
+
+@router.post(
+    "/auth/refresh",
+    dependencies=[Depends(require_auth_request)],
+)
+def refresh(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+
+    refresh_token = get_refresh_cookie(
+        request,
+    )
+
+    if not refresh_token:
+
+        session_service.reject_auth(
+            "REFRESH_INVALID",
+            "缺少 Refresh Token",
         )
 
-    if not user["is_active"]:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "ACCOUNT_DISABLED",
-                "message": "Account is disabled",
-            },
-        )   
-
-    # 创建双 Token，并登记 Refresh Token 摘要
-    token_pair = issue_token_pair(
-        db=db,
-        user_id=user["id"],
+    pair = auth_service.rotate_refresh_token(
+        db,
+        refresh_token=refresh_token,
+        ip=get_request_ip(request),
     )
 
-    # 返回 Token 和用户信息 
-    return success(
-        data={
-            **token_pair,
-            "user": {
-                "id": user["id"],
-                "username": user["username"],
-                "nickname": user["nickname"],
-            },
-        },
-        message="登录成功",
-        code=200,
-    )
-
-
-
-# 刷新 Token 接口
-@router.post("/auth/refresh")
-def refresh(
-    request: RefreshRequest,
-    db: Session = Depends(get_db),
-):
-    token_pair = rotate_refresh_token(
-        db=db,
-        refresh_token=request.refresh_token,
-    )
-
-    return success(
-        data=token_pair,
+    return create_auth_response(
+        pair,
         message="Token refreshed",
-        code=200,
     )
 
 
+# ==================== 退出当前会话 ====================
 
-#退出当前会话
-@router.post("/auth/logout")
+
+@router.post(
+    "/auth/logout",
+    dependencies=[Depends(require_auth_request)],
+)
 def logout(
-    request: RefreshRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ):
-    revoke_current_session(
-        db=db,
-        refresh_token=request.refresh_token,
+
+    auth_service.revoke_current_session(
+        db,
+        refresh_token=get_refresh_cookie(
+            request,
+        ),
+        ip=get_request_ip(request),
     )
 
-    return success(
-        message="Logged out successfully",
+    response = success(
+        message="已退出当前会话",
     )
 
+    clear_refresh_cookie(response)
 
-
-#退出全部会话
-@router.post("/auth/logout-all")
-def logout_all(
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    revoke_all_sessions(
-        db=db,
-        user_id=current_user["id"],
-    )
-
-    return success(
-        message="All sessions logged out successfully",
-    )
+    return response

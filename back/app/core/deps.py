@@ -1,81 +1,75 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import text
-from sqlalchemy.orm import Session
 
-from app.core.security import decode_access_token_detailed
-from app.database import get_db
+from app.core.security import (
+    decode_access_token_detailed,
+)
+
+from app.database import SessionLocal
+
+from app.services.auth import session_service
 
 
-# 从请求头中提取 Token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/auth/login",
+    auto_error=False,
+)
 
 
-# 根据 Token 获取当前用户
-def get_current_user(
-    #依赖注入
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-):
-#check token
-    payload, error_code = decode_access_token_detailed(token)
+def authenticate_access(
+    token: str | None,
+) -> dict:
+    """验证 Access Token 和对应登录会话"""
+
+    if not token:
+        session_service.reject_auth(
+            "INVALID_TOKEN",
+            "缺少 Access Token",
+        )
+
+    payload, error_code = (
+        decode_access_token_detailed(token)
+    )
 
     if payload is None:
+
         if error_code == "ACCESS_EXPIRED":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={
-                    "code": "ACCESS_EXPIRED",
-                    "message": "Access token expired",
-                },
+
+            session_service.reject_auth(
+                "ACCESS_EXPIRED",
+                "Access Token 已过期",
             )
 
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "code": error_code,
-                "message": "Invalid access token",
-            },
+        session_service.reject_auth(
+            error_code or "INVALID_TOKEN",
+            "Access Token 无效",
         )
 
-    user_id = payload.get("sub")
+    user_id = int(payload["sub"])
+    family_id = payload["family_id"]
 
-    if user_id is None or not str(user_id).isdigit():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "code": "INVALID_TOKEN_PAYLOAD",
-                "message": "Invalid token payload",
-            },
+    # 使用独立的短生命周期数据库 Session。
+    # 避免认证查询提前开启业务事务。
+    with SessionLocal() as db:
+
+        return session_service.get_active_session(
+            db,
+            user_id=user_id,
+            family_id=family_id,
         )
 
-    user_id = int(user_id)
 
-    sql = text("""
-    SELECT id, username, nickname, is_active
-    FROM users
-    WHERE id = :user_id
-""")
+def get_current_user(
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
+) -> dict:
 
-    result = db.execute(sql, {"user_id": user_id})
-    user = result.mappings().first()
-    #check user
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-    "code": "USER_NOT_FOUND",
-    "message": "User not found",
-    }
-        )
+    user = authenticate_access(token)
 
-    if not user["is_active"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "code": "ACCOUNT_DISABLED",
-                "message": "Account is disabled",
-            },
-        )
+    # 保存身份，用于请求成功后的活跃时间更新。
+    request.state.auth_identity = (
+        user["id"],
+        user["family_id"],
+    )
 
-    return dict(user)
+    return user
