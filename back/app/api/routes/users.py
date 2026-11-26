@@ -27,10 +27,17 @@ from app.services.auth import (
 )
 
 
+from fastapi import UploadFile, File
+
+from app.services.auth import avatar_service
+
+
+
+
 router = APIRouter()
 
 
-# ==================== 注册并自动登录 ====================
+# 注册并自动登录
 
 
 @router.post(
@@ -61,7 +68,7 @@ def create_user(
     )
 
 
-# ==================== 当前用户信息 ====================
+#  当前用户信息 
 
 
 @router.get("/users/me")
@@ -78,7 +85,7 @@ def get_me(
     )
 
 
-# ==================== 用户资料 ====================
+#  用户资料 
 
 
 @router.get("/users/{user_id}")
@@ -99,7 +106,7 @@ def get_user(
     return success(data=profile)
 
 
-# ==================== 修改昵称 ====================
+# 修改昵称
 
 
 @router.put("/users/{user_id}")
@@ -121,4 +128,46 @@ def update_user(
 
     return success(
         message="昵称修改成功",
+    )
+
+
+
+
+@router.post(
+    "/users/me/avatar",
+    dependencies=[Depends(require_auth_request)],
+)
+def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+
+    data = avatar_service.upload_avatar(
+        user_id=current_user["id"],
+        family_id=current_user["family_id"],
+        file=file.file,
+    )
+
+    return success(
+        data=data,
+        message="头像上传成功",
+    )
+
+
+@router.delete(
+    "/users/me/avatar",
+    dependencies=[Depends(require_auth_request)],
+)
+def delete_avatar(
+    current_user: dict = Depends(get_current_user),
+):
+
+    data = avatar_service.delete_avatar(
+        user_id=current_user["id"],
+        family_id=current_user["family_id"],
+    )
+
+    return success(
+        data=data,
+        message="头像删除成功",
     )

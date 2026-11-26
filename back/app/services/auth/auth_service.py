@@ -52,7 +52,7 @@ DUMMY_PASSWORD_HASH = hash_password(
 )
 
 
-# ==================== 公共用户信息 ====================
+#  公共用户信息 
 
 
 def public_user(user: dict) -> dict:
@@ -61,18 +61,18 @@ def public_user(user: dict) -> dict:
     data = dict(user)
 
     verified_at = data["email_verified_at"]
-
+#处理时区
     if verified_at.tzinfo is None:
         data["email_verified_at"] = (
             verified_at.replace(tzinfo=timezone.utc)
         )
-
+#pydantic 数据校验与过滤 我们之前写的
     return UserPublic.model_validate(
         data,
     ).model_dump(mode="json")
 
 
-# ==================== 密码规则 ====================
+# 密码规则，是否符合
 
 
 def validate_new_password(password: str) -> None:
@@ -103,7 +103,7 @@ def validate_new_password(password: str) -> None:
         )
 
 
-# ==================== Token 签发 ====================
+#  Token 签发 
 
 
 def _build_token_pair(
@@ -141,7 +141,7 @@ def _build_token_pair(
         refresh_token,
     )
 
-    if (
+    if (#检查是否成功
         access_payload is None
         or refresh_payload is None
     ):
@@ -150,13 +150,15 @@ def _build_token_pair(
     refresh_expires_at = datetime.fromtimestamp(
         refresh_payload["exp"],
         tz=timezone.utc,
-    ).replace(tzinfo=None)
+    ).replace(tzinfo=None)#移除 datetime 对象的时区信息
 
     expires_in = max(
         0,
         access_payload["exp"]
         - int(datetime.now(timezone.utc).timestamp()),
-    )
+    )#    
+#剩余秒数 = 过期时间戳 - 当前时间戳
+
 
     pair = TokenPair(
         access_token=access_token,
@@ -221,7 +223,7 @@ def _create_login(
     return pair, public_user(user)
 
 
-# ==================== 邮箱注册 ====================
+#  邮箱注册
 
 
 def register(
@@ -231,14 +233,14 @@ def register(
     ip: str,
     user_agent: str | None,
 ) -> tuple[TokenPair, dict]:
-
+#检查ip
     rate_limit_service.reserve_email_code_attempt(ip)
 
     validate_new_password(data.password)
 
     try:
         with db.begin():
-
+#验证码
             record = (
                 verification_service.check_verification(
                     db,
@@ -309,8 +311,19 @@ def register(
 
     except IntegrityError as exc:
 
-        # MySQL 1062：唯一约束冲突
+        # MySQL：唯一约束冲突
         args = exc.orig.args
+
+#args[0]  # 1062，MySQL 错误码
+
+#args[1]  # 具体错误描述
+
+#1062	唯一键或主键重复
+#1048	字段不允许为 NULL
+#1451	删除或更新父记录违反外键约束
+#1452	插入或更新子记录违反外键约束
+
+
 
         if args and args[0] == 1062:
 
@@ -333,7 +346,7 @@ def register(
         raise
 
 
-# ==================== 密码登录 ====================
+# 密码登录 
 
 
 def _find_login_user(
@@ -393,7 +406,7 @@ def login_with_password(
         )
 
         if user is None:
-
+#即使返回的错误信息完全相同，响应时间的差异也可能泄露账号是否存在
             verify_password(
                 password,
                 DUMMY_PASSWORD_HASH,
@@ -463,7 +476,7 @@ def login_with_password(
     return result
 
 
-# ==================== 邮箱验证码登录 ====================
+#  邮箱验证码登录 
 
 
 def login_with_email(
@@ -495,6 +508,10 @@ def login_with_email(
                 purpose=EmailCodePurpose.LOGIN,
                 code=code,
                 user_id=user["id"],
+                valid_after=max(
+    user["password_updated_at"],
+    user["email_verified_at"],
+),
             )
         )
 
@@ -525,7 +542,7 @@ def login_with_email(
     return result
 
 
-# ==================== Refresh Token 轮换 ====================
+#  Refresh Token 轮换 
 
 
 def rotate_refresh_token(
@@ -604,7 +621,7 @@ def rotate_refresh_token(
                 "Refresh Token 不存在",
             )
 
-        # ==================== 重放检测 ====================
+        # 重放检测
 
         if record["replaced_by"] is not None:
 
@@ -642,7 +659,7 @@ def rotate_refresh_token(
                 "Refresh Token 无效或已过期",
             )
 
-        # ==================== 正常轮换 ====================
+        #  正常轮换 
 
         pair, expires_at = _build_token_pair(
             user_id=user_id,
@@ -681,25 +698,51 @@ def rotate_refresh_token(
     return pair
 
 
-# ==================== 退出当前会话 ====================
-
-
+# 退出当前会话
 def revoke_current_session(
     db: Session,
     *,
     refresh_token: str | None,
     ip: str,
-) -> None:
+    access_token: str | None = None,
+) -> bool:
 
-    if not refresh_token:
-        return
+    refresh_payload = (
+        decode_refresh_token(refresh_token)
+        if refresh_token
+        else None
+    )
 
-    payload = decode_refresh_token(
-        refresh_token,
+    access_payload = (
+        decode_access_token(access_token)
+        if access_token
+        else None
+    )
+
+    if (
+        refresh_payload is not None
+        and access_payload is not None
+    ):
+
+        if (
+            refresh_payload["sub"]
+            != access_payload["sub"]
+
+            or refresh_payload["family_id"]
+            != access_payload["family_id"]
+        ):
+            reject_auth(
+                "SESSION_MISMATCH",
+                "登录凭证所属会话不一致",
+                status_code=409,
+            )
+
+    payload = (
+        access_payload or refresh_payload
     )
 
     if payload is None:
-        return
+        return False
 
     user_id = int(payload["sub"])
     family_id = payload["family_id"]
@@ -713,7 +756,7 @@ def revoke_current_session(
         )
 
         if user is None:
-            return
+            return False
 
         session = session_repository.find_session(
             db,
@@ -723,25 +766,32 @@ def revoke_current_session(
         )
 
         if session is None:
-            return
+            return False
 
-        record = token_repository.find_by_hash(
-            db,
-            token_hash=hash_refresh_token(
-                refresh_token,
-            ),
-            for_update=True,
-        )
+        # 没有合法 Access 时，
+        # 必须确认 Refresh 在数据库中存在。
+        if access_payload is None:
 
-        if (
-            record is None
-            or record["user_id"] != user_id
-            or record["family_id"] != family_id
-        ):
-            return
+            if refresh_token is None:
+                return False
+
+            record = token_repository.find_by_hash(
+                db,
+                token_hash=hash_refresh_token(
+                    refresh_token,
+                ),
+                for_update=True,
+            )
+
+            if (
+                record is None
+                or record["user_id"] != user_id
+                or record["family_id"] != family_id
+            ):
+                return False
 
         if session["revoked_at"] is not None:
-            return
+            return True
 
         now = utc_db_now()
 
@@ -761,3 +811,5 @@ def revoke_current_session(
             ip=ip,
             now=now,
         )
+
+    return True

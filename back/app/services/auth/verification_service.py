@@ -33,8 +33,9 @@ CHANGE_EMAIL_PURPOSES = {
     EmailCodePurpose.CHANGE_EMAIL_NEW,
 }
 
+from datetime import datetime, timedelta
 
-# ==================== 统一业务异常 ====================
+#  统一业务异常
 
 
 def _reject_authentication() -> None:
@@ -59,7 +60,7 @@ def _reject_invalid_email() -> None:
     )
 
 
-# ==================== 发码身份检查 ====================
+# 判断验证码发送资格,按照用户状态以及目的进行判断
 
 
 def _resolve_target(
@@ -87,7 +88,7 @@ def _resolve_target(
             or current_family_id is None
         ):
             _reject_authentication()
-
+#查询会话并校验状态
         session = (
             session_repository.find_session_with_user(
                 db,
@@ -128,7 +129,7 @@ def _resolve_target(
                 current_family_id,
             )
 
-        # 验证新邮箱
+        # 验证新邮箱不能与旧邮箱相同，也不能已经被其他账号占用
         if email == current_email:
             _reject_invalid_email()
 
@@ -227,7 +228,10 @@ def request_email_code(
         "mail-quota"
     ) as db:
 
-        (
+
+        issued_at = utc_db_now()
+
+        (# Python 的元组解包
             email,
             eligible,
             bound_user_id,
@@ -256,7 +260,7 @@ def request_email_code(
             purpose=purpose.value,
             code=code,
         )
-
+#作废之前的验证码
         verification_repository.invalidate_previous(
             db,
             email=email,
@@ -273,18 +277,16 @@ def request_email_code(
                 purpose=purpose.value,
                 code_hash=code_hash,
                 request_ip=request_ip,
-                now=now,
-                expires_at=now + timedelta(
-                    minutes=(
-                        settings.EMAIL_CODE_EXPIRE_MINUTES
-                    ),
-                ),
+                now=issued_at,
+expires_at=issued_at + timedelta(
+    minutes=settings.EMAIL_CODE_EXPIRE_MINUTES,
+),
                 user_id=bound_user_id,
                 family_id=bound_family_id,
             )
         )
 
-        db.commit()
+        db.commit()#因为我们需要提前记录本次申请，保证后续并发请求能够看到已经提交的验证码记录，同时为邮件发送结果提供对应的数据库记录。
 
     # ==================== 第二阶段 ====================
     # 已释放数据库命名锁，调用邮件服务
@@ -335,6 +337,7 @@ def check_verification(
     code: str,
     user_id: int | None = None,
     family_id: str | None = None,
+    valid_after: datetime | None = None,
 ) -> dict | None:
     """
     锁定并验证最新验证码。
@@ -398,6 +401,13 @@ def check_verification(
         >= settings.EMAIL_CODE_MAX_ATTEMPTS
     ):
         return None
+
+    if (
+        valid_after is not None
+        and record["created_at"] <= valid_after
+    ):
+        return None
+
 
     # 校验账号绑定
     if record["user_id"] != user_id:

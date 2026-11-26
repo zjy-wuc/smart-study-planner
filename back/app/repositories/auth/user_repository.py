@@ -169,3 +169,99 @@ def update_nickname(
     )
 
     return result.rowcount
+
+
+
+def update_password(
+    db: Session,
+    *,
+    user_id: int,
+    password_hash: str,
+    now: datetime,
+) -> int:
+
+    result = db.execute(
+        text("""
+            UPDATE users
+            SET password_hash = :password_hash,
+                password_updated_at = :now
+            WHERE id = :user_id
+        """),
+        {
+            "user_id": user_id,
+            "password_hash": password_hash,
+            "now": now,
+        },
+    )
+
+    return result.rowcount
+
+
+def update_email(
+    db: Session,
+    *,
+    user_id: int,
+    email: str,
+    now: datetime,
+) -> int:
+
+    result = db.execute(
+        text("""
+            UPDATE users
+            SET email = :email,
+                email_verified_at = :now
+            WHERE id = :user_id
+        """),
+        {
+            "user_id": user_id,
+            "email": email,
+            "now": now,
+        },
+    )
+
+    return result.rowcount
+
+
+
+
+
+#头像
+
+def update_avatar(
+    db: Session,
+    *,
+    user_id: int,
+    avatar_url: str | None,
+) -> int:
+
+    result = db.execute(
+        text("""
+            UPDATE users
+            SET avatar_url = :avatar_url
+            WHERE id = :user_id
+        """),
+        {
+            "user_id": user_id,
+            "avatar_url": avatar_url,
+        },
+    )
+
+    return result.rowcount
+
+
+def list_avatar_urls(db: Session) -> set[str]:
+
+    rows = db.execute(
+        text("""
+            SELECT avatar_url
+            FROM users
+            WHERE avatar_url IS NOT NULL
+        """)
+    ).scalars().all()
+
+    return set(rows)
+
+
+
+    
+    

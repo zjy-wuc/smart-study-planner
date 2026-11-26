@@ -111,10 +111,10 @@ def find_session_with_user(
 
     return dict(row) if row is not None else None
 
-
+#在用户访问网站时，有条件地更新登录会话的最后活跃时间。
 def touch_session(
     db: Session,
-    *,
+    *,#表示它后面的参数必须使用关键字传参
     user_id: int,
     family_id: str,
     now: datetime,
@@ -235,3 +235,72 @@ def revoke_all_sessions(
     )
 
     return result.rowcount
+
+
+
+
+
+def count_active_sessions(
+    db: Session,
+    *,
+    user_id: int,
+    now: datetime,
+    idle_cutoff: datetime,
+) -> int:
+
+    count = db.execute(
+        text("""
+            SELECT COUNT(*)
+            FROM login_sessions
+            WHERE user_id = :user_id
+              AND revoked_at IS NULL
+              AND absolute_expires_at > :now
+              AND last_activity_at > :idle_cutoff
+        """),
+        {
+            "user_id": user_id,
+            "now": now,
+            "idle_cutoff": idle_cutoff,
+        },
+    ).scalar_one()
+
+    return int(count)
+
+
+def list_active_sessions_page(
+    db: Session,
+    *,
+    user_id: int,
+    now: datetime,
+    idle_cutoff: datetime,
+    limit: int,
+    offset: int,
+) -> list[dict]:
+
+    rows = db.execute(
+        text("""
+            SELECT
+                family_id,
+                user_agent,
+                created_at,
+                last_activity_at,
+                absolute_expires_at
+            FROM login_sessions
+            WHERE user_id = :user_id
+              AND revoked_at IS NULL
+              AND absolute_expires_at > :now
+              AND last_activity_at > :idle_cutoff
+            ORDER BY last_activity_at DESC,
+                     family_id DESC
+            LIMIT :limit OFFSET :offset
+        """),
+        {
+            "user_id": user_id,
+            "now": now,
+            "idle_cutoff": idle_cutoff,
+            "limit": limit,
+            "offset": offset,
+        },
+    ).mappings().all()
+
+    return [dict(row) for row in rows]

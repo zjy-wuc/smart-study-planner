@@ -7,6 +7,8 @@ from app.services.auth.auth_service import (
     public_user,
 )
 
+from app.core.clock import BUSINESS_TIMEZONE
+
 
 def require_owner(
     user_id: int,
@@ -46,10 +48,14 @@ def get_profile(
         )
 
     return {
-        **public_user(user),
-        "created_at": user["created_at"],
-        "updated_at": user["updated_at"],
-    }
+    **public_user(user),
+    "created_at": user["created_at"].replace(
+        tzinfo=BUSINESS_TIMEZONE,
+    ),
+    "updated_at": user["updated_at"].replace(
+        tzinfo=BUSINESS_TIMEZONE,
+    ),
+}
 
 
 def update_nickname(

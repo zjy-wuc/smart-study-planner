@@ -25,13 +25,24 @@ class Settings(BaseSettings):
 
     # ==================== 登录会话 ====================
 
-    SESSION_IDLE_EXPIRE_DAYS: int = 7#连续 7 天不活跃，会话失效
-    SESSION_ABSOLUTE_EXPIRE_DAYS: int = 30#登录满 30 天，必须重新登录
+    SESSION_IDLE_EXPIRE_DAYS: int = Field(
+    default=7,
+    gt=0,
+)
+
+    SESSION_ABSOLUTE_EXPIRE_DAYS: int = Field(
+    default=30,
+    gt=0,
+)
 
     # 最后活跃时间写入间隔
-    SESSION_ACTIVITY_INTERVAL_SECONDS: int = 300#活跃时间最多约每 5 分钟更新
+    SESSION_ACTIVITY_INTERVAL_SECONDS: int = Field(
+    default=300,
+    gt=0,
+)
 
-    # ==================== Refresh Cookie ====================
+
+    #Refresh Cookie
 
     REFRESH_COOKIE_NAME: str = "ssp_refresh"
     REFRESH_COOKIE_PATH: str = "/auth"
@@ -39,18 +50,36 @@ class Settings(BaseSettings):
 
     AUTH_ALLOWED_ORIGINS: list[str] = [
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
     ]
 
-    # ==================== 邮箱验证码 ====================
+    #  邮箱验证码 
 
     EMAIL_CODE_SECRET: str
+    EMAIL_CODE_EXPIRE_MINUTES: int = Field(
+        default=5,
+        gt=0,
+    )
 
-    EMAIL_CODE_EXPIRE_MINUTES: int = 5
-    EMAIL_CODE_COOLDOWN_SECONDS: int = 60
-    EMAIL_CODE_MAX_ATTEMPTS: int = 5
+    EMAIL_CODE_COOLDOWN_SECONDS: int = Field(
+        default=60,
+        gt=0,
+    )
 
-    EMAIL_DAILY_LIMIT: int = 10
-    EMAIL_IP_DAILY_LIMIT: int = 30
+    EMAIL_CODE_MAX_ATTEMPTS: int = Field(
+        default=5,
+        gt=0,
+    )
+
+    EMAIL_DAILY_LIMIT: int = Field(
+        default=10,
+        gt=0,
+    )
+
+    EMAIL_IP_DAILY_LIMIT: int = Field(
+        default=30,
+        gt=0,
+    )
 
 
     # ==================== 邮件服务 ====================
@@ -92,19 +121,28 @@ class Settings(BaseSettings):
 
 
 
-    # ==================== 认证安全 ====================
+        # ==================== 认证安全 ====================
+    PASSWORD_MAX_FAILED_ATTEMPTS: int = Field(
+        default=5,
+        gt=0,
+    )
 
-    PASSWORD_MAX_FAILED_ATTEMPTS: int = 5
-    PASSWORD_LOCK_MINUTES: int = 15
+    PASSWORD_LOCK_MINUTES: int = Field(
+        default=15,
+        gt=0,
+    )
 
-    AUTH_EVENT_RETENTION_DAYS: int = 30#安全事件保留 30 天
+    AUTH_EVENT_RETENTION_DAYS: int = Field(
+        default=30,
+        gt=0,
+    )
 
-    # ==================== 头像 ====================
+    # 头像 
 
     AVATAR_MAX_BYTES: int = 2 * 1024 * 1024
     AVATAR_MAX_SIZE: int = 512
 
-    # ==================== AI 原有配置 ====================
+    #  AI 原有配置 
 
     AI_ENABLED: bool = False
     DEEPSEEK_API_KEY: str | None = None
@@ -124,7 +162,7 @@ class Settings(BaseSettings):
     AI_MAX_STREAM_SECONDS: int = 120
     AI_LEASE_SECONDS: int = 180
 
-    # ==================== 密钥校验 ====================
+    # 密钥校验 
 
     @field_validator("SECRET_KEY", "EMAIL_CODE_SECRET")
     @classmethod
@@ -149,4 +187,32 @@ class Settings(BaseSettings):
     )
 
 
+
+
+
+
+    #头像配置
+    AVATAR_MAX_BYTES: int = Field(
+        default=2 * 1024 * 1024,
+        gt=0,
+    )
+
+    AVATAR_MAX_SIZE: int = Field(
+        default=512,
+        gt=0,
+    )
+
+    AVATAR_MAX_PIXELS: int = Field(
+        default=16_000_000,
+        gt=0,
+    )
+
+    AVATAR_DIR: Path = BASE_DIR / "storage" / "avatars"
+
+
+
+    AUTH_CLEANUP_ENABLED: bool = False
+
+
 settings = Settings()
+

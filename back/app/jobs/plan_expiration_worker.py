@@ -8,7 +8,10 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from app.core.clock import business_today
 from app.database import SessionLocal
 from app.repositories.plans import plan_lifecycle_repository
-from app.services.plans import plan_lifecycle_service
+from app.services.auth.auth_cleanup import run_auth_cleanup
+
+from app.config import settings
+
 
 
 logger = logging.getLogger(__name__)
@@ -72,6 +75,7 @@ def run_due_plan_check() -> dict:
     return result
 
 
+
 def main():
     """启动独立的定时任务进程"""
 
@@ -97,6 +101,19 @@ def main():
         replace_existing=True,
     )
 
+
+    if settings.AUTH_CLEANUP_ENABLED:
+
+        scheduler.add_job(
+            run_auth_cleanup,
+            trigger="interval",
+            hours=1,
+            id="auth_cleanup",
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=300,
+            replace_existing=True,
+        )
     # 启动时立即检查一次。
     # 避免程序重启后遗漏已经到期的计划。
     run_due_plan_check()

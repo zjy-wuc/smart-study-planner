@@ -19,7 +19,7 @@ ITERATIONS = 600000
 JWT_ALGORITHM = "HS256"
 
 
-# ==================== 密码哈希 ====================
+#  密码哈希
 
 
 def hash_password(password: str) -> str:
@@ -35,10 +35,20 @@ def hash_password(password: str) -> str:
     return f"{ALGORITHM}${ITERATIONS}${salt.hex()}${digest}"
 
 
+
+
+
 def verify_password(
     password: str,
     stored_hash: str,
 ) -> bool:
+
+    if not isinstance(password, str):
+        return False
+
+    if not isinstance(stored_hash, str):
+        return False
+
     try:
         algorithm, iterations, salt_hex, digest = (
             stored_hash.split("$")
@@ -46,8 +56,9 @@ def verify_password(
 
         iterations_int = int(iterations)
         salt = bytes.fromhex(salt_hex)
+        expected_digest = bytes.fromhex(digest)
 
-    except ValueError:
+    except (ValueError, TypeError):
         return False
 
     if algorithm != ALGORITHM:
@@ -56,17 +67,24 @@ def verify_password(
     if not 100000 <= iterations_int <= 2000000:
         return False
 
-    computed = hashlib.pbkdf2_hmac(
+    if len(salt) != 16:
+        return False
+
+    if len(expected_digest) != 32:
+        return False
+
+    actual_digest = hashlib.pbkdf2_hmac(
         "sha256",
         password.encode("utf-8"),
         salt,
         iterations_int,
-    ).hex()
+    )
 
-    return hmac.compare_digest(computed, digest)
-
-
-# ==================== 会话 ID ====================
+    return hmac.compare_digest(
+        actual_digest,
+        expected_digest,
+    )
+#  会话 ID 
 
 
 def create_family_id() -> str:
@@ -89,7 +107,7 @@ def _is_uuid4(value: object) -> bool:
         return False
 
 
-# ==================== JWT Payload 校验 ====================
+# JWT Payload 校验
 
 
 def _valid_identity(payload: dict) -> bool:
