@@ -1,5 +1,6 @@
 import { locale, messages } from "@/messages";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   description: messages.common.appDescription,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang={locale}

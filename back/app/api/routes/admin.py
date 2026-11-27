@@ -7,6 +7,8 @@ from fastapi import (
     Query,
 )
 
+from app.services.admin import statistics_service
+
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -24,6 +26,10 @@ from app.services.admin import (
     user_service,
     audit_service,
 )
+
+from app.schemas.admin import AdminAIConfigUpdate
+from app.services.admin import ai_config_service
+
 
 
 router = APIRouter(
@@ -155,5 +161,62 @@ def list_audit_logs(
             page=page,
             page_size=page_size,
             action=action,
+        )
+    )
+
+
+
+
+
+@router.get("/dashboard")
+def get_dashboard(
+    admin: dict = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+
+    return success(
+        data=statistics_service.get_dashboard(db)
+    )
+
+
+@router.get("/ai/statistics")
+def get_ai_statistics(
+    admin: dict = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+
+    return success(
+        data=statistics_service.get_ai_statistics(db)
+    )
+
+
+
+
+@router.get("/ai/config")
+def get_ai_config(
+    admin: dict = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+
+    return success(
+        data=ai_config_service.get_config(db)
+    )
+
+
+@router.patch(
+    "/ai/config",
+    dependencies=[Depends(require_auth_request)],
+)
+def update_ai_config(
+    data: AdminAIConfigUpdate,
+    admin: dict = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+
+    return success(
+        data=ai_config_service.update_config(
+            db,
+            admin=admin,
+            data=data,
         )
     )

@@ -45,12 +45,6 @@ router = APIRouter(
 def require_ai_available() -> None:
     """关闭功能或未配置模型时，直接拒绝，不占用请求额度。"""
 
-    if not settings.AI_ENABLED:
-        raise HTTPException(
-            status_code=503,
-            detail="AI 功能尚未启用",
-        )
-
     if not settings.DEEPSEEK_API_KEY:
         raise HTTPException(
             status_code=503,

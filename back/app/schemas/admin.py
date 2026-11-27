@@ -2,6 +2,15 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, StringConstraints
 
+from pydantic import (
+    ConfigDict,
+    Field,
+    StrictBool,
+    StrictInt,
+)
+
+
+
 
 AdminAction = Literal[
     "BAN_USER",
@@ -31,4 +40,26 @@ AdminReason = Annotated[
 
 
 class AdminActionRequest(BaseModel):
+    reason: AdminReason
+
+
+
+class AdminAIConfigUpdate(BaseModel):
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    enabled: StrictBool | None = None
+
+    user_daily_limit: Annotated[
+        StrictInt,
+        Field(gt=0),
+    ] | None = None
+
+    global_daily_limit: Annotated[
+        StrictInt,
+        Field(gt=0),
+    ] | None = None
+
     reason: AdminReason

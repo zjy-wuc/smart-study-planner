@@ -1,4 +1,4 @@
-﻿"""A4 AI 知识问答：Schema、历史裁剪、Prompt、流式与 Guard 结算测试。
+﻿﻿"""A4 AI 知识问答：Schema、历史裁剪、Prompt、流式与 Guard 结算测试。
 
 全部使用 Mock，不访问数据库、不调用 DeepSeek。
 """
@@ -19,6 +19,7 @@ from app.services.knowledge import (
     ai_guard_service,
     ai_note_service,
     ai_qa_service,
+    ai_rate_limit_service,
 )
 from app.services.knowledge.ai_provider import ProviderError
 from app.services.knowledge.ai_service import (
@@ -354,6 +355,22 @@ def test_guard_cancel_closes_upstream_and_settles(monkeypatch):
 def test_ask_admission_persists_operation(monkeypatch):
     recorded = {}
 
+    # A4：准入读取动态配置，这里用固定生效配置替代数据库。
+    monkeypatch.setattr(
+        ai_guard_service.ai_runtime_service,
+        "read_config",
+        lambda db: {
+            "enabled": True,
+            "user_daily_limit": 10,
+            "global_daily_limit": 80,
+        },
+    )
+    # 隔离 Redis 频控计数，避免跨用例污染。
+    monkeypatch.setattr(
+        ai_rate_limit_service.redis_client,
+        "eval",
+        lambda *args, **kwargs: (1, 60),
+    )
     monkeypatch.setattr(
         ai_guard_service.ai_guard_repository, "lock_admission", lambda db: None
     )
@@ -376,6 +393,7 @@ def test_ask_admission_persists_operation(monkeypatch):
     )
 
     db = MagicMock()
+    db.in_transaction.return_value = False
     admission = ai_guard_service.admit_request(
         db=db, user_id=1, note_id=7, operation="ASK"
     )
@@ -390,6 +408,22 @@ def test_ask_admission_failure_rolls_back(monkeypatch):
     def broken_insert(**kwargs):
         raise RuntimeError("insert failed")
 
+    # A4：准入读取动态配置，这里用固定生效配置替代数据库。
+    monkeypatch.setattr(
+        ai_guard_service.ai_runtime_service,
+        "read_config",
+        lambda db: {
+            "enabled": True,
+            "user_daily_limit": 10,
+            "global_daily_limit": 80,
+        },
+    )
+    # 隔离 Redis 频控计数，避免跨用例污染。
+    monkeypatch.setattr(
+        ai_rate_limit_service.redis_client,
+        "eval",
+        lambda *args, **kwargs: (1, 60),
+    )
     monkeypatch.setattr(
         ai_guard_service.ai_guard_repository, "lock_admission", lambda db: None
     )
@@ -408,6 +442,7 @@ def test_ask_admission_failure_rolls_back(monkeypatch):
     )
 
     db = MagicMock()
+    db.in_transaction.return_value = False
     with pytest.raises(RuntimeError):
         ai_guard_service.admit_request(
             db=db, user_id=1, note_id=7, operation="ASK"

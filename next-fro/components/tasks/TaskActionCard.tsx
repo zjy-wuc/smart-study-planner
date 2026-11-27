@@ -99,7 +99,7 @@ export function TaskActionCard({
     ) &&
     !isRolledOver;
   const daily = useDailyCheckin(task.id, task.task_type === "NUMERIC" && canOperate);
-  const checkedIn = !isRolledOver && (task.status === "COMPLETED" || (canOperate && daily.state === "done"));
+  const checkedIn = !isRolledOver && task.status === "COMPLETED";
   const label = isRolledOver ? messages.tasks.rolledOver
     : task.plan_status !== "ACTIVE" && task.status !== "COMPLETED" ? messages.tasks.statusStopped
     : task.task_type === "NUMERIC" && ["PENDING", "IN_PROGRESS"].includes(task.display_status)
@@ -172,7 +172,7 @@ export function TaskActionCard({
 
 
   function handleNumericProgress() {
-    if (!canOperate || busy || daily.state !== "available") {
+    if (!canOperate || busy) {
       return;
     }
 
@@ -191,7 +191,12 @@ export function TaskActionCard({
     }
 
     void runAction(
-      async () => { await updateNumericTask(task.id, quantity); daily.markDone(); },
+      async () => {
+        await updateNumericTask(task.id, quantity);
+        daily.markDone();
+        setActualText(String(completionQuantity));
+        setQuantityEdited(false);
+      },
       messages.tasks.quantityUpdated,
     );
   }
@@ -260,24 +265,26 @@ export function TaskActionCard({
         </div>
         <div className="today-task-actions">
           {checkedIn && <span className="checkin-success-text">{messages.tasks.encouragement}</span>}
-          {canOperate && !checkedIn && (task.task_type === "BOOLEAN" ? (
+          {task.task_type === "NUMERIC" && canOperate && daily.state === "done" && <span className="checkin-success-text">{messages.tasks.todayRecorded}</span>}
+          {canOperate && (task.task_type === "BOOLEAN" ? (
             <button type="button" onClick={handleBooleanComplete} disabled={busy} className="workspace-button workspace-button--primary">
               {busy ? messages.common.processing : messages.tasks.checkin}
             </button>
           ) : (
             <div className="task-progress-form">
+              <label className="task-progress-label" htmlFor={`task-progress-${task.id}`}>{messages.tasks.cumulativeQuantityLabel}</label>
               <input
+                id={`task-progress-${task.id}`}
                 aria-label={messages.tasks.quantityLabel(task.content || task.step_name)}
                 title={messages.tasks.numericCheckinHint}
                 type="text" inputMode="numeric" value={actualText}
                 onChange={(event) => { setActualText(event.target.value); setQuantityEdited(true); }}
-                disabled={busy || daily.state !== "available"}
+                disabled={busy}
                 className="task-action-input"
               />
-              <button type="button" onClick={handleNumericProgress} disabled={busy || daily.state !== "available"} className="workspace-button workspace-button--primary">
-                {busy ? messages.common.savingShort : daily.state === "loading" ? messages.tasks.confirming : quantityEdited ? messages.tasks.checkin : messages.tasks.completeAll}
+              <button type="button" onClick={handleNumericProgress} disabled={busy} className="workspace-button workspace-button--primary">
+                {busy ? messages.common.savingShort : quantityEdited ? messages.tasks.checkin : messages.tasks.completeAll}
               </button>
-              {daily.state === "error" && <button type="button" onClick={daily.retry} className="workspace-text-link">{messages.tasks.confirmRetry}</button>}
             </div>
           ))}
         </div>

@@ -1,5 +1,32 @@
 # Auth V2.0 前端认证竞态专项审查与整改报告
 
+## 2026-11-28 复核补充
+
+下文 2026-11-27 的结果是当时的历史快照，测试数量和“12 处旧页面任意 401 跳转”不代表当前状态；旧页面的问题已在后续 `Auth_V2_Frontend_Final_Fix_Report.md` 整改。本次按当前工作区重新检查认证源码与回归测试，保留所有已有未提交改动。
+
+| 检查项 | 当前结论与证据 |
+| --- | --- |
+| P0 Token 与 Epoch、请求发送前校验 | 已有修复；`token.ts` 绑定内存 Token 与 Epoch，`client.ts` 在 Axios 发送前和 SSE 发送前复核。`auth-v2.test.mjs` 与 `auth-client.test.mjs` 覆盖旧 Token、旧请求及跨账号重试。 |
+| P1 广播乱序、刷新失败、锁晚于消息 | 已有修复；`coordinator.ts` 校验消息 Epoch 和刷新版本，刷新 Promise 只清理自身；现有测试覆盖迟到/重复广播、旧刷新失败、锁先于广播。 |
+| P1 SSE 和异常边界 | 已有修复；旧流读取和事件交付复核代际，开始读流后不重放；测试覆盖旧事件、错误解析期间切换账号、残留 Authorization Header、超时后不确定的 Cookie 轮换。 |
+| 登录恢复与 Cookie 写操作 | `AuthContext` 识别 `ACCOUNT_DISABLED`；登录、注册、刷新、重置密码及退出使用同名 Web Lock。退出操作在锁外预刷新、获锁后复核代际；现有测试覆盖嵌套锁和排队时换账号。 |
+| 旧页面宽泛 401 | 2026-11-27 报告列出的旧页面已由后续专项整改处理；本次检索未再找到这些直接跳转分支。 |
+| 新发现：管理页宽泛 401 | `AdminShell` 的 `/users/me` 失败分支把任何 401 直接当成退出。新增测试先复现失败，再移除该分支；非确认失效错误留在页面供重试，已确认失效仍由公共 `AuthContext` 导航。 |
+
+本次实际改动：`next-fro/components/admin/AdminShell.tsx` 的身份校验错误分支；`next-fro/tests/admin.test.mjs` 新增 401 回归测试；本报告及 `Auth_V2_Frontend_Core_Learning.md` 同步说明。认证核心、后端、数据库和接口协议未修改。原先 P0/P1 的复现测试和修复已存在，本次没有重写或重复新增这些测试；新缺陷按“先失败、后修复”执行。
+
+| 验收 | 本次实际结果 |
+| --- | --- |
+| `npx tsc --noEmit` | PASS |
+| `npx eslint app components contexts hooks lib messages services types`、`npx eslint tests/admin.test.mjs` | PASS |
+| `node --test tests/*.test.mjs` | PASS，60 项、0 失败；新增测试修复前失败、修复后通过 |
+| `npm run build` | PASS，Next.js 16.4.2 |
+| `npm run lint` | BLOCKED：ESLint 遍历现有 `.pytest_cache` 时遇到 `EPERM`；上述源码范围 ESLint 已通过 |
+| `git diff --check`（整个仓库） | FAIL：已有未提交的 `back/app/config.py` 尾随空格及文件末空行；本次范围检查通过 |
+| 真实浏览器双标签页与后端 Cookie 轮换 | BLOCKED：本次会话的浏览器访问受已保存权限限制，未执行；Mock 测试不等于浏览器联调 |
+
+剩余风险：真实跨标签事件顺序、存储运行中失效和后端已轮换 Cookie 但前端未收到响应，仍需在获准的真实浏览器与后端环境验收。当前代码对此采用代际校验及不确定刷新拒绝自动重试；不能把这些 Mock 结果写成真实环境结论。
+
 检查日期：2026-11-27。范围：`next-fro` 前端；未修改后端、数据库或认证接口。工作区原有未提交改动均保留。测试使用占位 Token 和模拟浏览器对象，不包含真实凭据。
 
 ## 结果概览

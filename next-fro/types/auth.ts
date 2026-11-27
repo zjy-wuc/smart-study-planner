@@ -12,6 +12,7 @@ export interface User {
   avatar_url: string | null;
   email_verified_at: string;
   is_active: boolean;
+  role: "USER" | "ADMIN";
 }
 
 export interface AccessTokenResponse {

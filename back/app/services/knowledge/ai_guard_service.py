@@ -1,6 +1,12 @@
 
 """A2 AI 公共守卫：共享额度、并发限制、流式请求状态结算。"""
 
+from app.services.knowledge import (
+    ai_rate_limit_service,
+    ai_runtime_service,
+)
+
+
 import asyncio
 import json
 import logging
@@ -38,18 +44,13 @@ def _reject_limit(code: str, message: str) -> None:
         detail={"code": code, "message": message},
     )
 
-
 def admit_request(
     db: Session,
     user_id: int,
     note_id: int | None,
     operation: str = "SUMMARY",
 ) -> Admission:
-    """在同一个数据库事务中原子检查额度、并发，并写入 RUNNING。
 
-    多进程通过 ai_guard_mutex 的 FOR UPDATE 串行准入；
-    在调用 DeepSeek 之前 COMMIT，避免模型生成期间占用数据库行锁。
-    """
     allowed_operations = {
         "SUMMARY",
         "GENERATE",
@@ -60,70 +61,142 @@ def admit_request(
     }
 
     if operation not in allowed_operations:
-        raise ValueError("Unsupported AI operation")
-
-    if settings.AI_LEASE_SECONDS <= settings.AI_MAX_STREAM_SECONDS:
-        raise RuntimeError("AI lease must exceed stream timeout")
-
-    request_id = str(uuid4())
-    today = business_today()
-
-    try:
-        ai_guard_repository.lock_admission(db)
-
-        global_daily, user_daily = ai_guard_repository.daily_counts(
-            db=db,
-            request_date=today,
-            user_id=user_id,
+        raise ValueError(
+            "Unsupported AI operation"
         )
 
-        # A5 练习生成至少需要剩余两次请求额度：
-        # 一次用于题目生成，一次用于后续简答题批改。
-        # 这里只检查，不预留额度。
+    if (
+        settings.AI_LEASE_SECONDS
+        <= settings.AI_MAX_STREAM_SECONDS
+    ):
+        raise RuntimeError(
+            "AI lease must exceed stream timeout"
+        )
+
+    # 必须从干净的事务开始。
+    # 避免使用业务查询已经建立的旧事务快照。
+    if db.in_transaction():
+
+        raise RuntimeError(
+            "AI admission requires a clean Session"
+        )
+
+    if not settings.DEEPSEEK_API_KEY:
+
+        raise HTTPException(
+            status_code=503,
+            detail="AI 模型尚未配置",
+        )
+
+    # 1. Redis 请求频率检查
+    # Redis 网络操作必须发生在获取 MySQL 锁之前。
+    ai_rate_limit_service.check_ai_rate_limit(
+        user_id
+    )
+
+    request_id = str(uuid4())
+
+    try:
+
+        # 2. 获取 MySQL 全站准入锁
+        ai_guard_repository.lock_admission(db)
+
+        # 获取锁之后再计算业务日期
+        today = business_today()
+
+        # 3. 读取最新动态配置
+        config = ai_runtime_service.read_config(
+            db
+        )
+
+        if not config["enabled"]:
+
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "AI_DISABLED",
+                    "message": "AI 功能尚未启用",
+                },
+            )
+
+        (
+            user_daily_limit,
+            global_daily_limit,
+        ) = ai_runtime_service.effective_limits(
+            config
+        )
+
+        # 4. 查询当日额度使用情况
+        global_daily, user_daily = (
+            ai_guard_repository.daily_counts(
+                db=db,
+                request_date=today,
+                user_id=user_id,
+            )
+        )
+
+        # 5. 保留练习生成至少剩余两次额度的规则
         if operation == "PRACTICE_GENERATE":
-            if user_daily + 2 > settings.AI_USER_DAILY_LIMIT:
+
+            if user_daily + 2 > user_daily_limit:
+
                 _reject_limit(
                     "AI_PRACTICE_QUOTA_INSUFFICIENT",
                     "至少需要剩余 2 次 AI 调用额度才能生成练习",
                 )
 
-            if global_daily + 2 > settings.AI_GLOBAL_DAILY_LIMIT:
+            if global_daily + 2 > global_daily_limit:
+
                 _reject_limit(
                     "AI_PRACTICE_GLOBAL_QUOTA_INSUFFICIENT",
                     "全站剩余 AI 调用额度不足，暂时无法生成练习",
                 )
 
+        # 6. 检查全站额度
+        if global_daily >= global_daily_limit:
 
-        if global_daily >= settings.AI_GLOBAL_DAILY_LIMIT:
             _reject_limit(
                 "AI_GLOBAL_DAILY_LIMIT",
                 "今日全站 AI 调用额度已用完",
             )
 
-        if user_daily >= settings.AI_USER_DAILY_LIMIT:
+        # 7. 检查用户额度
+        if user_daily >= user_daily_limit:
+
             _reject_limit(
                 "AI_USER_DAILY_LIMIT",
                 "你今天的 AI 调用额度已用完",
             )
 
-        global_active, user_active = ai_guard_repository.active_counts(
-            db=db,
-            user_id=user_id,
+        # 8. 检查并发资源
+        global_active, user_active = (
+            ai_guard_repository.active_counts(
+                db=db,
+                user_id=user_id,
+            )
         )
 
-        if global_active >= settings.AI_GLOBAL_CONCURRENCY:
+        if (
+            global_active
+            >= settings.AI_GLOBAL_CONCURRENCY
+        ):
+
             _reject_limit(
                 "AI_GLOBAL_BUSY",
                 "AI 服务繁忙，请稍后重试",
             )
 
-        if user_active >= settings.AI_USER_CONCURRENCY:
+        if (
+            user_active
+            >= settings.AI_USER_CONCURRENCY
+        ):
+
             _reject_limit(
                 "AI_USER_BUSY",
                 "你已有正在生成的 AI 请求",
             )
 
-        # 一旦成功准入，便占用当天一次请求额度；失败不自动退还。
+        # 9. 准入成功，登记请求
         ai_guard_repository.insert_request(
             db=db,
             request_id=request_id,
@@ -134,6 +207,7 @@ def admit_request(
             operation=operation,
         )
 
+        # 10. 提交事务并释放准入锁
         db.commit()
 
         return Admission(
@@ -143,9 +217,10 @@ def admit_request(
         )
 
     except Exception:
-        db.rollback()
-        raise
 
+        db.rollback()
+
+        raise
 
 def _finish_request_record(
     request_id: str,

@@ -144,6 +144,12 @@
   gap: 12px;
 }
 
+.workspace-app .task-progress-label {
+  color: #486583;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .workspace-app .task-action-input {
   width: 190px;
   max-width: 100%;

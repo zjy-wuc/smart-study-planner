@@ -89,6 +89,7 @@ export function WorkspaceShell({
   const auth = useAuth();
   const [search, setSearch] = useState("");
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const [adminAccessRevoked, setAdminAccessRevoked] = useState(false);
   const section = pathname.split("/").filter(Boolean)[0] ?? "home";
   const currentPage = navigation.find((item) =>
     pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`)),
@@ -101,10 +102,18 @@ export function WorkspaceShell({
     }
   }, [auth.status, router]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("admin_access") !== "revoked") return;
+    queueMicrotask(() => setAdminAccessRevoked(true));
+    params.delete("admin_access");
+    window.history.replaceState(null, "", `${window.location.pathname}${params.size ? `?${params}` : ""}`);
+  }, []);
+
 
   if (auth.status !== "authenticated") {
     return (
-      auth.status === "temporary-error" ? <p role="alert">{messages.auth.restoreFailed} <button type="button" onClick={auth.retry}>{messages.common.retry}</button></p> : <p role="status">{messages.auth.checkingSession}</p>
+      auth.status === "temporary-error" ? <div className="auth-restore-error" role="alert"><div className="auth-restore-card"><h1>{messages.auth.restoreTitle}</h1><p>{messages.auth.restoreFailed}</p><p>{messages.auth.restoreLoginHint}</p><div className="auth-restore-actions"><button type="button" onClick={auth.retry}>{messages.common.retry}</button><Link href="/login">{messages.auth.backToLogin}</Link></div></div></div> : <p role="status">{messages.auth.checkingSession}</p>
     );
   }
 
@@ -216,9 +225,12 @@ export function WorkspaceShell({
 
             <p className="workspace-sidebar-note">{messages.navigation.mottoFirstLine}<br />{messages.navigation.mottoSecondLine}<span aria-hidden="true">✦</span>
             </p>
+            {auth.user?.role === "ADMIN" && <Link className="workspace-nav-link admin-entry" href="/admin" onClick={() => setNavigationOpen(false)}>{messages.admin.overview} <span className="admin-mini-badge">{messages.admin.badge}</span></Link>}
           </aside>
 
           <main className="workspace-main">
+            {auth.user?.role === "ADMIN" && pathname === "/" && <span className="admin-learning-badge">{auth.user.username} · {messages.admin.badge}</span>}
+            {pathname === "/" && adminAccessRevoked && <p role="status" className="workspace-feedback workspace-feedback--warning">{messages.admin.permissionChanged}</p>}
             {children}
           </main>
         </div>

@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
-    # ==================== 数据库 ====================
+    #  数据库 
 
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 3306
@@ -16,14 +16,14 @@ class Settings(BaseSettings):
     DB_PASSWORD: str
     DB_NAME: str
 
-    # ==================== JWT ====================
+    # JWT
 
     SECRET_KEY: str
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=15, gt=0)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, gt=0)
 
-    # ==================== 登录会话 ====================
+    # 登录会话 
 
     SESSION_IDLE_EXPIRE_DAYS: int = Field(
     default=7,
@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     )
 
 
-    # ==================== 邮件服务 ====================
+    # 邮件服务 
 
     MAIL_ENABLED: bool = False
 
@@ -97,7 +97,7 @@ class Settings(BaseSettings):
         gt=0,
     )
 
-    # ==================== IP 认证限流 ====================
+    #  IP 认证限流 
 
     AUTH_IP_WINDOW_MINUTES: int = Field(#设置 IP 认证限流的统计窗口为 15 分钟
         default=15,
@@ -121,7 +121,7 @@ class Settings(BaseSettings):
 
 
 
-        # ==================== 认证安全 ====================
+        #  认证安全 
     PASSWORD_MAX_FAILED_ATTEMPTS: int = Field(
         default=5,
         gt=0,
@@ -178,6 +178,20 @@ class Settings(BaseSettings):
             raise ValueError("JWT和邮箱验证码不能使用相同密钥")
 
         return self
+    
+
+    @model_validator(mode="after")
+    def validate_ai_limits(self):
+
+        if (
+            self.AI_USER_DAILY_HARD_LIMIT
+            > self.AI_GLOBAL_DAILY_HARD_LIMIT
+        ):
+            raise ValueError(
+                "AI 用户额度硬上限不能超过全站额度硬上限"
+            )
+
+        return self
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
@@ -214,5 +228,36 @@ class Settings(BaseSettings):
     AUTH_CLEANUP_ENABLED: bool = False
 
 
+
+
+# Redis 配置
+    REDIS_URL: str = "redis://127.0.0.1:6379/0"
+
+    # AI 请求频率限制
+    AI_USER_RATE_LIMIT: int = Field(
+        default=6,
+        gt=0,
+    )
+
+    AI_RATE_WINDOW_SECONDS: int = Field(
+        default=60,
+        gt=0,
+    )
+
+    # 开发者每日额度硬上限
+    AI_USER_DAILY_HARD_LIMIT: int = Field(
+        default=50,
+        gt=0,
+    )
+
+    AI_GLOBAL_DAILY_HARD_LIMIT: int = Field(
+        default=200,
+        gt=0,
+    )
+
+
+
+
 settings = Settings()
+
 

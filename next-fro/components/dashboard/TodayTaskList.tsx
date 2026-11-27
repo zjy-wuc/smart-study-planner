@@ -29,7 +29,7 @@ function TodayTaskRow({ task, planName, onChanged }: { task: DailyTask; planName
 
   async function checkin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || !canCheckin || (task.task_type === "NUMERIC" && daily.state !== "available")) return;
+    if (busy || !canCheckin) return;
     const text = quantity.trim();
     const value = Number(text);
     if (task.task_type === "NUMERIC" && (!/^\d+$/.test(text) || !Number.isSafeInteger(value))) {
@@ -41,7 +41,11 @@ function TodayTaskRow({ task, planName, onChanged }: { task: DailyTask; planName
     try {
       if (task.task_type === "BOOLEAN") await completeBooleanTask(task.id);
       else await updateNumericTask(task.id, value);
-      daily.markDone();
+      if (task.task_type === "NUMERIC") {
+        daily.markDone();
+        setQuantity(String(completionQuantity));
+        setQuantityEdited(false);
+      }
       onChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : messages.tasks.checkinFailed);
@@ -64,12 +68,12 @@ function TodayTaskRow({ task, planName, onChanged }: { task: DailyTask; planName
       </div>
       <div className="dashboard-task-actions">
         <span className="workspace-task-status" data-status={task.display_status}>{label}</span>
-        {canCheckin && daily.state !== "done" && <form className="dashboard-checkin" onSubmit={(event) => void checkin(event)}>
-          {task.task_type === "NUMERIC" && <input aria-label={messages.tasks.quantityLabel(task.content || task.step_name)} title={messages.tasks.numericCheckinHint} type="text" inputMode="numeric" value={quantity} onChange={(event) => { setQuantity(event.target.value); setQuantityEdited(true); }} disabled={busy || daily.state !== "available"} />}
-          <button type="submit" disabled={busy || (task.task_type === "NUMERIC" && daily.state !== "available")}>{busy ? messages.common.savingCompact : daily.state === "loading" ? messages.tasks.confirming : task.task_type === "NUMERIC" && !quantityEdited ? messages.tasks.completeAll : messages.tasks.checkin}</button>
-          {daily.state === "error" && task.task_type === "NUMERIC" && <button type="button" onClick={daily.retry}>{messages.tasks.confirmRetry}</button>}
+        {task.task_type === "NUMERIC" && canCheckin && daily.state === "done" && <span className="checkin-success-text">{messages.tasks.todayRecorded}</span>}
+        {canCheckin && <form className="dashboard-checkin" onSubmit={(event) => void checkin(event)}>
+          {task.task_type === "NUMERIC" && <><label className="dashboard-checkin-label" htmlFor={`dashboard-progress-${task.id}`}>{messages.tasks.cumulativeQuantityLabel}</label><input id={`dashboard-progress-${task.id}`} aria-label={messages.tasks.quantityLabel(task.content || task.step_name)} title={messages.tasks.numericCheckinHint} type="text" inputMode="numeric" value={quantity} onChange={(event) => { setQuantity(event.target.value); setQuantityEdited(true); }} disabled={busy} /></>}
+          <button type="submit" disabled={busy}>{busy ? messages.common.savingCompact : task.task_type === "NUMERIC" && !quantityEdited ? messages.tasks.completeAll : messages.tasks.checkin}</button>
         </form>}
-        {!rolledOver && (daily.state === "done" || task.status === "COMPLETED") && <span className="checkin-success-text">{messages.tasks.encouragement}</span>}
+        {!rolledOver && task.status === "COMPLETED" && <span className="checkin-success-text">{messages.tasks.encouragement}</span>}
       </div>
     </li>
   );

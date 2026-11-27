@@ -231,6 +231,27 @@ Next.js App Router 的根 `app/layout.tsx` 包裹 Provider；工作区 `componen
 
 **当前验证边界：** 自动化单元测试可验证单飞与模拟双标签页；真实浏览器、邮件验证码、真实 MySQL/后端 Cookie 轮换需要按测试报告进一步联调。本文解释已实现的前端代码，不把模拟测试写成真实浏览器结果。
 
+### 2026-11-28 补充：管理页的 401 与认证状态
+
+`AdminShell` 进入管理空间时会重新调用 `/users/me` 核对身份。该请求如果返回某个 401，页面不能仅凭 HTTP 状态就认定用户已退出：公共 API 层按后端明确的会话错误码清理当前代际的 Token，`AuthContext` 确认变为 `unauthenticated` 后，页面守卫才导航到登录页。其他 401 显示错误和重试入口。此次新增的管理页回归测试先复现了宽泛跳转，随后验证修复；原有 Token、刷新、广播和 SSE 的时序图与源码附录没有变化。
+
+```mermaid
+sequenceDiagram
+  participant A as 管理页
+  participant C as 公共 API 与 AuthContext
+  participant S as 后端 /users/me
+  A->>C: 核对当前身份
+  C->>S: 携带当前代际 Access 请求
+  S-->>C: 返回 401 及错误码
+  alt 已确认会话失效
+    C-->>A: 认证状态变为未登录
+    A->>A: 导航登录页
+  else 其他错误
+    C-->>A: 保留认证状态并返回错误
+    A->>A: 显示错误与重试
+  end
+```
+
 ## 附录：最终核心源码（阅读时对照前述章节）
 
 以下源码摘录自本次最终工作区；文件改动后应重新核对。

@@ -209,3 +209,73 @@
     transition: none;
   }
 }
+
+.workspace-app .admin-mini-badge,
+.workspace-app .admin-learning-badge {
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #dbeafe;
+  color: #245caf;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}
+
+.workspace-app .admin-learning-badge {
+  display: inline-block;
+  margin: 10px 20px;
+}
+
+.workspace-app .workspace-sidebar .admin-entry {
+  border-top: 1px solid #cfe2ee;
+  border-radius: 0;
+  padding-top: 12px;
+}
+
+.auth-restore-error {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(145deg, #eaf4ff, #f7fbff 58%, #e8f7fa);
+  color: #203b55;
+}
+
+.auth-restore-card {
+  width: min(100%, 440px);
+  padding: 32px;
+  border: 1px solid #d7e7f2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgb(30 82 133 / 9%);
+}
+
+.auth-restore-card h1 {
+  margin: 0 0 18px;
+  font-size: 24px;
+}
+
+.auth-restore-card p {
+  margin: 8px 0;
+  color: #526d8c;
+}
+
+.auth-restore-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.auth-restore-actions button {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 8px;
+  background: #2867ce;
+  color: #fff;
+  cursor: pointer;
+}
+
+.auth-restore-actions a {
+  color: #2867ce;
+  text-decoration: none;
+}

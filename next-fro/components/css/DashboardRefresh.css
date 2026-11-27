@@ -206,6 +206,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+.workspace-refresh .dashboard-refresh .dashboard-checkin-label {
+  color: #486583;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .workspace-refresh .dashboard-refresh .dashboard-checkin button {
   background: var(--workspace-accent);
   font-size: 12px;

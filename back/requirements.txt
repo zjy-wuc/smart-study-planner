@@ -23,6 +23,7 @@ PyMySQL==1.2.3
 python-dotenv==1.2.4
 python-multipart==0.0.33
 PyYAML==6.0.3
+redis==8.2.0
 SQLAlchemy==2.1.5
 starlette==1.8.0
 typing-inspection==0.4.4
