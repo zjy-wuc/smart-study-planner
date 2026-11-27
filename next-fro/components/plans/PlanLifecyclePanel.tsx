@@ -3,7 +3,6 @@
 import { messages } from "@/messages";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { ApiError } from "@/lib/api/client";
 import { endPlan } from "@/services/plans.service";
@@ -24,7 +23,6 @@ export function PlanLifecyclePanel({
   plan,
   onEnded,
 }: Props) {
-  const router = useRouter();
 
   const [ending, setEnding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +51,6 @@ export function PlanLifecyclePanel({
       onEnded(result);
 
     } catch (err) {
-      if (
-        err instanceof ApiError &&
-        err.status === 401
-      ) {
-        router.replace("/login");
-        return;
-      }
-
       if (
         err instanceof ApiError &&
         err.status === 409

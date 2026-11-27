@@ -19,9 +19,12 @@ class ProgressRegression(unittest.TestCase):
         self.outer = self.conn.begin()
         self.db = Session(bind=self.conn, join_transaction_mode="create_savepoint")
         self.today = business_today()
+        username = "progress_test_" + uuid4().hex
         self.user = self.sql(
-            "INSERT INTO users (username, password_hash) VALUES (:name, 'test')",
-            name="progress_test_" + uuid4().hex,
+            "INSERT INTO users (username, password_hash, password_updated_at, email, email_verified_at) "
+            "VALUES (:name, 'test', UTC_TIMESTAMP(6), :email, UTC_TIMESTAMP(6))",
+            name=username,
+            email=username + "@example.invalid",
         ).lastrowid
         self.plan = self.new_plan("ACTIVE")
         self.db.commit()
@@ -304,9 +307,12 @@ class ProgressRegression(unittest.TestCase):
         self.assertEqual(result["reason"], "PLAN_NOT_ACTIVE")
 
     def test_P15_other_users_plan_is_hidden(self):
+        other_name = "progress_other_" + uuid4().hex
         other = self.sql(
-            "INSERT INTO users (username, password_hash) VALUES (:name, 'test')",
-            name="progress_other_" + uuid4().hex,
+            "INSERT INTO users (username, password_hash, password_updated_at, email, email_verified_at) "
+            "VALUES (:name, 'test', UTC_TIMESTAMP(6), :email, UTC_TIMESTAMP(6))",
+            name=other_name,
+            email=other_name + "@example.invalid",
         ).lastrowid
         foreign_plan = self.sql(
             "INSERT INTO study_plans (user_id,name,start_date,end_date,status) "

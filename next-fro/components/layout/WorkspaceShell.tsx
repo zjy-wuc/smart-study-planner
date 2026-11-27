@@ -19,7 +19,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { getAccessToken } from "@/lib/auth/token";
+import { useAuth } from "@/contexts/AuthContext";
 import { ScrollPositionManager } from "@/components/common/ScrollPositionManager";
 
 import {
@@ -86,7 +86,7 @@ export function WorkspaceShell({
   const router = useRouter();
   const pathname = usePathname();
 
-  const [authChecked, setAuthChecked] = useState(false);
+  const auth = useAuth();
   const [search, setSearch] = useState("");
   const [navigationOpen, setNavigationOpen] = useState(false);
   const section = pathname.split("/").filter(Boolean)[0] ?? "home";
@@ -96,18 +96,15 @@ export function WorkspaceShell({
 
 
   useEffect(() => {
-    if (!getAccessToken()) {
+    if (auth.status === "unauthenticated") {
       router.replace("/login");
-      return;
     }
-
-    setAuthChecked(true);
-  }, [router]);
+  }, [auth.status, router]);
 
 
-  if (!authChecked) {
+  if (auth.status !== "authenticated") {
     return (
-      <p role="status">{messages.auth.checkingSession}</p>
+      auth.status === "temporary-error" ? <p role="alert">{messages.auth.restoreFailed} <button type="button" onClick={auth.retry}>{messages.common.retry}</button></p> : <p role="status">{messages.auth.checkingSession}</p>
     );
   }
 

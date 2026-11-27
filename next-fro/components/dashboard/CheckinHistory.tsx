@@ -3,13 +3,10 @@
 import { messages } from "@/messages";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { ApiError } from "@/lib/api/client";
 import { getTaskRecords } from "@/services/tasks.service";
 import type { DailyTask, StudyRecord } from "@/types/task";
 
 function HistoryItem({ task }: { task: DailyTask }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [records, setRecords] = useState<StudyRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,8 +23,7 @@ function HistoryItem({ task }: { task: DailyTask }) {
     try {
       setRecords(await getTaskRecords(task.id));
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) router.replace("/login");
-      else setError(err instanceof Error ? err.message : messages.history.loadFailed);
+      setError(err instanceof Error ? err.message : messages.history.loadFailed);
     } finally {
       setLoading(false);
     }

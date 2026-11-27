@@ -4,7 +4,6 @@ import { messages } from "@/messages";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   ChevronUp,
@@ -134,7 +133,6 @@ export function ActiveStepManager({
   onChanged,
   manageHref,
 }: Props) {
-  const router = useRouter();
 
   const [tree, setTree] = useState<StepNode[]>([]);
   const [revision, setRevision] = useState(0);
@@ -233,11 +231,6 @@ export function ActiveStepManager({
   }, [plan.id, revision]);
 
   function handleApiError(err: unknown) {
-    if (err instanceof ApiError && err.status === 401) {
-      router.replace("/login");
-      return;
-    }
-
     setError(getErrorText(err));
   }
 

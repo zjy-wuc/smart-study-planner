@@ -35,15 +35,19 @@ from app.repositories.auth import (
 # 隔离库连接守卫 — 模块加载即校验，避免误连正式库
 # ============================================================
 
-_EXPECTED_DB = "ssp_a0_migrate2"
+_ALLOWED_TEST_DBS = {
+    "ssp_v3_admin_test",
+    "ssp_a0_migrate2",
+}
 
 
 def _guard_database():
     with engine.connect() as conn:
         db_name = conn.execute(text("SELECT DATABASE()")).scalar_one()
-        if db_name != _EXPECTED_DB:
+        if db_name not in _ALLOWED_TEST_DBS:
             raise RuntimeError(
-                f"测试仅允许在 {_EXPECTED_DB} 执行，当前数据库: {db_name}"
+                "测试仅允许在隔离测试库执行，"
+                f"允许: {sorted(_ALLOWED_TEST_DBS)}，当前数据库: {db_name}"
             )
 
 
@@ -75,7 +79,7 @@ class RollbackTestCase(unittest.TestCase):
         )
         # 再确认一次 DB 名
         db_name = self.db.execute(text("SELECT DATABASE()")).scalar_one()
-        self.assertEqual(db_name, _EXPECTED_DB)
+        self.assertIn(db_name, _ALLOWED_TEST_DBS)
 
     def tearDown(self):
         self.db.close()
@@ -114,15 +118,15 @@ class RollbackTestCase(unittest.TestCase):
 class T1ConfigAndEnv(unittest.TestCase):
     def test_t1_01_env_loaded(self):
         """.env 加载且 DB 指向隔离库"""
-        self.assertEqual(settings.DB_NAME, _EXPECTED_DB)
+        self.assertIn(settings.DB_NAME, _ALLOWED_TEST_DBS)
         self.assertEqual(settings.DB_HOST, "127.0.0.1")
 
     def test_t1_02_database_actually_isolation(self):
         """实际连接的 DB 名"""
         with engine.connect() as conn:
-            self.assertEqual(
+            self.assertIn(
                 conn.execute(text("SELECT DATABASE()")).scalar_one(),
-                _EXPECTED_DB,
+                _ALLOWED_TEST_DBS,
             )
 
     def test_t1_03_secret_min_length(self):
@@ -283,7 +287,7 @@ class T1ConfigAndEnv(unittest.TestCase):
         return {
             "DB_USER": "root",
             "DB_PASSWORD": "x",
-            "DB_NAME": _EXPECTED_DB,
+            "DB_NAME": settings.DB_NAME,
             "SECRET_KEY": "b" * 64,
             "EMAIL_CODE_SECRET": "c" * 64,
         }
@@ -687,12 +691,36 @@ class T6Schema(unittest.TestCase):
                 f"T6 期望的 schema 未实现: {', '.join(missing)}"
             )
 
-    def test_t6_02_user_create_no_constraints(self):
-        """当前 UserCreate 无字段约束 — 4 位以下/特殊字符也能通过"""
+    def test_t6_02_user_create_constraints(self):
+        """UserCreate 已实施字段约束：用户名/密码/邮箱/验证码"""
+        from pydantic import ValidationError
         from app.schemas.user import UserCreate
-        # 当前 UserCreate 无 min_length / pattern，任意字符串均可
-        u = UserCreate(username="a", password="1", nickname="")
-        self.assertEqual(u.username, "a")  # 实际通过 — 记录为缺失约束
+
+        valid = UserCreate(
+            username="user_01",
+            password="Passw0rd!",
+            email="user01@example.com",
+            code="123456",
+        )
+        self.assertEqual(valid.username, "user_01")
+        self.assertEqual(valid.email, "user01@example.com")
+        self.assertEqual(valid.code, "123456")
+
+        invalid_payloads = [
+            # 用户名过短（min_length=4）
+            dict(username="a", password="Passw0rd!", email="u1@example.com", code="123456"),
+            # 用户名含非法字符（pattern ^[a-zA-Z0-9_]+$）
+            dict(username="bad-name", password="Passw0rd!", email="u2@example.com", code="123456"),
+            # 密码过短（min_length=8）
+            dict(username="user_02", password="short", email="u3@example.com", code="123456"),
+            # 邮箱非法
+            dict(username="user_03", password="Passw0rd!", email="not-an-email", code="123456"),
+            # 验证码非 6 位数字
+            dict(username="user_04", password="Passw0rd!", email="u4@example.com", code="12ab"),
+        ]
+        for payload in invalid_payloads:
+            with self.assertRaises(ValidationError):
+                UserCreate(**payload)
 
     def test_t6_03_token_pair_structure(self):
         from app.schemas.auth import TokenPair
@@ -1646,23 +1674,32 @@ class T11AuthEventRepository(RollbackTestCase):
         )
         self.assertEqual(cnt, 1)
 
-    def test_t11_08_identifier_ip_no_after_id(self):
-        """identifier/ip 维度的统计缺少 after_id 参数 — 仅记录问题"""
+    def test_t11_08_identifier_ip_use_since_window(self):
+        """identifier/ip 限流使用 since 时间窗口契约（after_id 方案已被替代）"""
         import inspect
+        from app.services.auth import rate_limit_service
+
         sig_id = inspect.signature(
             auth_event_repository.count_identifier_events
         )
         sig_ip = inspect.signature(auth_event_repository.count_ip_events)
-        # 预期应支持 after_id 实现"上次成功后清零"
-        has_after_id = (
-            "after_id" in sig_id.parameters
-            and "after_id" in sig_ip.parameters
-        )
-        if not has_after_id:
-            self.fail(
-                "count_identifier_events/count_ip_events 缺少 after_id 参数，"
-                "无法支持'上次登录成功后清零'语义"
+
+        for sig in (sig_id, sig_ip):
+            params = sig.parameters
+            self.assertIn("since", params)
+            self.assertIs(
+                params["since"].default,
+                inspect.Parameter.empty,
+                "since 必须是必填参数",
             )
+            self.assertNotIn("after_id", params)
+
+        # 限流服务实际按 since 窗口统计 IP 事件
+        source = inspect.getsource(
+            rate_limit_service._reserve_ip_attempt
+        )
+        self.assertIn("count_ip_events", source)
+        self.assertIn("since=since", source)
 
     def test_t11_09_no_sensitive_fields_in_schema(self):
         """表结构不含 password/code/token 字段"""
@@ -1671,7 +1708,7 @@ class T11AuthEventRepository(RollbackTestCase):
             SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = :db AND TABLE_NAME = 'auth_events'
             """,
-            db=_EXPECTED_DB,
+            db=settings.DB_NAME,
         ).scalars().all()
         forbidden = {"password", "password_hash", "code", "code_hash",
                      "token", "token_hash", "refresh_token"}
@@ -1743,7 +1780,7 @@ class T12TransactionsAndConcurrency(RollbackTestCase):
             FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = :db AND TABLE_NAME = 'login_sessions'
             """,
-            db=_EXPECTED_DB,
+            db=settings.DB_NAME,
         ).mappings().all()
         col_map = {c["COLUMN_NAME"]: c for c in cols}
         self.assertIn("family_id", col_map)
@@ -1765,7 +1802,7 @@ class T12ConcurrencyCommitted(unittest.TestCase):
                 password=settings.DB_PASSWORD,
                 host=settings.DB_HOST,
                 port=settings.DB_PORT,
-                database=_EXPECTED_DB,
+                database=settings.DB_NAME,
                 query={"charset": "utf8mb4"},
             ),
             pool_pre_ping=True,

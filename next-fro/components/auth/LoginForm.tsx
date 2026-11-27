@@ -1,126 +1,174 @@
 "use client";
 
-import { messages } from "@/messages";
-
-import { useLayoutEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { loginUser } from "@/services/auth.service";
-import type { LoginRequest } from "@/types/auth";
-import { setTokenPair } from "@/lib/auth/token";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import { sameAuthEpoch } from "@/lib/auth/coordinator";
+import {
+  loginUser,
+  loginWithEmail,
+  sendEmailCode,
+} from "@/services/auth.service";
+import { messages } from "@/messages";
 import "@/components/css/LoginForm.css";
+import "@/components/css/AuthFields.css";
+
+const copy = messages.auth;
+type Mode = "username" | "email-password" | "email-code";
 
 export default function LoginForm() {
   const router = useRouter();
-
-  const [formData, setFormData] = useState<LoginRequest>({
-    username: "",
-    password: "",
-  });
-
+  const auth = useAuth();
+  const [mode, setMode] = useState<Mode>("username");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
-  useLayoutEffect(() => {
-    return () => {
-      setMessage((current) => current === messages.auth.loginSuccess ? "" : current);
-    };
-  }, []);
-
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
-    event.preventDefault();
-
-    setLoading(true);
+  async function sendCode() {
+    if (busy || cooldown || !identifier) return;
+    setBusy(true);
     setMessage("");
-
     try {
-  const result = await loginUser(formData);
-// 1. 获取后端返回的双 Token
-const accessToken = result.data.access_token;
-const refreshToken = result.data.refresh_token;
+      await sendEmailCode(identifier, "LOGIN");
+      setMessage(copy.codeSent);
+      setCooldown(60);
+      const timer = window.setInterval(
+        () =>
+          setCooldown((seconds) => {
+            if (seconds <= 1) {
+              window.clearInterval(timer);
+              return 0;
+            }
+            return seconds - 1;
+          }),
+        1000,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : copy.codeFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
 
-// 2. 同时保存双 Token
-setTokenPair(accessToken, refreshToken);
-
-// 3. 更新页面提示
-setMessage(messages.auth.loginSuccess);
-
-// 4. 跳转到首页
-router.replace("/");
-
-  
-} catch (error) {
-  setMessage(
-    error instanceof Error
-      ? error.message
-      : messages.auth.loginFailed
-  );
-} finally {
-  setLoading(false);
-}
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const result =
+        mode === "email-code"
+          ? await loginWithEmail({ email: identifier, code })
+          : await loginUser({ username: identifier, password });
+      if (!sameAuthEpoch(result.authEpoch)) throw new Error(copy.sessionChanged);
+      auth.completeLogin(result.data.user);
+      router.replace("/");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : copy.loginFailed);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="login-form">
+    <form className="login-form" onSubmit={submit}>
       <div className="login-formHeading">
-        <svg className="login-book" viewBox="0 0 64 52" fill="none" aria-hidden="true">
-          <path d="M32 11C23 3 12 3 4 8v36c9-5 19-4 28 3m0-36c9-8 20-8 28-3v36c-9-5-19-4-28 3m0-36v36" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <span className="login-book" aria-hidden="true">
+          ▤
+        </span>
         <h1>{messages.common.appName}</h1>
       </div>
-
+      <div className="auth-mode-tabs" role="group" aria-label={copy.loginMode}>
+        {(["username", "email-password", "email-code"] as const).map(
+          (value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={mode === value}
+              onClick={() => {
+                setMode(value);
+                setIdentifier("");
+                setMessage("");
+              }}
+            >
+              {value === "username"
+                ? copy.usernameLogin
+                : value === "email-password"
+                  ? copy.emailPasswordLogin
+                  : copy.emailCodeLogin}
+            </button>
+          ),
+        )}
+      </div>
       <div className="login-field">
-        <label htmlFor="login-username">{messages.auth.username}</label>
+        <label htmlFor="login-identifier">
+          {mode === "username" ? copy.username : copy.email}
+        </label>
         <input
-          id="login-username"
-          name="username"
-          autoComplete="username"
-          placeholder={messages.auth.usernamePlaceholder}
-          value={formData.username}
-          onChange={(event) =>
-            setFormData({
-              ...formData,
-              username: event.target.value,
-            })
-          }
+          id="login-identifier"
+          autoComplete={mode === "username" ? "username" : "email"}
+          type={mode === "username" ? "text" : "email"}
+          placeholder={mode === "username" ? copy.usernamePlaceholder : copy.emailPlaceholder}
+          value={identifier}
+          onChange={(event) => setIdentifier(event.target.value)}
           required
         />
       </div>
-
-      <div className="login-field">
-        <label htmlFor="login-password">{messages.auth.password}</label>
-        <input
-          id="login-password"
-          name="password"
-          autoComplete="current-password"
-          placeholder={messages.auth.passwordPlaceholder}
-          type="password"
-          value={formData.password}
-          onChange={(event) =>
-            setFormData({
-              ...formData,
-              password: event.target.value,
-            })
-          }
-          required
-        />
-      </div>
-
+      {mode === "email-code" ? (
+        <div className="login-field">
+          <label htmlFor="login-code">{copy.emailCode}</label>
+          <div className="auth-inline-field">
+            <input
+              id="login-code"
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              placeholder={copy.codePlaceholder}
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+              required
+            />
+            <button
+              type="button"
+              disabled={busy || cooldown > 0}
+              onClick={() => void sendCode()}
+            >
+              {cooldown ? copy.resendIn(cooldown) : copy.sendCode}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="login-field">
+          <label htmlFor="login-password">{copy.password}</label>
+          <input
+            id="login-password"
+            type="password"
+            autoComplete="current-password"
+            minLength={8}
+            placeholder={copy.passwordPlaceholder}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
+        </div>
+      )}
       {message && (
-        <p
-          className={message === messages.auth.loginSuccess ? "login-message login-message-success" : "login-message"}
-          role={message === messages.auth.loginSuccess ? "status" : "alert"}
-        >
+        <p className="login-message" role="status">
           {message}
         </p>
       )}
-      <button className="login-submit" type="submit" disabled={loading}>
-        {loading ? messages.auth.loggingIn : messages.auth.login}
+      <button className="login-submit" type="submit" disabled={busy}>
+        {busy ? copy.loggingIn : copy.login}
       </button>
-      <p className="login-register"><Link href="/register">{messages.auth.newUser}</Link></p>
-      <p className="login-motto">{messages.auth.motto}</p>
+      <p className="login-register">
+        <Link href="/register">{copy.newUser}</Link>
+        <Link href="/forgot-password">{copy.forgotPassword}</Link>
+      </p>
+      <p className="login-motto">{copy.motto}</p>
     </form>
   );
 }

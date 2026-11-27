@@ -26,8 +26,13 @@ class RolloverRegression(unittest.TestCase):
         self.clock.start()
         self.task_clock = patch("app.services.tasks.task_service.business_today", return_value=self.today)
         self.task_clock.start()
-        self.user = self.sql("INSERT INTO users (username, password_hash) VALUES (:name, 'test')",
-                             name="rollover_test_" + uuid4().hex).lastrowid
+        username = "rollover_test_" + uuid4().hex
+        self.user = self.sql(
+            "INSERT INTO users (username, password_hash, password_updated_at, email, email_verified_at) "
+            "VALUES (:name, 'test', UTC_TIMESTAMP(6), :email, UTC_TIMESTAMP(6))",
+            name=username,
+            email=username + "@example.invalid",
+        ).lastrowid
         self.plan = self.sql(
             "INSERT INTO study_plans (user_id,name,start_date,end_date,status) VALUES (:u,'test',:s,:e,'ACTIVE')",
             u=self.user, s=self.today-timedelta(days=5), e=self.today+timedelta(days=10)

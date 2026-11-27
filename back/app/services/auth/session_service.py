@@ -214,6 +214,36 @@ def lock_current_user(
 
     return user, session
 
+def revoke_user_sessions_with_counts(
+    db: Session,
+    *,
+    user_id: int,
+    now: datetime,
+    reason: str,
+    exclude_family_id: str | None = None,
+) -> tuple[int, int]:
+
+    session_count = (
+        session_repository.revoke_all_sessions(
+            db,
+            user_id=user_id,
+            now=now,
+            reason=reason,
+            exclude_family_id=exclude_family_id,
+        )
+    )
+
+    token_count = (
+        token_repository.revoke_all_tokens(
+            db,
+            user_id=user_id,
+            now=now,
+            exclude_family_id=exclude_family_id,
+        )
+    )
+
+    return int(session_count), int(token_count)
+
 
 def revoke_user_sessions(
     db: Session,
@@ -223,31 +253,18 @@ def revoke_user_sessions(
     reason: str,
     exclude_family_id: str | None = None,
 ) -> int:
-    """
-    批量撤销会话及对应 Refresh Token。
 
-    可选择保留一个 Session。
-    调用前必须已经锁定用户行。
-    """
-
-    affected = session_repository.revoke_all_sessions(
-        db,
-        user_id=user_id,
-        now=now,
-        reason=reason,
-        exclude_family_id=exclude_family_id,
+    session_count, _ = (
+        revoke_user_sessions_with_counts(
+            db,
+            user_id=user_id,
+            now=now,
+            reason=reason,
+            exclude_family_id=exclude_family_id,
+        )
     )
 
-    token_repository.revoke_all_tokens(
-        db,
-        user_id=user_id,
-        now=now,
-        exclude_family_id=exclude_family_id,
-    )
-
-    return affected
-
-
+    return session_count
 def _device_name(user_agent: str | None) -> str:
     """根据 User-Agent 推断设备显示名称"""
 

@@ -1,20 +1,206 @@
 .login-page {
-  min-height: 100vh;
+  position: relative;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 56px 24px;
+  justify-content: flex-start;
+  padding: 24px clamp(24px, 9.5vw, 164px);
   color: #fff;
   background: linear-gradient(rgba(35,48,72,.55), rgba(30,42,65,.67)), url('/login-background.png') center center / cover no-repeat;
+  background-position: center, 75% center;
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-}
-
-.login-page--signin {
-  background-position: center, 85% center;
 }
 
 .login-form {
   width: min(100%, 470px);
+}
+
+.login-page .login-form {
+  box-sizing: border-box;
+  width: min(100%, 430px);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 34px 38px;
+  border-radius: 14px;
+  background: rgba(13, 35, 59, .68);
+  box-shadow: 0 18px 48px rgba(7, 24, 45, .18);
+  transition: background-color .25s ease, box-shadow .25s ease;
+}
+
+.login-page .login-form:focus-within {
+  background: rgba(13, 35, 59, .78);
+  box-shadow: 0 20px 52px rgba(7, 24, 45, .28);
+}
+
+.login-page .login-formHeading {
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.login-page .login-book {
+  display: none;
+}
+
+.login-page .login-formHeading h1,
+.login-page .login-form > h1 {
+  font-size: 27px;
+  font-weight: 650;
+  letter-spacing: .01em;
+}
+
+.login-page .auth-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid rgba(255, 255, 255, .22);
+}
+
+.login-page .auth-mode-tabs button {
+  min-width: 0;
+  padding: 11px 2px 13px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: rgba(255, 255, 255, .76);
+  background: transparent;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.login-page .auth-mode-tabs button[aria-pressed="true"] {
+  border-bottom-color: #5dd4f7;
+  color: #fff;
+  background: transparent;
+  font-weight: 600;
+}
+
+.login-page .auth-mode-tabs button:hover {
+  color: #fff;
+}
+
+.login-page .auth-mode-tabs button:focus-visible {
+  outline-color: #5dd4f7;
+  outline-offset: -3px;
+}
+
+.login-page .login-field label {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  margin-bottom: 8px;
+  overflow: visible;
+  clip-path: none;
+  color: rgba(255, 255, 255, .94);
+  font-size: 14px;
+}
+
+.login-page .login-field input {
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .1);
+  font-size: 15px;
+}
+
+.login-page .login-field input::placeholder {
+  color: rgba(255, 255, 255, .75);
+}
+
+.login-page .login-field input:focus {
+  border-color: #73dcfa;
+  background: rgba(255, 255, 255, .15);
+  box-shadow: 0 0 0 3px rgba(93, 212, 247, .16);
+}
+
+.login-page .auth-inline-field button {
+  border-color: rgba(255, 255, 255, .35);
+  color: #fff;
+  background: rgba(255, 255, 255, .12);
+}
+
+.login-page .login-submit {
+  height: 50px;
+  margin-top: 15px;
+  border-radius: 9px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-indent: 0;
+}
+
+.login-page .login-register {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 22px;
+  text-align: left;
+}
+
+.login-page .login-motto {
+  margin-top: 26px;
+  line-height: 1.6;
+}
+
+.login-formSubtitle {
+  margin: -15px 0 24px;
+  color: rgba(255, 255, 255, .78);
+  font-size: 14px;
+}
+
+.login-page .login-form > h1 {
+  margin: 0 0 26px;
+}
+
+.login-scene {
+  position: absolute;
+  top: 39%;
+  left: 45%;
+  width: 340px;
+  max-width: 27vw;
+  text-shadow: 0 2px 14px rgba(10, 33, 57, .45);
+}
+
+.login-scene-title {
+  margin: 0 0 22px;
+  font-size: clamp(28px, 2.6vw, 40px);
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.login-scene-steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, .72);
+  color: rgba(255, 255, 255, .95);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1260px) {
+  .login-page {
+    justify-content: center;
+  }
+
+  .login-scene {
+    display: none;
+  }
+}
+
+@media (max-width: 540px) {
+  .login-page {
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .login-page .login-form {
+    padding: 28px 22px;
+  }
 }
 
 .login-formHeading {

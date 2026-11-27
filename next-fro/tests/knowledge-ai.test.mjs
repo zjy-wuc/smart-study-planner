@@ -41,17 +41,12 @@ test("SSE parser handles UTF-8 splits, CRLF, multiline data, and arbitrary chunk
 });
 
 test("authenticated requests share one refresh and retry each request once", async () => {
-  let accessToken = "expired";
-  let refreshToken = "refresh";
+  const accessToken = "expired";
   let refreshCalls = 0;
   let apiCalls = 0;
+  let sharedRefresh;
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, init = {}) => {
-    if (String(url).endsWith("/auth/refresh")) {
-      refreshCalls += 1;
-      await Promise.resolve();
-      return Response.json({ data: { access_token: "fresh", refresh_token: "refresh-2" } });
-    }
     apiCalls += 1;
     const authorization = new Headers(init.headers).get("Authorization");
     return authorization === "Bearer fresh"
@@ -61,12 +56,23 @@ test("authenticated requests share one refresh and retry each request once", asy
 
   try {
     const client = load("../lib/api/client.ts", {
+      axios: { default: { create: () => ({ interceptors: { request: { use() {} }, response: { use() {} } }, post: async () => {
+        refreshCalls += 1;
+        await Promise.resolve();
+        return { data: { data: { access_token: "fresh" } } };
+      } }) } },
       "@/messages": { messages: { common: { httpRequestFailed: (status) => String(status) } } },
+      "@/lib/auth/coordinator": {
+        authEpoch: () => null,
+        sameAuthEpoch: () => true,
+        refreshAccessToken: (_token, request) => {
+          if (!sharedRefresh) sharedRefresh = request().finally(() => { sharedRefresh = null; });
+          return sharedRefresh;
+        },
+      },
       "@/lib/auth/token": {
         getAccessToken: () => accessToken,
-        getRefreshToken: () => refreshToken,
-        setTokenPair: (access, refresh) => { accessToken = access; refreshToken = refresh; },
-        removeTokenPair: () => { accessToken = ""; refreshToken = ""; },
+        getAuthGeneration: () => 0,
       },
     });
     const responses = await Promise.all([client.authenticatedFetch("/a"), client.authenticatedFetch("/b")]);
@@ -83,6 +89,7 @@ test("AI stream rejects EOF without a terminal event", async () => {
   const service = load("../services/knowledge-ai.service.ts", {
     "@/lib/api/client": {
       ApiError: class ApiError extends Error {},
+      assertSseSession: () => {},
       authenticatedFetch: async () => new Response('event: delta\ndata: {"text":"partial"}\n\n', {
         headers: { "Content-Type": "text/event-stream" },
       }),
@@ -100,6 +107,7 @@ test("AI stream cancellation aborts the active read", async () => {
   const service = load("../services/knowledge-ai.service.ts", {
     "@/lib/api/client": {
       ApiError: class ApiError extends Error {},
+      assertSseSession: () => {},
       authenticatedFetch: async (_path, options) => new Response(new ReadableStream({
         start(controller) {
           controller.enqueue(new TextEncoder().encode('event: start\ndata: {}\n\n'));
@@ -121,6 +129,7 @@ test("knowledge QA sends the note route and only its explicit history payload", 
   const service = load("../services/knowledge-ai.service.ts", {
     "@/lib/api/client": {
       ApiError: class ApiError extends Error {},
+      assertSseSession: () => {},
       authenticatedFetch: async (path, options) => {
         call = { path, options };
         return new Response('event: done\ndata: {"status":"success","mode":"ask","markdown":"回答"}\n\n');

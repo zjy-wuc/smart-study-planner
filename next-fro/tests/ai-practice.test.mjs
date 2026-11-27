@@ -12,7 +12,7 @@ function loadService(fetcher, apiFetcher = async () => ({ data: {} })) {
   new Function("require", "module", "exports", parserOutput)(() => ({}), parser, parser.exports);
   const service = { exports: {} };
   const dependencies = {
-    "@/lib/api/client": { ApiError: class ApiError extends Error { constructor(message, status) { super(message); this.status = status; } }, authenticatedFetch: fetcher, apiFetch: apiFetcher },
+    "@/lib/api/client": { ApiError: class ApiError extends Error { constructor(message, status) { super(message); this.status = status; } }, assertSseSession: () => {}, authenticatedFetch: fetcher, apiFetch: apiFetcher },
     "@/lib/api/sse": parser.exports,
     "@/services/knowledge-ai.service": { aiResponseErrorMessage: (body, status) => body?.detail || `请求失败 ${status}` },
   };

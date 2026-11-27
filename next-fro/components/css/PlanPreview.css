@@ -293,7 +293,7 @@
 .plan-preview-task-copy > span {
   margin-top: 3px;
   color: #526a80;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .plan-preview-task-progress {
@@ -306,7 +306,7 @@
 .plan-preview-task-progress > span {
   flex: none;
   color: #567189;
-  font-size: 10px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -331,7 +331,7 @@
   border-radius: 6px;
   color: #45647f;
   background: #edf3f8;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .plan-preview-task-status[data-status="OVERDUE"] {
@@ -342,6 +342,11 @@
 .plan-preview-task-status[data-status="COMPLETED"] {
   color: #276a4d;
   background: #e4f4ec;
+}
+
+.plan-preview-task-status[data-status="SETTLED"] {
+  color: #205c93;
+  background: #e8f2fc;
 }
 
 .plan-preview-completed {

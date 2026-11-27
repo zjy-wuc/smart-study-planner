@@ -62,6 +62,54 @@ from app.core import security  # noqa: E402
 from app.core.clock import utc_db_now  # noqa: E402
 from app.database import SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
+
+
+# ----------------------------------------------------------------------
+# 全量执行时，其他测试用例可能已先导入 app.main，StaticFiles 的 directory
+# 会被绑定到仓库 storage/avatars。这里把挂载重建到本次临时目录，并在进程
+# 退出时恢复原挂载，保证夹具与静态资源指向一致（不修改 main.py 的生产架构）。
+# ----------------------------------------------------------------------
+
+from fastapi.staticfiles import StaticFiles as _StaticFiles  # noqa: E402
+
+_ORIGINAL_AVATAR_MOUNT = next(
+    (
+        route
+        for route in app.router.routes
+        if getattr(route, "path", None) == "/media/avatars"
+    ),
+    None,
+)
+
+
+def _rebind_avatar_static() -> None:
+    app.router.routes[:] = [
+        route
+        for route in app.router.routes
+        if getattr(route, "path", None) != "/media/avatars"
+    ]
+    app.mount(
+        "/media/avatars",
+        _StaticFiles(
+            directory=str(settings.AVATAR_DIR),
+            follow_symlink=False,
+        ),
+        name="avatars",
+    )
+
+
+def _restore_avatar_static() -> None:
+    if _ORIGINAL_AVATAR_MOUNT is None:
+        return
+    app.router.routes[:] = [
+        route
+        for route in app.router.routes
+        if getattr(route, "path", None) != "/media/avatars"
+    ] + [_ORIGINAL_AVATAR_MOUNT]
+
+
+_rebind_avatar_static()
+atexit.register(_restore_avatar_static)
 from app.repositories.auth import (  # noqa: E402
     cleanup_repository,
     user_repository,

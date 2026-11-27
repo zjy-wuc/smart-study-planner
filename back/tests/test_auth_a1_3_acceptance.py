@@ -43,7 +43,7 @@ from app.services.auth import (
 )
 
 
-TEST_DB = "ssp_a0_migrate2"
+ALLOWED_TEST_DBS = {"ssp_v3_admin_test", "ssp_a0_migrate2"}
 ORIGIN = settings.AUTH_ALLOWED_ORIGINS[0]
 CSRF = {"Origin": ORIGIN, "X-CSRF-Protection": "1"}
 PASSWORD = "GoodPass123"
@@ -52,7 +52,7 @@ PASSWORD = "GoodPass123"
 def assert_isolated_db():
     with engine.connect() as conn:
         name = conn.execute(text("SELECT DATABASE()")).scalar_one()
-    if name != TEST_DB:
+    if name not in ALLOWED_TEST_DBS:
         raise RuntimeError(f"拒绝在非隔离库运行: {name}")
 
 
@@ -327,10 +327,9 @@ class TestImportsAndInterface(BaseAuthTest):
     def test_no_legacy_route_refs(self):
         spec = app.openapi()["paths"]
 
-        # 旧版 logout-all 暂时关闭
-        self.assertFalse(
-            any("logout-all" in p or "logout_all" in p for p in spec)
-        )
+        # 新版 logout-all 需要密码确认，接口保留（A2 契约）
+        self.assertIn("/auth/logout-all", spec)
+        self.assertIn("post", spec["/auth/logout-all"])
 
         # 匿名 GET /users（列出全部用户）不再开放
         self.assertIn("/users", spec)

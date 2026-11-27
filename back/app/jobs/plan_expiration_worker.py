@@ -8,6 +8,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from app.core.clock import business_today
 from app.database import SessionLocal
 from app.repositories.plans import plan_lifecycle_repository
+from app.services.plans import plan_lifecycle_service
 from app.services.auth.auth_cleanup import run_auth_cleanup
 
 from app.config import settings

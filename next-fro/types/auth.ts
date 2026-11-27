@@ -1,71 +1,84 @@
-// 后端统一响应结构
 export interface ApiResponse<T> {
   code: number;
   message: string;
   data: T;
-  detail?: {
-    code?: string;
-    message?: string;
-  };
-}
-// 注册请求体
-export interface RegisterRequest {
-  username: string;
-  password: string;
-  nickname: string;
 }
 
-// 注册成功后返回的用户信息
-export interface RegisterData {
+export interface User {
   id: number;
   username: string;
-  nickname: string;
+  nickname: string | null;
+  email: string;
+  avatar_url: string | null;
+  email_verified_at: string;
+  is_active: boolean;
 }
 
+export interface AccessTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
 
+export interface LoginResponse extends AccessTokenResponse {
+  user: User;
+}
 
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  code: string;
+  password: string;
+  nickname?: string | null;
+}
 
-
-
- // 用户登录请求数据
- 
 export interface LoginRequest {
   username: string;
   password: string;
 }
 
-
- 
-export interface LoginResponse extends TokenPair {
-  user: User;
+export interface EmailLoginRequest {
+  email: string;
+  code: string;
 }
 
-// 当前登录用户信息（GET /users/me 返回）
-export interface User {
-  id: number;
-  username: string;
-  nickname: string | null;
+export type EmailCodePurpose =
+  | "REGISTER"
+  | "LOGIN"
+  | "RESET_PASSWORD"
+  | "CHANGE_EMAIL_OLD"
+  | "CHANGE_EMAIL_NEW";
+
+export interface PasswordResetRequest {
+  email: string;
+  code: string;
+  new_password: string;
 }
 
-
-
-
-//用户登录成功返回的数据
- 
-export interface LoginResponse extends TokenPair {
-  user: User;
+export interface PasswordChangeRequest {
+  old_password: string;
+  new_password: string;
 }
 
-
-// 双 Token 响应数据
-export interface TokenPair {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
+export interface EmailChangeRequest {
+  password: string;
+  old_email_code: string;
+  new_email: string;
+  new_email_code: string;
 }
 
-// Refresh Token 请求体
-export interface RefreshRequest {
-  refresh_token: string;
+export interface LoginSession {
+  family_id: string;
+  device_name: string;
+  is_current: boolean;
+  created_at: string;
+  last_activity_at: string;
+  absolute_expires_at: string;
+}
+
+export interface SessionListResponse {
+  items: LoginSession[];
+  total: number;
+  page: number;
+  page_size: number;
 }

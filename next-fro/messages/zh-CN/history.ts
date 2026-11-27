@@ -14,6 +14,7 @@ export const history = {
   subtitle: "记录每一次认真学习的日子",
   refresh: "刷新记录",
   loading: "正在整理打卡记录，任务较多时需要一些时间…",
+  loadProgress: (done: MessageValue, total: MessageValue): string => `已读取 ${done} / ${total} 项`,
   partialFailure: "部分数据加载失败，记录可能不完整，受影响的计划不显示统计。",
   recordsTitle: "打卡记录",
   recordsSubtitle: "每一次努力，都值得被记录",

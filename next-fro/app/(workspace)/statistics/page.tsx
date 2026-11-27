@@ -71,7 +71,7 @@ export default function StatisticsPage() {
         </header>
 
         <nav className="statistics-tabs" aria-label={messages.statistics.categoriesLabel}>
-          {(["CHECKIN", "CONSISTENCY", "FOCUS"] as const).map((value) => <button key={value} type="button" aria-current={tab === value ? "page" : undefined} onClick={() => setTab(value)}>{value === "CHECKIN" ? messages.statistics.checkinTab : value === "CONSISTENCY" ? messages.statistics.consistencyTab : messages.statistics.focusTab}</button>)}
+          {(["CHECKIN", "CONSISTENCY", "FOCUS"] as const).map((value) => <button key={value} type="button" data-limited={value === "CONSISTENCY"} aria-current={tab === value ? "page" : undefined} onClick={() => setTab(value)}>{value === "CHECKIN" ? messages.statistics.checkinTab : value === "CONSISTENCY" ? messages.statistics.consistencyTab : messages.statistics.focusTab}</button>)}
         </nav>
 
         {tab === "CHECKIN" && loading && !visibleData && (

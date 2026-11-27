@@ -1,91 +1,204 @@
 import { apiFetch } from "@/lib/api/client";
-import { getRefreshToken, removeTokenPair } from "@/lib/auth/token";
+import { announceAuthChange, authEpoch, sameAuthEpoch, withAuthLock } from "@/lib/auth/coordinator";
+import { clearAccessToken, getAuthGeneration, setAccessToken } from "@/lib/auth/token";
 import type {
   ApiResponse,
-  RegisterData,
-  RegisterRequest,
+  EmailChangeRequest,
+  EmailCodePurpose,
+  EmailLoginRequest,
   LoginRequest,
   LoginResponse,
-  RefreshRequest,
+  LoginSession,
+  PasswordChangeRequest,
+  PasswordResetRequest,
+  RegisterRequest,
+  SessionListResponse,
   User,
 } from "@/types/auth";
 
+function rememberLogin(
+  result: ApiResponse<LoginResponse>,
+): ApiResponse<LoginResponse> & { authEpoch: string } {
+  const epoch = announceAuthChange("login");
+  setAccessToken(result.data.access_token, epoch);
+  return { ...result, authEpoch: epoch };
+}
 
-
-// 调用后端 POST /users 注册用户
-export function registerUser(payload: RegisterRequest) {
-  return apiFetch<ApiResponse<RegisterData>>("/users", {
+export function sendEmailCode(email: string, purpose: EmailCodePurpose) {
+  return apiFetch<ApiResponse<null>>("/auth/email-code", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ email, purpose }),
+    skipAuthRefresh:
+      purpose !== "CHANGE_EMAIL_OLD" && purpose !== "CHANGE_EMAIL_NEW",
   });
 }
 
-// 调用后端 POST /auth/login 登录用户
-export async function loginUser(
-  data: LoginRequest
-): Promise<ApiResponse<LoginResponse>> {
-  const formData = new URLSearchParams();// 构建表单数据,因为login接口接受URL类型的数据，用了OAuth2PasswordRequestForm格式接收
-
-  formData.append("username", data.username);
-  formData.append("password", data.password);
-
-  return apiFetch<ApiResponse<LoginResponse>>(
-    "/auth/login",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formData,
-    }
+export function registerUser(payload: RegisterRequest) {
+  return withAuthLock(async () =>
+    rememberLogin(
+      await apiFetch<ApiResponse<LoginResponse>>("/users", {
+        method: "POST",
+        body: JSON.stringify(payload),
+        skipAuthRefresh: true,
+      }),
+    ),
   );
 }
 
+export function loginUser(data: LoginRequest) {
+  return withAuthLock(async () => {
+    const form = new URLSearchParams({
+      username: data.username,
+      password: data.password,
+    });
+    return rememberLogin(
+      await apiFetch<ApiResponse<LoginResponse>>("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: form,
+        skipAuthRefresh: true,
+      }),
+    );
+  });
+}
 
-// 获取当前登录用户的信息
-export async function getCurrentUser(): Promise<ApiResponse<User>> {
+export function loginWithEmail(data: EmailLoginRequest) {
+  return withAuthLock(async () =>
+    rememberLogin(
+      await apiFetch<ApiResponse<LoginResponse>>("/auth/login/email", {
+        method: "POST",
+        body: JSON.stringify(data),
+        skipAuthRefresh: true,
+      }),
+    ),
+  );
+}
+
+export function getCurrentUser() {
   return apiFetch<ApiResponse<User>>("/users/me");
 }
 
-
-
-// 调用后端 POST /auth/logout 退出当前会话
-export async function logoutUser(): Promise<void> {
-  const refreshToken = getRefreshToken();
-
-  try {
-    // 有 Refresh Token 才请求后端撤销会话
-    if (refreshToken) {
-      await apiFetch<ApiResponse<null>>(
-        "/auth/logout",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            refresh_token: refreshToken,
-          } satisfies RefreshRequest),/*check type*/
-        },
-      );
-    }
-  } finally {
-    // 无论后端请求成功还是失败，都清理本地双 Token
-    removeTokenPair();
-  }
+export function resetPassword(data: PasswordResetRequest) {
+  return withAuthLock(() =>
+    apiFetch<ApiResponse<null>>("/auth/password/reset", {
+      method: "POST",
+      body: JSON.stringify(data),
+      skipAuthRefresh: true,
+    }),
+  );
 }
 
+export function changePassword(data: PasswordChangeRequest) {
+  return apiFetch<ApiResponse<null>>("/auth/password/change", {
+    method: "POST",
+    body: JSON.stringify(data),
+    userActivity: true,
+  });
+}
 
-// 调用后端 POST /auth/logout-all
-// 撤销当前用户的所有登录会话
-export async function logoutAllSessions(): Promise<void> {
-  try {
-    await apiFetch<ApiResponse<null>>(
+export function changeEmail(data: EmailChangeRequest) {
+  return apiFetch<ApiResponse<User>>("/auth/email/change", {
+    method: "POST",
+    body: JSON.stringify(data),
+    userActivity: true,
+  });
+}
+
+export function updateNickname(id: number, nickname: string) {
+  return apiFetch<ApiResponse<null>>(`/users/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({ nickname }),
+    userActivity: true,
+  });
+}
+
+export function uploadAvatar(file: File) {
+  const form = new FormData();
+  form.set("file", file);
+  return apiFetch<ApiResponse<{ avatar_url: string }>>("/users/me/avatar", {
+    method: "POST",
+    body: form,
+    userActivity: true,
+  });
+}
+
+export function deleteAvatar() {
+  return apiFetch<ApiResponse<{ avatar_url: null }>>("/users/me/avatar", {
+    method: "DELETE",
+    userActivity: true,
+  });
+}
+
+export function listSessions(page = 1, pageSize = 20) {
+  return apiFetch<ApiResponse<SessionListResponse>>(
+    `/auth/sessions?page=${page}&page_size=${pageSize}`,
+  );
+}
+
+export function currentSession() {
+  return apiFetch<ApiResponse<LoginSession>>("/auth/sessions/current");
+}
+
+export function revokeSession(familyId: string, password: string) {
+  return apiFetch<ApiResponse<null>>(`/auth/sessions/${familyId}/revoke`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+    userActivity: true,
+  });
+}
+
+export function revokeOtherSessions(password: string) {
+  return apiFetch<ApiResponse<{ revoked_count: number }>>(
+    "/auth/sessions/revoke-others",
+    {
+      method: "POST",
+      body: JSON.stringify({ password }),
+      userActivity: true,
+    },
+  );
+}
+
+export function logoutUser() {
+  return withCurrentSessionLock(async () => {
+    const result = await apiFetch<ApiResponse<{ session_revoked: boolean }>>(
+      "/auth/logout",
+      { method: "POST", skipAuthRefresh: true },
+    );
+    if (result.data.session_revoked) {
+      clearAccessToken();
+      announceAuthChange("logout");
+    }
+    return result;
+  });
+}
+
+export function logoutAllSessions(password: string) {
+  return withCurrentSessionLock(async () => {
+    const result = await apiFetch<ApiResponse<{ revoked_count: number }>>(
       "/auth/logout-all",
       {
         method: "POST",
+        body: JSON.stringify({ password }),
+        userActivity: true,
+        skipAuthRefresh: true,
       },
     );
-  } finally {
-    // 无论请求成功还是失败，都清理当前设备的双 Token
-    removeTokenPair();
-  }
+    clearAccessToken();
+    announceAuthChange("logout");
+    return result;
+  });
 }
 
+async function withCurrentSessionLock<T>(work: () => Promise<T>): Promise<T> {
+  const epoch = authEpoch();
+  const generation = getAuthGeneration();
+  // 可能需要的 Access 刷新先在锁外完成；锁内请求禁止隐式刷新。
+  await getCurrentUser();
+  if (!sameAuthEpoch(epoch) || getAuthGeneration() !== generation)
+    throw new Error("登录状态已变化，请重试");
+  return withAuthLock(async () => {
+    if (!sameAuthEpoch(epoch) || getAuthGeneration() !== generation)
+      throw new Error("登录状态已变化，请重试");
+    return work();
+  });
+}

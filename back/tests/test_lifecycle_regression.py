@@ -28,9 +28,12 @@ class PlanLifecycleRegression(unittest.TestCase):
         self.outer = self.conn.begin()
         self.db = Session(bind=self.conn, join_transaction_mode="create_savepoint")
         self.today = business_today()
+        username = "lifecycle_test_" + uuid4().hex
         self.user = self.sql(
-            "INSERT INTO users (username, password_hash) VALUES (:name, 'test')",
-            name="lifecycle_test_" + uuid4().hex,
+            "INSERT INTO users (username, password_hash, password_updated_at, email, email_verified_at) "
+            "VALUES (:name, 'test', UTC_TIMESTAMP(6), :email, UTC_TIMESTAMP(6))",
+            name=username,
+            email=username + "@example.invalid",
         ).lastrowid
         self.plan = self.new_plan("ACTIVE", -2, 5)
         self.db.commit()
@@ -377,9 +380,12 @@ class PlanLifecycleRegression(unittest.TestCase):
         self.assertEqual(self.row(task)["content"], "test")
 
     def test_L14_other_users_plan_is_hidden(self):
+        other_name = "lifecycle_other_" + uuid4().hex
         other = self.sql(
-            "INSERT INTO users (username, password_hash) VALUES (:name, 'test')",
-            name="lifecycle_other_" + uuid4().hex,
+            "INSERT INTO users (username, password_hash, password_updated_at, email, email_verified_at) "
+            "VALUES (:name, 'test', UTC_TIMESTAMP(6), :email, UTC_TIMESTAMP(6))",
+            name=other_name,
+            email=other_name + "@example.invalid",
         ).lastrowid
         foreign = self.sql(
             "INSERT INTO study_plans (user_id,name,start_date,end_date,status) "

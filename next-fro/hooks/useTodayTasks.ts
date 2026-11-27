@@ -8,16 +8,13 @@ import {
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
 
-import { ApiError } from "@/lib/api/client";
 import { listTodayTasks } from "@/services/tasks.service";
 
 import type { DailyTask } from "@/types/task";
 
 
 export function useTodayTasks() {
-  const router = useRouter();
 
   const [tasks, setTasks] = useState<DailyTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,14 +48,6 @@ export function useTodayTasks() {
 
         setTasks([]);
 
-        if (
-          err instanceof ApiError &&
-          err.status === 401
-        ) {
-          router.replace("/login");
-          return;
-        }
-
         setError(
           err instanceof Error
             ? err.message
@@ -77,7 +66,7 @@ export function useTodayTasks() {
     return () => {
       cancelled = true;
     };
-  }, [router, revision]);
+  }, [revision]);
 
 
   return {

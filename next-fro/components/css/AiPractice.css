@@ -44,6 +44,10 @@
 .ai-practice-panel, .ai-practice-result-heading, .ai-practice-history-item { background: #fff; border: 1px solid #d8e7f5; border-radius: 16px; padding: clamp(20px, 3vw, 34px); }
 .ai-practice-config { display: grid; gap: 25px; max-width: 720px; }
 .ai-practice-config > label { display: grid; gap: 8px; font-weight: 600; }
+.ai-practice-note-search { display: grid; gap: 8px; font-weight: 600; }
+.ai-practice-note-search > div { display: flex; gap: 8px; }
+.ai-practice-note-search input { min-width: 0; flex: 1; border: 1px solid #bcd2e6; border-radius: 10px; padding: 12px 14px; color: #19324c; background: #fff; }
+.ai-practice-note-search button { border: 1px solid #286dc5; border-radius: 10px; padding: 0 18px; color: #fff; background: #286dc5; cursor: pointer; }
 .ai-practice-page select, .ai-practice-page textarea { width: 100%; border: 1px solid #bcd2e6; border-radius: 10px; padding: 12px 14px; background: #fff; color: #19324c; }
 .ai-practice-count-field > span { display: block; font-weight: 600; margin-bottom: 10px; }
 .ai-practice-count-options { display: flex; flex-wrap: wrap; gap: 10px; }

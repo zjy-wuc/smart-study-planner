@@ -14,7 +14,6 @@ import { startPlan } from "@/services/plans.service";
 
 import { PlanForm } from "@/components/plans/PlanForm";
 import { PlanWorkflowNav, useDraftPlanView } from "@/components/plans/PlanWorkflowNav";
-import { ApiError } from "@/lib/api/client";
 import { StepTreeEditor } from "@/components/plans/StepTreeEditor";
 import {
   getPlan,
@@ -115,11 +114,6 @@ async function handleStartPlan() {
     }
 
   } catch (err) {
-    if (err instanceof ApiError && err.status === 401) {
-      router.replace("/login");
-      return;
-    }
-
     setError(
       err instanceof Error
         ? err.message
@@ -160,10 +154,6 @@ async function handleStartPlan() {
           return;
         }
 
-        if (err instanceof ApiError && err.status === 401) {
-          router.replace("/login");
-          return;
-        }
 
         setError(
           err instanceof Error
@@ -279,10 +269,6 @@ function handlePlanEnded(result: EndPlanResult) {
       router.replace("/plans");
 
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        router.replace("/login");
-        return;
-      }
 
       setError(
         err instanceof Error

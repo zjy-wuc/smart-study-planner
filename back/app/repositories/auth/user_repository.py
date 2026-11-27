@@ -14,7 +14,7 @@ def find_by_id(
         SELECT id, username, password_hash,
                email, email_verified_at,
                password_updated_at,
-               nickname, avatar_url, is_active
+               nickname, avatar_url, is_active, role
         FROM users
         WHERE id = :user_id
     """
@@ -40,7 +40,7 @@ def find_by_username(
         SELECT id, username, password_hash,
                email, email_verified_at,
                password_updated_at,
-               nickname, avatar_url, is_active
+               nickname, avatar_url, is_active, role
         FROM users
         WHERE username = :username
     """
@@ -66,7 +66,7 @@ def find_by_email(
         SELECT id, username, password_hash,
                email, email_verified_at,
                password_updated_at,
-               nickname, avatar_url, is_active
+               nickname, avatar_url, is_active, role
         FROM users
         WHERE email = :email
     """
@@ -129,18 +129,19 @@ def find_profile(
 
     row = db.execute(
         text("""
-            SELECT
-                id,
-                username,
-                nickname,
-                email,
-                avatar_url,
-                email_verified_at,
-                is_active,
-                created_at,
-                updated_at
-            FROM users
-            WHERE id = :user_id
+           SELECT
+    id,
+    username,
+    nickname,
+    email,
+    avatar_url,
+    email_verified_at,
+    is_active,
+    role,
+    created_at,
+    updated_at
+FROM users
+WHERE id = :user_id
         """),
         {"user_id": user_id},
     ).mappings().first()

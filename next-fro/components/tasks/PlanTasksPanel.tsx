@@ -2,8 +2,7 @@
 
 import { messages } from "@/messages";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import {
   listPlanTasks,
@@ -56,10 +55,9 @@ export function PlanTasksPanel({
   planId,
   planStatus,
 }: Props) {
-  const router = useRouter();
 
   const [tasks, setTasks] = useState<PlanTask[]>([]);
-  const [today, setToday] = useState<string | null>(null);
+  const today = useSyncExternalStore(() => () => {}, getBusinessToday, () => null);
 
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
@@ -79,10 +77,6 @@ export function PlanTasksPanel({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] =
     useState<string | null>(null);
-
-  useEffect(() => {
-    setToday(getBusinessToday());
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,11 +115,6 @@ export function PlanTasksPanel({
   }
 
   function handleError(err: unknown) {
-    if (err instanceof ApiError && err.status === 401) {
-      router.replace("/login");
-      return;
-    }
-
     setError(errorText(err));
   }
 

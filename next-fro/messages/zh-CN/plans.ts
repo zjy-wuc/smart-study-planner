@@ -68,6 +68,8 @@ export const plans = {
   previewTaskDate: (date: MessageValue): string => `安排日期：${date}`,
   previewTaskCount: (count: MessageValue): string => `${count} 项`,
   previewCompletedTasks: (count: MessageValue): string => `已完成 ${count} 项`,
+  previewSettled: "已顺延结算",
+  previewSettledTasks: (count: MessageValue): string => `顺延结算 ${count} 项`,
   previewQuantity: (actual: MessageValue, target: MessageValue): string =>
     `已完成 ${actual} / ${target}`,
   viewHistory: "查看历史内容",

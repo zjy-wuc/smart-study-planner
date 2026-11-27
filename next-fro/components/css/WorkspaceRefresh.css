@@ -1,4 +1,4 @@
-/* 共享导航的新外观；内容区背景仅在工作台覆盖。 */
+/* 工作区统一使用浅蓝底色，页面各自保留内容卡片。 */
 .workspace-app.workspace-refresh {
   --workspace-ink: #24364b;
   --workspace-muted: #617287;
@@ -7,6 +7,7 @@
   --workspace-nav: #e6f0fe;
   --workspace-soft: #edf4ff;
   --workspace-success: #26734e;
+  background: #f1f6fc;
 }
 
 .workspace-app.workspace-refresh[data-home="true"] {

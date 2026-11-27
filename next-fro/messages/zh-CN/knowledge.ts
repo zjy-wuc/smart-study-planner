@@ -44,6 +44,7 @@ export const knowledge = {
     title: "AI 问答", open: "打开 AI 问答", close: "关闭问答", clear: "清空对话",
     description: "围绕当前已保存笔记提问，支持连续追问。",
     placeholder: "针对这篇笔记提一个问题…", send: "发送", stop: "停止生成",
+    questionLabel: "向 AI 提问",
     copy: "复制", copied: "已复制", retry: "重新生成",
     empty: "还没有对话。试着询问概念、原理或笔记中的难点。",
     generating: "正在回答…", reviewing: "正在检查回答…",

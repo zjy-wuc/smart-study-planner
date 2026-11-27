@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
 import { BookOpen, Check, ClipboardList } from "lucide-react";
 
 import { ApiError } from "@/lib/api/client";
@@ -66,7 +65,6 @@ export function TaskActionCard({
   onChanged,
   onCheckinStatus,
 }: Props) {
-  const router = useRouter();
   const completionQuantity = task.effective_target_quantity ?? task.target_quantity ?? task.actual_quantity;
 
   const [actualText, setActualText] = useState(
@@ -154,14 +152,6 @@ export function TaskActionCard({
         await refreshRecords();
       }
     } catch (err) {
-      if (
-        err instanceof ApiError &&
-        err.status === 401
-      ) {
-        router.replace("/login");
-        return;
-      }
-
       setError(getErrorText(err));
     } finally {
       setBusy(false);

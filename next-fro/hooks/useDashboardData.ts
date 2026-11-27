@@ -3,10 +3,7 @@
 import { messages } from "@/messages";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
-import { getAccessToken } from "@/lib/auth/token";
-import { ApiError } from "@/lib/api/client";
 
 import { listPlans } from "@/services/plans.service";
 import { listTodayTasks } from "@/services/tasks.service";
@@ -25,7 +22,6 @@ function getErrorMessage(error: unknown): string {
 
 
 export function useDashboardData() {
-  const router = useRouter();
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [tasks, setTasks] = useState<DailyTask[]>([]);
@@ -43,12 +39,6 @@ export function useDashboardData() {
   useEffect(() => {
     let cancelled = false;
 
-    // Token 存在浏览器 localStorage，
-    // 因此必须等组件挂载后再检查。
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
 
     async function load() {
       setLoading(true);
@@ -80,25 +70,6 @@ export function useDashboardData() {
         setTasksError(getErrorMessage(tasksResult.reason));
       }
 
-      const errors = [
-        plansResult.status === "rejected"
-          ? plansResult.reason
-          : null,
-        tasksResult.status === "rejected"
-          ? tasksResult.reason
-          : null,
-      ];
-
-      if (
-        errors.some(
-          (error) =>
-            error instanceof ApiError &&
-            error.status === 401,
-        )
-      ) {
-        router.replace("/login");
-      }
-
       setLoading(false);
     }
 
@@ -107,7 +78,7 @@ export function useDashboardData() {
     return () => {
       cancelled = true;
     };
-  }, [router, reloadKey]);
+  }, [reloadKey]);
 
   return {
     plans,

@@ -7,6 +7,7 @@ from app.api.routes import (
     knowledge_ai, ai_practice,
 )
 
+from app.api.routes import admin
 
 api_router = APIRouter()
 
@@ -45,3 +46,6 @@ api_router.include_router(ai_practice.router)
 
 # 专注闹钟
 api_router.include_router(focus.router)
+
+# 管理员系统
+api_router.include_router(admin.router)

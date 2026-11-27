@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { isOpenTodayTask } from "@/lib/tasks/today-presentation";
 import { PlanCard } from "@/components/dashboard/PlanCard";
 import { WorkspaceIcon } from "@/components/ui/WorkspaceIcon";
 import type { PlanStatus } from "@/types/plan";
@@ -56,7 +57,7 @@ export default function PlansPage() {
         <>
           <section className="plans-overview" aria-label={messages.plans.listDescription}>
             <article><span>{messages.plans.overviewActive}</span><strong>{counts.active}</strong></article>
-            <article><span>{messages.plans.overviewToday}</span><strong>{tasks.filter((task) => task.status !== "COMPLETED" && !task.is_rolled_over).length}</strong></article>
+            <article><span>{messages.plans.overviewToday}</span><strong>{tasks.filter(isOpenTodayTask).length}</strong></article>
             <article><span>{messages.plans.overviewEnded}</span><strong>{counts.ended}</strong></article>
           </section>
           <div className="plans-toolbar">

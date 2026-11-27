@@ -8,7 +8,6 @@ import { ArrowLeft, Check } from "lucide-react";
 import { ActiveStepManager } from "@/components/plans/ActiveStepManager";
 import { StepTreeEditor } from "@/components/plans/StepTreeEditor";
 import { PlanWorkflowNav } from "@/components/plans/PlanWorkflowNav";
-import { ApiError } from "@/lib/api/client";
 import { messages } from "@/messages";
 import { getPlan } from "@/services/plans.service";
 
@@ -53,10 +52,6 @@ export default function PlanStepsPage() {
         }
       } catch (err) {
         if (cancelled) return;
-        if (err instanceof ApiError && err.status === 401) {
-          router.replace("/login");
-          return;
-        }
         setError(err instanceof Error ? err.message : messages.plans.fetchFailed);
       } finally {
         if (!cancelled) setLoading(false);

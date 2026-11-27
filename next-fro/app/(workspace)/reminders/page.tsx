@@ -33,28 +33,24 @@ export default function RemindersPage() {
     updateSettings,
   } = useReminderSettings();
 
-  const loadSummary = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const result = await getTodayUncheckedCount();
-      setSummary(result);
-    } catch (error) {
-      setSummary(null);
-
-      setError(
-        error instanceof Error
-          ? error.message
-          : messages.reminders.loadFailed,
-      );
-    } finally {
-      setLoading(false);
-    }
+  const loadSummary = useCallback(() => {
+    void getTodayUncheckedCount()
+      .then(setSummary)
+      .catch((error) => {
+        setSummary(null);
+        setError(error instanceof Error ? error.message : messages.reminders.loadFailed);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
+  const refreshSummary = () => {
+    setLoading(true);
+    setError("");
     void loadSummary();
+  };
+
+  useEffect(() => {
+    loadSummary();
   }, [loadSummary]);
 
   return (
@@ -68,7 +64,7 @@ export default function RemindersPage() {
         <button
           type="button"
           className="reminders-refresh"
-          onClick={() => void loadSummary()}
+          onClick={refreshSummary}
           disabled={loading}
           aria-label={messages.reminders.refresh}
           title={messages.reminders.refresh}
@@ -103,7 +99,7 @@ export default function RemindersPage() {
 
                 <button
                   type="button"
-                  onClick={() => void loadSummary()}
+                  onClick={refreshSummary}
                   className="reminders-retry"
                 >
                   {messages.reminders.retry}

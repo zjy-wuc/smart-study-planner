@@ -3,6 +3,7 @@ export const aiPractice = {
   organize: "AI 知识整理", organizeDesc: "生成、整理和总结知识笔记", qa: "AI 笔记问答", qaDesc: "围绕已保存笔记继续追问",
   practice: "AI 智能练习", practiceDesc: "根据笔记出题，完成后统一批改", history: "练习历史", historyDesc: "回看成绩、答案和解析",
   go: "进入", chooseNote: "选择笔记", count: "题目数量", generate: "生成练习", generateHint: "题目仅根据所选笔记生成。",
+  searchNote: "查找笔记", searchPlaceholder: "输入标题或正文关键词", search: "搜索", noSearchResults: "没有找到匹配的笔记，请换个关键词。",
   selectedNote: "当前笔记", questionUnit: "题", countHint: "包含单选题和简答题；提交后统一批改。", historyTotal: "条练习记录",
   generating: "正在生成题目…", reviewing: "正在校验题目…", grading: "正在批改，请稍候…", cancel: "取消生成",
   preview: "题目预览", previewHint: "预览中不展示答案；开始后可自由作答。", start: "开始练习", discard: "放弃本次练习",

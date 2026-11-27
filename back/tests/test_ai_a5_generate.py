@@ -13,33 +13,69 @@ from app.services.knowledge.ai_service import CheckedCompletionEvent
 from app.services.knowledge import ai_practice_service as practice
 
 
+TOPICS = [
+    "JWT Access Token 的过期校验",
+    "Refresh Token 轮换与重放检测",
+    "登录会话的即时撤销",
+    "邮箱验证码的有效期管理",
+    "密码重置后旧会话失效",
+    "多设备登录的会话隔离",
+    "认证 POST 请求的 CSRF 来源校验",
+    "验证码尝试次数的上限控制",
+    "连续登录失败后的锁定策略",
+    "头像上传的文件类型校验",
+    "学习计划到期后的历史数据保留",
+    "每日任务顺延链的依赖顺序",
+    "知识复习记录的间隔调度",
+    "专注会话的暂停与恢复",
+    "笔记快照版本的一致性",
+]
+
+STEM_TEMPLATES = [
+    "{topic}：下列哪项做法是正确的？",
+    "关于{topic}，哪一项描述符合实现要求？",
+    "在{topic}场景下，应当如何处理？",
+    "{topic}的正确实现方式是？",
+    "下列对{topic}的理解中，正确的是？",
+]
+
+
 def make_paper(count=5):
     choice_count = count * 3 // 5
     questions = []
 
     for i in range(choice_count):
+        topic = TOPICS[i]
+        stem = STEM_TEMPLATES[i % len(STEM_TEMPLATES)].format(
+            topic=topic,
+        )
         questions.append({
             "type": "SINGLE_CHOICE",
-            "stem": f"根据笔记，知识点{i}的主要作用是什么？",
+            "stem": stem,
             "options": {
-                "A": f"正确作用{i}",
-                "B": f"错误作用一{i}",
-                "C": f"错误作用二{i}",
-                "D": f"错误作用三{i}",
+                "A": f"由服务端强制校验{topic}",
+                "B": f"只在前端提示{topic}",
+                "C": f"无需持久化{topic}",
+                "D": f"跳过{topic}的权限判断",
             },
             "correct_answer": "A",
-            "explanation": f"笔记说明了知识点{i}的主要作用。",
+            "explanation": f"服务端必须对“{topic}”做强制校验。",
         })
 
     for i in range(count - choice_count):
+        index = choice_count + i
+        topic = TOPICS[index]
+        stem = STEM_TEMPLATES[index % len(STEM_TEMPLATES)].format(
+            topic=topic,
+        )
         questions.append({
             "type": "SHORT_ANSWER",
-            "stem": f"请解释知识点{i}在实际学习中的含义。",
-            "reference_answer": f"知识点{i}的完整解释。",
+            "stem": stem,
+            "reference_answer": f"{topic}的完整处理流程说明。",
             "grading_points": [
-                f"说明知识点{i}的核心含义",
+                f"说明{topic}的关键步骤",
             ],
-            "explanation": f"根据笔记理解知识点{i}。",
+            "explanation": f"结合笔记理解{topic}。",
         })
 
     return {"questions": questions}

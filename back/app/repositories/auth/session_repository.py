@@ -89,6 +89,7 @@ def find_session_with_user(
                    u.email_verified_at,
                    u.avatar_url,
                    u.is_active,
+                   u.role,
 
                    s.family_id,
                    s.last_activity_at,
@@ -110,7 +111,6 @@ def find_session_with_user(
     ).mappings().first()
 
     return dict(row) if row is not None else None
-
 #在用户访问网站时，有条件地更新登录会话的最后活跃时间。
 def touch_session(
     db: Session,

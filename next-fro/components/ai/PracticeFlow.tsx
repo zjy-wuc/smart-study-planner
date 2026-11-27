@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { KnowledgeMarkdownPreview } from "@/components/knowledge/KnowledgeMarkdownPreview";
@@ -23,9 +23,12 @@ export function PracticeFlow() {
   const requestedId = Number(query.get("note_id"));
   const [notes, setNotes] = useState<KnowledgeNote[]>([]);
   const [notePage, setNotePage] = useState(1);
+  const [noteSearch, setNoteSearch] = useState("");
+  const [noteKeyword, setNoteKeyword] = useState("");
   const [noteRevision, setNoteRevision] = useState(0);
   const [noteTotal, setNoteTotal] = useState(0);
   const [noteId, setNoteId] = useState(Number.isSafeInteger(requestedId) && requestedId > 0 ? requestedId : 0);
+  const selectedNoteId = useRef(noteId);
   const [count, setCount] = useState<5 | 10 | 15>(5);
   const [noteError, setNoteError] = useState("");
   const [noteLoading, setNoteLoading] = useState(true);
@@ -35,19 +38,21 @@ export function PracticeFlow() {
 
   useEffect(() => {
     let live = true;
-    listNotes({ page: notePage, page_size: 100 }).then((list) => {
+    listNotes({ page: notePage, page_size: 20, keyword: noteKeyword }).then((list) => {
       if (!live) return;
-      setNotes((previous) => notePage === 1 ? list.items : [...previous, ...list.items]);
+      setNotes((previous) => notePage === 1
+        ? [...list.items, ...previous.filter((note) => note.id === selectedNoteId.current && !list.items.some((item) => item.id === note.id))]
+        : [...previous, ...list.items]);
       setNoteTotal(list.total); setNoteLoading(false);
     }).catch((error) => { if (live) { setNoteError(error instanceof Error ? error.message : m.failed); setNoteLoading(false); } });
     return () => { live = false; };
-  }, [notePage, noteRevision]);
+  }, [notePage, noteRevision, noteKeyword]);
 
   useEffect(() => {
     if (!noteId || notes.some((note) => note.id === noteId) || noteLoading) return;
     let live = true;
     getNote(noteId).then((note) => { if (live && !note.deleted_at) setNotes((current) => [note, ...current]); })
-      .catch(() => { if (live) setNoteId(0); });
+      .catch(() => { if (live) { selectedNoteId.current = 0; setNoteId(0); } });
     return () => { live = false; };
   }, [noteId, notes, noteLoading]);
 
@@ -85,9 +90,13 @@ export function PracticeFlow() {
     {flow.phase === "configuring" && <section className="ai-practice-panel ai-practice-config">
       <div><h2>{m.chooseNote}</h2><p>{m.generateHint}</p></div>
       {noteLoading ? <div className="ai-practice-skeleton ai-practice-skeleton-field" role="status" aria-label={m.loading} /> : noteError ? <p role="alert">{noteError} <button type="button" onClick={() => { setNoteError(""); setNoteLoading(true); setNotePage(1); setNoteRevision((value) => value + 1); }}>{messages.knowledge.retry}</button></p> : <>
-        <label>{m.chooseNote}<select value={selected?.id ?? ""} onChange={(event) => setNoteId(Number(event.target.value))}><option value="">{m.choose}</option>{available.map((note) => <option key={note.id} value={note.id}>{note.title}</option>)}</select></label>
-        {notePage * 100 < noteTotal && <button type="button" className="ai-practice-text-button" onClick={() => setNotePage((page) => page + 1)}>{m.moreNotes}</button>}
-        {!available.length && <p>{m.emptyNotes} <Link href="/knowledge/new">{messages.knowledge.create}</Link></p>}
+        <form className="ai-practice-note-search" onSubmit={(event) => { event.preventDefault(); setNoteLoading(true); setNotePage(1); setNoteKeyword(noteSearch.trim()); setNoteRevision((value) => value + 1); }}>
+          <label htmlFor="ai-practice-note-keyword">{m.searchNote}</label>
+          <div><input id="ai-practice-note-keyword" type="search" value={noteSearch} onChange={(event) => setNoteSearch(event.target.value)} placeholder={m.searchPlaceholder} /><button type="submit">{m.search}</button></div>
+        </form>
+        <label>{m.chooseNote}<select value={selected?.id ?? ""} onChange={(event) => { const id = Number(event.target.value); selectedNoteId.current = id; setNoteId(id); }}><option value="">{m.choose}</option>{available.map((note) => <option key={note.id} value={note.id}>{note.title}</option>)}</select></label>
+        {notePage * 20 < noteTotal && <button type="button" className="ai-practice-text-button" onClick={() => { setNoteLoading(true); setNotePage((page) => page + 1); }}>{m.moreNotes}</button>}
+        {noteTotal === 0 && (noteKeyword ? <p>{m.noSearchResults}</p> : <p>{m.emptyNotes} <Link href="/knowledge/new">{messages.knowledge.create}</Link></p>)}
         {selected && <div className="ai-practice-selection"><span>{m.selectedNote}</span><strong>{selected.title}</strong><div><Link href={`/knowledge/${selected.id}`}>{m.noteLink}</Link><Link href={historyHref}>{m.historyLink}</Link></div></div>}
       </>}
       <div className="ai-practice-count-field"><span id="ai-practice-count-label">{m.count}</span><RadioGroup.Root className="ai-practice-count-options" aria-labelledby="ai-practice-count-label" value={String(count)} onValueChange={(value) => setCount(Number(value) as 5 | 10 | 15)}>{([5, 10, 15] as const).map((value) => <RadioGroup.Item key={value} value={String(value)} className="ai-practice-count">{value} {m.questionUnit}</RadioGroup.Item>)}</RadioGroup.Root><p>{m.countHint}</p></div>

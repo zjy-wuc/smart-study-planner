@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { Bot, Clipboard, LoaderCircle, RotateCcw, Send, Square, Trash2, X } from "lucide-react";
 import { messages } from "@/messages";
 import { useKnowledgeQa } from "@/hooks/useKnowledgeQa";
@@ -10,6 +10,13 @@ import { KnowledgeMarkdownPreview } from "./KnowledgeMarkdownPreview";
 import "@/components/css/KnowledgeQA.css";
 
 const m = messages.knowledge.qa;
+const mobileQuery = "(max-width: 1050px)";
+const subscribeMobile = (callback: () => void) => {
+  const media = window.matchMedia(mobileQuery);
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
+};
+const isMobile = () => window.matchMedia(mobileQuery).matches;
 
 type Props = {
   noteId: number;
@@ -27,6 +34,9 @@ export function KnowledgeQaPanel({ noteId, open, dirty, savedContentEmpty, stale
   const [notice, setNotice] = useState("");
   const qa = useKnowledgeQa(noteId, onStale);
   const endRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const questionRef = useRef<HTMLTextAreaElement>(null);
+  const mobile = useSyncExternalStore(subscribeMobile, isMobile, () => false);
   const questionLength = unicodeLength(question);
   const unavailable = dirty ? m.saveFirst : savedContentEmpty ? m.emptyNote : questionLength > 1000 ? m.questionTooLong : "";
 
@@ -34,9 +44,33 @@ export function KnowledgeQaPanel({ noteId, open, dirty, savedContentEmpty, stale
     if (open) endRef.current?.scrollIntoView({ block: "nearest" });
   }, [open, qa.turns]);
 
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    questionRef.current?.focus();
+    return () => previous?.focus();
+  }, [open]);
+
   function close() {
     if (qa.running) qa.cancel();
     onClose();
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
+    }
+    if (event.key !== "Tab" || !mobile || !panelRef.current) return;
+    const focusable = [...panelRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), textarea:not([disabled]), a[href], input:not([disabled])')];
+    if (!focusable.length) return;
+    if (event.shiftKey && document.activeElement === focusable[0]) {
+      event.preventDefault();
+      focusable.at(-1)?.focus();
+    } else if (!event.shiftKey && document.activeElement === focusable.at(-1)) {
+      event.preventDefault();
+      focusable[0].focus();
+    }
   }
 
   function send() {
@@ -59,7 +93,7 @@ export function KnowledgeQaPanel({ noteId, open, dirty, savedContentEmpty, stale
 
   return <>
     <button type="button" className="knowledge-qa-scrim" aria-label={m.close} data-open={open} onClick={close} />
-    <aside className="knowledge-qa-panel" data-open={open} aria-hidden={!open} aria-label={m.title}>
+    <aside ref={panelRef} className="knowledge-qa-panel" data-open={open} aria-hidden={!open} aria-label={m.title} role={mobile ? "dialog" : "complementary"} aria-modal={mobile && open ? true : undefined} onKeyDown={handleKeyDown}>
       <header className="knowledge-qa-header">
         <div><span><Bot size={18} aria-hidden="true" /></span><div><h2>{m.title}</h2><p>{m.description}</p></div></div>
         <button type="button" aria-label={m.close} onClick={close}><X size={18} aria-hidden="true" /></button>
@@ -92,6 +126,8 @@ export function KnowledgeQaPanel({ noteId, open, dirty, savedContentEmpty, stale
       <footer className="knowledge-qa-composer">
         {(notice || unavailable) && <p role="alert">{notice || unavailable}</p>}
         <textarea
+          ref={questionRef}
+          aria-label={m.questionLabel}
           value={question}
           placeholder={m.placeholder}
           onChange={(event) => { setQuestion(event.target.value); setNotice(""); }}

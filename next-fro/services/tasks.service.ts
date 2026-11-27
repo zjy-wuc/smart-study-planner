@@ -7,8 +7,6 @@ import type { TodayUncheckedCount } from "@/types/reminder";
 
 import type {
   PlanTask,
-  TaskType,
-  TaskStatus,
   ActiveTaskUpdate,
 } from "@/types/task";
 

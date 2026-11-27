@@ -10,6 +10,8 @@ from app.database import SessionLocal
 from app.services.auth import session_service
 
 
+from fastapi import Depends, Request, HTTPException
+
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/auth/login",
     auto_error=False,
@@ -66,10 +68,29 @@ def get_current_user(
 
     user = authenticate_access(token)
 
-    # 保存身份，用于请求成功后的活跃时间更新。
+    # 保存身份，用于请求成功后的活跃时间更新，中间件要用
     request.state.auth_identity = (
         user["id"],
         user["family_id"],
     )
+
+    return user
+
+
+
+
+def require_admin(
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """校验当前用户是否具有管理员权限"""
+
+    if user.get("role") != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "ADMIN_REQUIRED",
+                "message": "需要管理员权限",
+            },
+        )
 
     return user

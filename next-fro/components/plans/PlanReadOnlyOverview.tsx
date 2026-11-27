@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   Check,
@@ -13,8 +12,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { ApiError } from "@/lib/api/client";
 import { getBusinessToday } from "@/lib/plans/business-date";
+import { isSettledNumericTask } from "@/lib/tasks/today-presentation";
 import { messages } from "@/messages";
 import { getPlanProgress } from "@/services/progress.service";
 import { getPlanSteps } from "@/services/steps.service";
@@ -145,14 +144,15 @@ function StepTree({
 }
 
 function TaskRow({ task, path }: { task: PlanTask; path: string }) {
-  const completed = task.status === "COMPLETED";
+  const settled = isSettledNumericTask(task);
+  const completed = task.status === "COMPLETED" && !settled;
   const target = task.target_quantity ?? 0;
   const numericProgress = target > 0
     ? Math.min(100, Math.round((task.actual_quantity / target) * 100))
     : 0;
 
   return (
-    <article className="plan-preview-task" data-completed={completed}>
+    <article className="plan-preview-task" data-completed={completed} data-settled={settled}>
       <span className="plan-preview-task-check" aria-hidden="true">
         {completed ? <Check size={16} /> : <Circle size={13} />}
       </span>
@@ -170,15 +170,14 @@ function TaskRow({ task, path }: { task: PlanTask; path: string }) {
           </div>
         )}
       </div>
-      <span className="plan-preview-task-status" data-status={task.status}>
-        {taskStatusLabels[task.status]}
+      <span className="plan-preview-task-status" data-status={settled ? "SETTLED" : task.status}>
+        {settled ? messages.plans.previewSettled : taskStatusLabels[task.status]}
       </span>
     </article>
   );
 }
 
 export function PlanReadOnlyOverview({ plan, onManage }: Props) {
-  const router = useRouter();
   const [today] = useState(getBusinessToday);
   const [progress, setProgress] = useState<PlanProgress | null>(null);
   const [steps, setSteps] = useState<StepNode[]>([]);
@@ -205,15 +204,6 @@ export function PlanReadOnlyOverview({ plan, onManage }: Props) {
 
       if (cancelled) return;
 
-      const rejected = results.find(
-        (result): result is PromiseRejectedResult => result.status === "rejected",
-      );
-
-      if (rejected?.reason instanceof ApiError && rejected.reason.status === 401) {
-        router.replace("/login");
-        return;
-      }
-
       if (results[0].status === "fulfilled") setProgress(results[0].value);
       if (results[1].status === "fulfilled") setSteps(results[1].value);
       if (results[2].status === "fulfilled") setTasks(results[2].value);
@@ -229,14 +219,15 @@ export function PlanReadOnlyOverview({ plan, onManage }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [plan.id, router]);
+  }, [plan.id]);
 
   const stepPaths = useMemo(() => collectStepPaths(steps), [steps]);
   const todayTasks = useMemo(
     () => today === null ? [] : tasks.filter((task) => task.task_date === today),
     [tasks, today],
   );
-  const completedToday = todayTasks.filter((task) => task.status === "COMPLETED");
+  const completedToday = todayTasks.filter((task) => task.status === "COMPLETED" && !isSettledNumericTask(task));
+  const settledToday = todayTasks.filter(isSettledNumericTask);
   const pendingToday = todayTasks.filter((task) => task.status !== "COMPLETED");
 
   const nextDate = today === null
@@ -260,7 +251,10 @@ export function PlanReadOnlyOverview({ plan, onManage }: Props) {
     : focusTasks.filter((task) => task.status !== "COMPLETED");
   const focusCompleted = plan.status === "ACTIVE" && focusDate === today
     ? completedToday
-    : focusTasks.filter((task) => task.status === "COMPLETED");
+    : focusTasks.filter((task) => task.status === "COMPLETED" && !isSettledNumericTask(task));
+  const focusSettled = plan.status === "ACTIVE" && focusDate === today
+    ? settledToday
+    : focusTasks.filter(isSettledNumericTask);
   const todayPathIds = collectPathIds(
     steps,
     new Set(todayTasks.map((task) => task.step_id)),
@@ -361,6 +355,13 @@ export function PlanReadOnlyOverview({ plan, onManage }: Props) {
                   path={stepPaths.get(task.step_id) ?? task.step_name}
                 />
               ))}
+
+              {focusSettled.length > 0 && (
+                <details className="plan-preview-completed" open={focusPending.length === 0}>
+                  <summary><ChevronDown size={15} aria-hidden="true" />{messages.plans.previewSettledTasks(focusSettled.length)}</summary>
+                  {focusSettled.map((task) => <TaskRow key={task.id} task={task} path={stepPaths.get(task.step_id) ?? task.step_name} />)}
+                </details>
+              )}
 
               {focusCompleted.length > 0 && (
                 <details className="plan-preview-completed" open={focusPending.length === 0}>

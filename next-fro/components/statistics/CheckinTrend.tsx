@@ -36,8 +36,8 @@ export function CheckinTrend({ days, dailyTrend, onToggleDays, disabled = false 
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="#e7f0f6" strokeDasharray="4 4" />
-            <XAxis dataKey="date" tickFormatter={formatDate} tickLine={false} axisLine={false} minTickGap={days === 30 ? 35 : 12} tick={{ fill: "#819aad", fontSize: 12 }} />
-            <YAxis allowDecimals={false} domain={[0, "auto"]} width={32} tickLine={false} axisLine={false} tick={{ fill: "#819aad", fontSize: 12 }} />
+            <XAxis dataKey="date" tickFormatter={formatDate} tickLine={false} axisLine={false} minTickGap={days === 30 ? 35 : 12} tick={{ fill: "#526b83", fontSize: 12 }} />
+            <YAxis allowDecimals={false} domain={[0, "auto"]} width={32} tickLine={false} axisLine={false} tick={{ fill: "#526b83", fontSize: 12 }} />
             <Tooltip labelFormatter={(label) => String(label)} formatter={(value) => [messages.statistics.times(String(value)), messages.tasks.checkin]} />
             <Area type="monotone" dataKey="checkin_count" stroke="#10a9de" strokeWidth={3} fill="url(#checkin-area-gradient)" dot={days === 7 ? { r: 3, fill: "#10a9de", stroke: "#fff", strokeWidth: 2 } : false} activeDot={{ r: 5, fill: "#10a9de", stroke: "#fff", strokeWidth: 2 }} />
           </AreaChart>

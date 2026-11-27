@@ -4,9 +4,7 @@ import { messages } from "@/messages";
 import { historyRangeSummary } from "@/messages/zh-CN/history";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Check, ChevronDown } from "lucide-react";
-import { ApiError } from "@/lib/api/client";
 import { listPlans } from "@/services/plans.service";
 import { getPlanSteps } from "@/services/steps.service";
 import { getTaskRecords, listPlanTasks } from "@/services/tasks.service";
@@ -59,7 +57,7 @@ function descendants(node: StepNode): number[] {
   return [node.id, ...node.children.flatMap(descendants)];
 }
 
-async function mapLimited<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>, cancelled: () => boolean): Promise<PromiseSettledResult<R>[]> {
+async function mapLimited<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>, cancelled: () => boolean, onSettled?: () => void): Promise<PromiseSettledResult<R>[]> {
   const results: PromiseSettledResult<R>[] = new Array(items.length);
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(items.length, concurrency) }, async () => {
@@ -67,6 +65,7 @@ async function mapLimited<T, R>(items: T[], concurrency: number, fn: (item: T) =
       const index = next++;
       try { results[index] = { status: "fulfilled", value: await fn(items[index]) }; }
       catch (reason) { results[index] = { status: "rejected", reason }; }
+      if (!cancelled()) onSettled?.();
     }
   }));
   return results;
@@ -81,7 +80,6 @@ function StepItem({ node, entries, today, incomplete }: { node: StepNode; entrie
 }
 
 export default function HistoryPage() {
-  const router = useRouter();
   const [plans, setPlans] = useState<PlanHistory[]>([]);
   const [range, setRange] = useState<Range>(7);
   const [loading, setLoading] = useState(true);
@@ -89,6 +87,7 @@ export default function HistoryPage() {
   const [revision, setRevision] = useState(0);
   const [asOf, setAsOf] = useState("");
   const [planErrors, setPlanErrors] = useState(0);
+  const [loadProgress, setLoadProgress] = useState<{ done: number; total: number } | null>(null);
 
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   useEffect(() => {
@@ -96,21 +95,26 @@ export default function HistoryPage() {
     async function load() {
       setLoading(true);
       setError("");
+      setLoadProgress(null);
       try {
         const allPlans = await listPlans();
+        let completedPlans = 0;
+        setLoadProgress({ done: 0, total: allPlans.length });
         const planResults = await mapLimited(allPlans, 4, async (plan) => {
           const [steps, tasks] = await Promise.all([getPlanSteps(plan.id), listPlanTasks(plan.id)]);
           return { plan, steps, tasks };
-        }, () => cancelled);
+        }, () => cancelled, () => setLoadProgress({ done: ++completedPlans, total: allPlans.length }));
         if (cancelled) return;
         const failedPlans = planResults.filter((item) => item.status === "rejected");
-        const planAuthFailure = failedPlans.some((item) => item.status === "rejected" && item.reason instanceof ApiError && item.reason.status === 401);
-        if (planAuthFailure) throw new ApiError(messages.auth.sessionExpired, 401);
         const loaded = planResults.flatMap((item) => item.status === "fulfilled" ? [item.value] : []);
         const work = loaded.flatMap(({ plan, tasks }) => tasks.map((task) => ({ plan, task })));
-        const records = await mapLimited(work, 6, async ({ plan, task }) => ({ plan, task, records: await getTaskRecords(task.id) }), () => cancelled);
+        let completedTasks = 0;
+        setLoadProgress({ done: 0, total: work.length });
+        const records = await mapLimited(work, 6, async ({ plan, task }) => ({ plan, task, records: await getTaskRecords(task.id) }), () => cancelled, () => {
+          completedTasks += 1;
+          if (completedTasks % 5 === 0 || completedTasks === work.length) setLoadProgress({ done: completedTasks, total: work.length });
+        });
         if (cancelled) return;
-        if (records.some((item) => item.status === "rejected" && item.reason instanceof ApiError && item.reason.status === 401)) throw new ApiError(messages.auth.sessionExpired, 401);
         const result = loaded.map(({ plan, steps }) => ({ plan, steps, entries: [] as HistoryEntry[], incomplete: false }));
         const byId = new Map(result.map((item) => [item.plan.id, item]));
         const paths = new Map(result.map((item) => [item.plan.id, nodePaths(item.steps)]));
@@ -124,15 +128,14 @@ export default function HistoryPage() {
         setAsOf(todayInBeijing());
       } catch (err) {
         if (cancelled) return;
-        if (err instanceof ApiError && err.status === 401) router.replace("/login");
-        else setError(err instanceof Error ? err.message : messages.common.loadFailedRetry);
+        setError(err instanceof Error ? err.message : messages.common.loadFailedRetry);
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     void load();
     return () => { cancelled = true; };
-  }, [router, revision]);
+  }, [revision]);
 
   const entries = useMemo(() => plans.flatMap((plan) => plan.entries).sort((a, b) => b.record.recorded_at.localeCompare(a.record.recorded_at) || b.record.id - a.record.id), [plans]);
   const grouped = useMemo(() => {
@@ -162,7 +165,7 @@ export default function HistoryPage() {
       </div>
       <button className="history-refresh" type="button" onClick={reload} disabled={loading}>{messages.history.refresh}</button>
     </header>
-    {loading ? <p role="status" className="workspace-loading">{messages.history.loading}</p> : error ? <div role="alert" className="workspace-feedback workspace-feedback--error">{error} <button type="button" onClick={reload}>{messages.common.retry}</button></div> : <>
+    {loading ? <p role="status" className="workspace-loading">{messages.history.loading}{loadProgress && loadProgress.total > 0 && <> {messages.history.loadProgress(loadProgress.done, loadProgress.total)}</>}</p> : error ? <div role="alert" className="workspace-feedback workspace-feedback--error">{error} <button type="button" onClick={reload}>{messages.common.retry}</button></div> : <>
       {incomplete && <div role="alert" className="history-warning">{messages.history.partialFailure}<button type="button" onClick={reload}>{messages.common.reload}</button></div>}
       <div className="history-layout">
         <section className="history-panel" aria-labelledby="history-timeline-title">

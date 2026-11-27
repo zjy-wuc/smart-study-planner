@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useMemo } from "react";
 
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { isOpenTodayTask } from "@/lib/tasks/today-presentation";
 import { useWorkspaceSearch } from "@/components/layout/WorkspaceShell";
 
 import { PlanCard } from "@/components/dashboard/PlanCard";
@@ -42,10 +43,10 @@ export default function Dashboard() {
 
   // 首页只展示最多 3 个，完整列表在 /plans
   const featuredPlans = filteredPlans.slice(0, 3);
-  const pendingTasks = tasks.filter((task) =>
-    task.status !== "COMPLETED" && task.status !== "ENDED" &&
-    !task.is_rolled_over && !task.has_rollover && task.rollover_out_quantity === 0,
-  ).length;
+  const pendingTasks = tasks.filter(isOpenTodayTask).length;
+  const previewTasks = [...tasks].sort((left, right) =>
+    Number(isOpenTodayTask(right)) - Number(isOpenTodayTask(left)),
+  ).slice(0, 5);
   const activePlans = plans.filter((plan) => plan.status === "ACTIVE").length;
 
   return (
@@ -85,7 +86,7 @@ export default function Dashboard() {
           <p role="alert" className="workspace-feedback workspace-feedback--error">{messages.dashboard.tasksError(tasksError)}
           </p>
         ) : (
-          <TodayTaskList tasks={tasks.slice(0, 5)} plans={plans} onChanged={reload} />
+          <TodayTaskList tasks={previewTasks} plans={plans} onChanged={reload} />
         )}
       </section>
 

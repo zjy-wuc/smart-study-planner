@@ -3,8 +3,6 @@
 import { messages } from "@/messages";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { ApiError } from "@/lib/api/client";
 import { completeBooleanTask, updateNumericTask } from "@/services/tasks.service";
 import { useDailyCheckin } from "@/hooks/useDailyCheckin";
 import type { DailyTask } from "@/types/task";
@@ -17,7 +15,6 @@ const statusLabels = {
 };
 
 function TodayTaskRow({ task, planName, onChanged }: { task: DailyTask; planName?: string; onChanged: () => void }) {
-  const router = useRouter();
   const completionQuantity = task.effective_target_quantity ?? task.target_quantity ?? task.actual_quantity;
   const [quantity, setQuantity] = useState(String(completionQuantity));
   const [quantityEdited, setQuantityEdited] = useState(false);
@@ -47,11 +44,7 @@ function TodayTaskRow({ task, planName, onChanged }: { task: DailyTask; planName
       daily.markDone();
       onChanged();
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        router.replace("/login");
-      } else {
-        setError(err instanceof Error ? err.message : messages.tasks.checkinFailed);
-      }
+      setError(err instanceof Error ? err.message : messages.tasks.checkinFailed);
     } finally {
       setBusy(false);
     }

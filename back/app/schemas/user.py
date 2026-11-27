@@ -11,6 +11,8 @@ from pydantic import (
     StringConstraints,
 )
 
+from typing import Literal
+
 
 def normalize_email(value: str) -> str:
     """验证邮箱格式，并统一邮箱存储格式"""
@@ -32,7 +34,7 @@ def normalize_email(value: str) -> str:
     return email
 
 
-# ==================== 公共字段类型 ====================
+# 公共字段类型 
 
 EmailAddress = Annotated[
     str,
@@ -75,7 +77,9 @@ EmailCode = Annotated[
 ]
 
 
-# ==================== 请求模型 ====================
+UserRole = Literal["USER", "ADMIN"]
+
+# 请求模型
 
 class UserCreate(BaseModel):
     username: Username
@@ -89,8 +93,7 @@ class UserUpdate(BaseModel):
     nickname: Nickname
 
 
-# ==================== 响应模型 ====================
-
+# 响应模型 
 class UserPublic(BaseModel):
     id: int
     username: str
@@ -99,3 +102,4 @@ class UserPublic(BaseModel):
     avatar_url: str | None = None
     email_verified_at: datetime
     is_active: bool
+    role: UserRole

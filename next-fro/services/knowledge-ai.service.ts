@@ -1,4 +1,4 @@
-import { ApiError, authenticatedFetch } from "@/lib/api/client";
+import { ApiError, assertSseSession, authenticatedFetch } from "@/lib/api/client";
 import { readSseEvents } from "@/lib/api/sse";
 import type { KnowledgeAiDone, KnowledgeAiEvent, KnowledgeAiRequest } from "@/types/knowledge-ai";
 
@@ -53,6 +53,7 @@ export async function streamKnowledgeAi(
   if (!response.body) throw new Error("浏览器未提供流式响应内容");
 
   for await (const event of readSseEvents(response.body)) {
+    assertSseSession(response);
     onEvent(event);
     if (["done", "blocked", "error"].includes(event.event)) return event;
   }
