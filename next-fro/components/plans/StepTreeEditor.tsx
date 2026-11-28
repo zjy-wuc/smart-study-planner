@@ -35,6 +35,7 @@ import {
 } from "@/lib/plans/step-rule";
 
 import { StepRuleFields } from "./StepRuleFields";
+import { SaveSuccessDialog } from "@/components/ui/SaveSuccessDialog";
 
 import type { PlanStatus } from "@/types/plan";
 import type {
@@ -181,7 +182,10 @@ function TreeItem({
               onClick={() => controls.toggle(node.id)}
             ><ChevronDown size={15} aria-hidden="true" /></button>
           )}
-          <strong>{node.name}</strong>
+          <div className="plan-step-row-name">
+            <small>{isGroup ? messages.steps.groupName : messages.steps.leafName}</small>
+            <strong>{node.name}</strong>
+          </div>
           <span>
             {isGroup
               ? messages.steps.groupNode
@@ -257,6 +261,7 @@ export function StepTreeEditor({
 
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [creationSuccessOpen, setCreationSuccessOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<number[]>([]);
@@ -297,6 +302,13 @@ export function StepTreeEditor({
   );
   const stepCount = useMemo(() => countNodes(tree), [tree]);
   const editId = renamingNode?.id ?? ruleNode?.id;
+  const createParentName = groups.find((group) => String(group.id) === parentId)?.name;
+  const createPath = [
+    messages.steps.createPreviewRoot,
+    createParentName,
+    nodeType === "GROUP" ? name.trim() || messages.steps.createPreviewGroup : name.trim() || messages.steps.createPreviewTask,
+    ...(nodeType === "GROUP" ? [firstLeafName.trim() || messages.steps.createPreviewTask] : []),
+  ].filter(Boolean).join(" › ");
 
   useEffect(() => {
     if (savedId === null) return;
@@ -554,6 +566,8 @@ export function StepTreeEditor({
 
     if (success) {
       setSavedId(renamingNode.id);
+      setNotice(null);
+      setSaveMessage(messages.steps.renamed);
       closeEditor();
     }
   }
@@ -597,6 +611,8 @@ export function StepTreeEditor({
 
       if (success) {
         setSavedId(ruleNode.id);
+        setNotice(null);
+        setSaveMessage(messages.steps.ruleUpdated);
         closeEditor();
       }
     } catch (err) {
@@ -672,22 +688,8 @@ export function StepTreeEditor({
         {error && editId === undefined && <p role="alert" className="plan-step-feedback is-error">{error}</p>}
         {notice && <p role="status" className="plan-step-feedback is-success">{notice}</p>}
 
-        {canEdit && createOpen ? (
-          <form onSubmit={handleCreate} className="plan-step-editor">
-            <h3>{messages.steps.createTitle}</h3>
-            <p className="plan-step-create-target">{messages.steps.addTo(groups.find((group) => String(group.id) === parentId)?.name ?? messages.steps.rootNode)}</p>
-            <div className="plan-step-form-grid">
-              <div><label htmlFor="step-parent">{messages.steps.parentLabel}</label><select id="step-parent" value={parentId} onChange={(event) => setParentId(event.target.value)}><option value="">{messages.steps.rootNode}</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.label}</option>)}</select></div>
-              <div><label htmlFor="step-type">{messages.steps.nodeType}</label><select id="step-type" value={nodeType} onChange={(event) => setNodeType(event.target.value as "LEAF" | "GROUP")}><option value="LEAF">{messages.steps.leafType}</option><option value="GROUP">{messages.steps.groupWithLeaf}</option></select></div>
-              <div className="plan-step-form-wide"><label htmlFor="step-name">{nodeType === "GROUP" ? messages.steps.groupName : messages.steps.leafName}</label><input id="step-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={100} required /></div>
-              {nodeType === "GROUP" && <div className="plan-step-form-wide"><label htmlFor="step-first-leaf">{messages.steps.firstLeafNameLabel}</label><input id="step-first-leaf" value={firstLeafName} onChange={(event) => setFirstLeafName(event.target.value)} maxLength={100} required /></div>}
-            </div>
-            <StepRuleFields mode={mode} onModeChange={setMode} repeatContent={repeatContent} onRepeatContentChange={setRepeatContent} totalText={totalText} onTotalTextChange={setTotalText} />
-            <div className="plan-step-editor-actions"><button type="submit" disabled={busy}><Plus size={16} aria-hidden="true" />{busy ? messages.common.submitting : messages.steps.create}</button></div>
-          </form>
-        ) : !canEdit ? <p className="plan-step-readonly">{messages.steps.readOnlyHint}</p> : null}
-
         <div className="plan-step-tree-section" aria-busy={loading}>
+          <h3>{messages.steps.treeHeading}</h3>
           {tree.length === 0 ? (
             <p className="plan-step-empty">{loading ? messages.steps.loadingFull : messages.steps.emptyCurrentPlanSentence}</p>
           ) : (
@@ -723,6 +725,34 @@ export function StepTreeEditor({
             </ul>
           )}
         </div>
+
+        {canEdit && createOpen ? (
+          <form onSubmit={handleCreate} className="plan-step-editor">
+            <h3>{messages.steps.createTitle}</h3>
+            <fieldset className="plan-step-kind">
+              <legend>{messages.steps.createKindQuestion}</legend>
+              <div className="plan-step-kind-options">
+                <label className="plan-step-kind-option" data-selected={nodeType === "LEAF"}>
+                  <input type="radio" name="step-kind" value="LEAF" checked={nodeType === "LEAF"} onChange={() => setNodeType("LEAF")} />
+                  <span><strong>{messages.steps.createTaskChoice}</strong><small>{messages.steps.createTaskChoiceHint}</small></span>
+                </label>
+                <label className="plan-step-kind-option" data-selected={nodeType === "GROUP"}>
+                  <input type="radio" name="step-kind" value="GROUP" checked={nodeType === "GROUP"} onChange={() => setNodeType("GROUP")} />
+                  <span><strong>{messages.steps.createGroupChoice}</strong><small>{messages.steps.createGroupChoiceHint}</small></span>
+                </label>
+              </div>
+            </fieldset>
+            <div className="plan-step-form-grid">
+              <div className="plan-step-form-wide"><label htmlFor="step-parent">{messages.steps.createLocation}</label><select id="step-parent" value={parentId} onChange={(event) => setParentId(event.target.value)}><option value="">{messages.steps.createRootLocation}</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.label}</option>)}</select></div>
+              <div className="plan-step-form-wide"><label htmlFor="step-name">{nodeType === "GROUP" ? messages.steps.groupName : messages.steps.createTaskName}</label><input id="step-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={100} placeholder={nodeType === "GROUP" ? messages.steps.createGroupPlaceholder : messages.steps.createTaskPlaceholder} required /></div>
+              {nodeType === "GROUP" && <div className="plan-step-form-wide"><label htmlFor="step-first-leaf">{messages.steps.createFirstTaskName}</label><input id="step-first-leaf" value={firstLeafName} onChange={(event) => setFirstLeafName(event.target.value)} maxLength={100} placeholder={messages.steps.createFirstTaskPlaceholder} required /></div>}
+            </div>
+            <h4 className="plan-step-rule-title">{nodeType === "GROUP" ? messages.steps.createFirstTaskRule : messages.steps.createTaskRule}</h4>
+            <StepRuleFields mode={mode} onModeChange={setMode} repeatContent={repeatContent} onRepeatContentChange={setRepeatContent} totalText={totalText} onTotalTextChange={setTotalText} />
+            <div className="plan-step-create-preview"><span>{messages.steps.createPreview}</span><strong>{createPath}</strong></div>
+            <div className="plan-step-editor-actions"><button type="submit" disabled={busy}><Plus size={16} aria-hidden="true" />{busy ? messages.common.submitting : nodeType === "GROUP" ? messages.steps.createGroupAction : messages.steps.createTaskAction}</button></div>
+          </form>
+        ) : !canEdit ? <p className="plan-step-readonly">{messages.steps.readOnlyHint}</p> : null}
       </section>
 
       {creationSuccessOpen && (
@@ -736,6 +766,7 @@ export function StepTreeEditor({
           </section>
         </div>
       )}
+      <SaveSuccessDialog message={saveMessage} onClose={() => setSaveMessage(null)} />
     </>
   );
 }

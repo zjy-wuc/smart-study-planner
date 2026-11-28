@@ -1,25 +1,32 @@
 import type { MessageValue } from "../types";
 
-export function historyRangeSummary(days: number, records: number): string {
-  return `${days} 天有打卡 · 共 ${records} 次`;
-}
-
 export const history = {
   dateHeading: (month: MessageValue, day: MessageValue, weekday: MessageValue, todaySuffix: MessageValue): string =>
     `${month}月${day}日 · 周${weekday}${todaySuffix}`,
   todaySuffix: " · 今天",
-  incompleteData: "数据未完整加载",
   dayCounts: (total: MessageValue, streak: MessageValue): string =>
     `累计 ${total} 天 · 连续 ${streak} 天`,
   subtitle: "记录每一次认真学习的日子",
   refresh: "刷新记录",
-  loading: "正在整理打卡记录，任务较多时需要一些时间…",
-  loadProgress: (done: MessageValue, total: MessageValue): string => `已读取 ${done} / ${total} 项`,
-  partialFailure: "部分数据加载失败，记录可能不完整，受影响的计划不显示统计。",
+  loading: "正在读取学习记录…",
+  checkinsTab: "任务打卡",
+  focusTab: "专注自习",
+  reviewsTab: "笔记复习",
+  practiceTab: "智能练习",
+  openPractice: "查看练习记录",
+  reviewCount: (count: MessageValue): string => `共 ${count} 次复习`,
+  focusCount: (count: MessageValue): string => `共 ${count} 条专注记录`,
+  noteDeleted: "笔记已删除",
+  taskDeleted: "任务已删除",
+  stepDeleted: "步骤已删除",
+  planFilter: "筛选计划",
+  relatedPlan: (name: MessageValue): string => `计划：${name}`,
+  allPlans: "全部计划",
+  previous: "上一页",
+  next: "下一页",
+  pagination: (page: MessageValue, total: MessageValue): string => `第 ${page} / ${total} 页`,
   recordsTitle: "打卡记录",
-  recordsSubtitle: "每一次努力，都值得被记录",
   rangeLabel: "打卡记录时间范围",
-  partialRetry: "部分数据未加载，请重试",
   emptyRange: "这个时间范围还没有打卡记录",
   plansTitle: "计划坚持情况",
   plansSubtitle: "每个学习方向的点滴积累",
@@ -27,8 +34,7 @@ export const history = {
   expandSteps: "展开查看学习步骤",
   totalDays: "累计天数",
   streakDays: "连续天数",
-  emptyPlanSteps: "此计划暂无步骤",
-  dataScope: "按北京时间的实际打卡日期统计；当前展示可查询的有效计划、步骤和任务记录。",
+  dataScope: "任务打卡按北京时间和真实记录统计；已删除任务、步骤的历史仍保留，已删除计划不计入。专注、复习和练习分别统计。",
   loadFailed: "历史记录加载失败",
   collapse: "收起历史",
   view: "查看历史",

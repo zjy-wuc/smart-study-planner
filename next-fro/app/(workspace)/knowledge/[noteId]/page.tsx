@@ -1,9 +1,9 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { KnowledgeEditorPage } from "@/components/knowledge/KnowledgeEditor";
+import { KnowledgeNotePreview } from "@/components/knowledge/KnowledgeNotePreview";
 
-export default function EditKnowledgePage() {
+export default function KnowledgeNotePage() {
   const { noteId } = useParams<{ noteId: string }>();
-  return <KnowledgeEditorPage key={noteId} noteId={Number(noteId)} />;
+  return <KnowledgeNotePreview key={noteId} noteId={Number(noteId)} />;
 }

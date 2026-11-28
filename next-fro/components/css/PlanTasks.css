@@ -1,0 +1,360 @@
+.plan-task-panel {
+  overflow: visible;
+  border: 1px solid #dce7f2;
+  border-radius: 16px;
+  background: #fff;
+  color: #24364b;
+}
+
+.plan-task-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e5edf5;
+}
+
+.plan-task-header h2,
+.plan-task-header p {
+  margin: 0;
+}
+
+.plan-task-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.plan-task-header-actions a {
+  color: #2769b2;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.plan-task-header h2 {
+  color: #203b53;
+  font-size: 18px;
+}
+
+.plan-task-header p {
+  margin-top: 3px;
+  color: #61788e;
+  font-size: 12px;
+}
+
+.plan-task-header button,
+.plan-task-actions button,
+.plan-task-more summary,
+.plan-task-edit button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.plan-task-header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #cadceb;
+  border-radius: 8px;
+  color: #2867ad;
+  background: #fff;
+  font-size: 12px;
+}
+
+.plan-task-body {
+  padding: 4px 22px 18px;
+}
+
+.plan-task-count {
+  margin: 12px 0 18px;
+  color: #61788e;
+  font-size: 12px;
+}
+
+.plan-task-day + .plan-task-day {
+  margin-top: 18px;
+}
+
+.plan-task-day > header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 7px;
+}
+
+.plan-task-day h3 {
+  margin: 0;
+  color: #28445e;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-task-day > header span {
+  color: #71879b;
+  font-size: 12px;
+}
+
+.plan-task-list {
+  border: 1px solid #e1eaf3;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.plan-task-row + .plan-task-row {
+  border-top: 1px solid #e8eef5;
+}
+
+.plan-task-row-main {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) 80px minmax(160px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 66px;
+  padding: 10px 14px;
+}
+
+.plan-task-identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.plan-task-identity strong {
+  overflow: hidden;
+  color: #213b54;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-task-identity small,
+.plan-task-measure {
+  color: #61788e;
+  font-size: 12px;
+}
+
+.plan-task-status {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: #52708d;
+  background: #edf3f8;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.plan-task-status[data-status="COMPLETED"] {
+  color: #247251;
+  background: #e5f4eb;
+}
+
+.plan-task-status[data-status="IN_PROGRESS"] {
+  color: #1e69a0;
+  background: #e6f3fb;
+}
+
+.plan-task-status[data-status="OVERDUE"] {
+  color: #a45b26;
+  background: #fff0dd;
+}
+
+.plan-task-status[data-status="SETTLED"] {
+  color: #5b6e89;
+  background: #ebeff6;
+}
+
+.plan-task-measure {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-task-progress {
+  display: block;
+  overflow: hidden;
+  width: min(150px, 100%);
+  height: 4px;
+  border-radius: 4px;
+  background: #e6eef5;
+}
+
+.plan-task-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2b9acb;
+}
+
+.plan-task-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.plan-task-actions > button {
+  padding: 6px 4px;
+  border: 0;
+  color: #2867ad;
+  background: transparent;
+  font-size: 12px;
+}
+
+.plan-task-more {
+  position: relative;
+}
+
+.plan-task-more summary {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  color: #61788e;
+  list-style: none;
+}
+
+.plan-task-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan-task-more[open] summary,
+.plan-task-more summary:hover,
+.plan-task-header button:hover,
+.plan-task-actions > button:hover {
+  color: #1e5a99;
+  background: #eef5fc;
+}
+
+.plan-task-more > button {
+  position: absolute;
+  z-index: 2;
+  top: 34px;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+  padding: 9px 11px;
+  border: 1px solid #e6caca;
+  border-radius: 8px;
+  color: #a34848;
+  background: #fff;
+  box-shadow: 0 8px 18px rgb(41 69 97 / 12%);
+  font-size: 12px;
+}
+
+.plan-task-history,
+.plan-task-edit {
+  padding: 14px;
+  border-top: 1px solid #e8eef5;
+  background: #f8fbfe;
+  font-size: 12px;
+}
+
+.plan-task-history ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.plan-task-edit {
+  display: grid;
+  gap: 9px;
+}
+
+.plan-task-edit h4,
+.plan-task-edit p {
+  margin: 0;
+}
+
+.plan-task-edit label {
+  color: #334c64;
+  font-weight: 600;
+}
+
+.plan-task-edit input {
+  width: min(420px, 100%);
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid #c8d9e8;
+  border-radius: 8px;
+  color: #243d55;
+  background: #fff;
+  font: inherit;
+}
+
+.plan-task-edit p {
+  color: #61788e;
+}
+
+.plan-task-edit > div {
+  display: flex;
+  gap: 9px;
+}
+
+.plan-task-edit button {
+  padding: 7px 12px;
+  border: 1px solid #c8d9e8;
+  border-radius: 7px;
+  color: #2867ad;
+  background: #fff;
+}
+
+.plan-task-edit button:first-child {
+  border-color: #286fc3;
+  color: #fff;
+  background: #286fc3;
+}
+
+.plan-task-error,
+.plan-task-notice,
+.plan-task-empty {
+  margin: 14px 22px;
+  font-size: 13px;
+}
+
+.plan-task-error { color: #a04747; }
+.plan-task-notice { color: #29664a; }
+.plan-task-empty { color: #61788e; }
+
+.plan-task-panel :is(button, summary, input):focus-visible {
+  outline: 2px solid #2875c7;
+  outline-offset: 2px;
+}
+
+.plan-task-panel button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+@media (max-width: 900px) {
+  .plan-task-row-main {
+    grid-template-columns: minmax(160px, 1fr) 80px minmax(130px, 1fr);
+  }
+
+  .plan-task-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .plan-task-header { align-items: flex-start; }
+  .plan-task-header p { max-width: 28ch; }
+  .plan-task-body { padding-inline: 14px; }
+  .plan-task-row-main { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .plan-task-identity { grid-column: 1; }
+  .plan-task-status { grid-column: 2; }
+  .plan-task-measure, .plan-task-actions { grid-column: 1 / -1; }
+  .plan-task-measure { gap: 4px; }
+  .plan-task-progress { width: 100%; }
+}

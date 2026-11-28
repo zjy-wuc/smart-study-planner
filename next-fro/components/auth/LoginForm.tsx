@@ -34,7 +34,7 @@ export default function LoginForm() {
     setMessage("");
     try {
       await sendEmailCode(identifier, "LOGIN");
-      setMessage(copy.codeSent);
+      setMessage(copy.loginCodeRequested);
       setCooldown(60);
       const timer = window.setInterval(
         () =>

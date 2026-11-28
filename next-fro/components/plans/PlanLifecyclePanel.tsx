@@ -78,7 +78,7 @@ export function PlanLifecyclePanel({
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-amber-200 bg-white p-6">
+    <section className="plan-lifecycle-panel">
       <div>
         <h2 className="text-xl font-semibold">{messages.plans.endTitle}</h2>
 
@@ -97,7 +97,7 @@ export function PlanLifecyclePanel({
         type="button"
         disabled={ending}
         onClick={() => void handleEnd()}
-        className="rounded-lg border border-red-500 px-5 py-3 text-red-700 disabled:opacity-50"
+        className="plan-detail-delete-button"
       >
         {ending ? messages.plans.ending : messages.plans.endEarly}
       </button>

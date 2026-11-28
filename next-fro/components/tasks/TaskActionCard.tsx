@@ -67,9 +67,7 @@ export function TaskActionCard({
 }: Props) {
   const completionQuantity = task.effective_target_quantity ?? task.target_quantity ?? task.actual_quantity;
 
-  const [actualText, setActualText] = useState(
-    String(completionQuantity),
-  );
+  const [actualText, setActualText] = useState("");
   const [quantityEdited, setQuantityEdited] = useState(false);
 
   const [targetDate, setTargetDate] = useState("");
@@ -176,7 +174,7 @@ export function TaskActionCard({
       return;
     }
 
-    const text = actualText.trim();
+    const text = quantityEdited ? actualText.trim() : String(completionQuantity);
 
     if (!/^\d+$/.test(text)) {
       setError(messages.tasks.actualIntegerRequired);
@@ -194,7 +192,7 @@ export function TaskActionCard({
       async () => {
         await updateNumericTask(task.id, quantity);
         daily.markDone();
-        setActualText(String(completionQuantity));
+        setActualText("");
         setQuantityEdited(false);
       },
       messages.tasks.quantityUpdated,
@@ -278,6 +276,7 @@ export function TaskActionCard({
                 aria-label={messages.tasks.quantityLabel(task.content || task.step_name)}
                 title={messages.tasks.numericCheckinHint}
                 type="text" inputMode="numeric" value={actualText}
+                placeholder={task.remaining_quantity !== null ? messages.tasks.remainingPlaceholder(task.remaining_quantity) : undefined}
                 onChange={(event) => { setActualText(event.target.value); setQuantityEdited(true); }}
                 disabled={busy}
                 className="task-action-input"

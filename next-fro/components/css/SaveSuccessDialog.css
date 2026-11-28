@@ -1,0 +1,49 @@
+.save-success-dialog {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  max-width: 400px;
+  text-align: center;
+}
+
+.save-success-icon {
+  color: #26875c;
+}
+
+.save-success-dialog .ui-dialog-header {
+  gap: 7px;
+}
+
+.save-success-dialog [data-slot="dialog-title"],
+.save-success-dialog h2 {
+  color: #204765;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.save-success-dialog p {
+  color: #526b83;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.save-success-dialog > button {
+  min-width: 120px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: #286fc3;
+  font: inherit;
+  cursor: pointer;
+}
+
+.save-success-dialog > button:hover {
+  background: #1f5da7;
+}
+
+.save-success-dialog > button:focus-visible {
+  outline: 2px solid #174f91;
+  outline-offset: 3px;
+}

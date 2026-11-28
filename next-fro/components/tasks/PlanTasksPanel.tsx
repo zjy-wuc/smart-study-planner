@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { messages } from "@/messages";
+import { SaveSuccessDialog } from "@/components/ui/SaveSuccessDialog";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { Ellipsis, RefreshCw, Trash2 } from "lucide-react";
 
 import {
   listPlanTasks,
@@ -14,6 +17,7 @@ import {
 
 import { ApiError } from "@/lib/api/client";
 import { getBusinessToday } from "@/lib/plans/business-date";
+import { isSettledNumericTask } from "@/lib/tasks/today-presentation";
 
 import type { PlanStatus } from "@/types/plan";
 import type {
@@ -22,6 +26,7 @@ import type {
   StudyRecord,
   ActiveTaskUpdate,
 } from "@/types/task";
+import "@/components/css/PlanTasks.css";
 
 type Props = {
   planId: number;
@@ -65,6 +70,7 @@ export function PlanTasksPanel({
 
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   // 编辑未来任务
   const [editing, setEditing] = useState<DailyTask | null>(null);
@@ -203,7 +209,7 @@ export function PlanTasksPanel({
       await updateFutureTask(editing.id, payload);
 
       setEditing(null);
-      setNotice(messages.tasks.futureUpdated);
+      setSaveMessage(messages.tasks.futureUpdated);
       reload();
     } catch (err) {
       handleError(err);
@@ -283,44 +289,46 @@ export function PlanTasksPanel({
   ).sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <section className="space-y-5 rounded border p-5">
-      <div className="flex items-center justify-between">
+    <section id="plan-tasks" className="plan-task-panel plan-detail-anchor">
+      <header className="plan-task-header">
         <div>
-          <h2 className="text-xl font-semibold">{messages.tasks.planTitle}</h2>
-          <p className="text-sm text-slate-500">{messages.tasks.planDescription}</p>
+          <h2>{messages.tasks.planTitle}</h2>
+          <p>{messages.tasks.planDescription}</p>
         </div>
-
-        <button
-          type="button"
-          onClick={reload}
-          disabled={loading || busy}
-        >{messages.common.refresh}</button>
-      </div>
+        <div className="plan-task-header-actions">
+          <Link href={`/history?plan_id=${planId}`}>{messages.history.viewFull}</Link>
+          <button
+            type="button"
+            onClick={reload}
+            disabled={loading || busy}
+          ><RefreshCw size={16} aria-hidden="true" />{messages.common.refresh}</button>
+        </div>
+      </header>
 
       {error && (
-        <p role="alert" className="text-red-700">
+        <p role="alert" className="plan-task-error">
           {error}
         </p>
       )}
 
       {notice && (
-        <p role="status" className="text-green-700">
+        <p role="status" className="plan-task-notice">
           {notice}
         </p>
       )}
 
       {loading ? (
-        <p>{messages.tasks.loading}</p>
+        <p className="plan-task-empty">{messages.tasks.loading}</p>
       ) : tasks.length === 0 ? (
-        <p>{messages.tasks.emptyPlan}</p>
+        <p className="plan-task-empty">{messages.tasks.emptyPlan}</p>
       ) : (
-        <div className="space-y-6">
-          <p>{messages.tasks.validCount(tasks.length)}</p>
+        <div className="plan-task-body">
+          <p className="plan-task-count">{messages.tasks.validCount(tasks.length)}</p>
 
           {groupedTasks.map(([date, dayTasks]) => (
-            <section key={date} className="space-y-3">
-              <h3 className="font-semibold">{date}</h3>
-
+            <section key={date} className="plan-task-day">
+              <header><h3>{date}</h3><span>{messages.plans.previewTaskCount(dayTasks.length)}</span></header>
+              <div className="plan-task-list">
               {dayTasks.map((task) => {
                 const canEdit =
                   planStatus === "ACTIVE" &&
@@ -329,68 +337,57 @@ export function PlanTasksPanel({
                   task.status === "PENDING";
 
                 return (
-                  <article
-                    key={task.id}
-                    className="rounded border p-4"
-                  >
-                    <div className="flex flex-wrap justify-between gap-3">
-                      <div>
-                        <p className="font-medium">
-                          {task.content || task.step_name}
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          {task.step_name}
-                          {" · "}
-                          {task.task_type}
-                        </p>
-                        <p className="text-sm">
-                          {statusNames[task.status]}
-                        </p>
-
-                        {task.task_type === "NUMERIC" && (
-                          <p className="text-sm">
-                            {messages.tasks.originalQuantitySummary(task.actual_quantity, task.target_quantity ?? 0)}
-                          </p>
-                        )}
+                  <article key={task.id} className="plan-task-row">
+                    <div className="plan-task-row-main">
+                      <div className="plan-task-identity">
+                        <strong>{task.content || task.step_name}</strong>
+                        <small>{task.content && task.content !== task.step_name && <>{task.step_name} · </>}{task.task_type === "NUMERIC" ? messages.tasks.numericType : messages.tasks.booleanType}</small>
                       </div>
-
-                      <div className="flex flex-wrap gap-3 text-sm">
+                      <span className="plan-task-status" data-status={isSettledNumericTask(task) ? "SETTLED" : task.status}>
+                        {isSettledNumericTask(task) ? messages.plans.previewSettled : statusNames[task.status]}
+                      </span>
+                      <div className="plan-task-measure">
+                        {task.task_type === "NUMERIC" && <>
+                          <span>{messages.tasks.originalQuantitySummary(task.actual_quantity, task.target_quantity ?? 0)}</span>
+                          <span className="plan-task-progress" aria-hidden="true"><span style={{ width: `${task.target_quantity && task.target_quantity > 0 ? Math.min(100, task.actual_quantity / task.target_quantity * 100) : 0}%` }} /></span>
+                        </>}
+                      </div>
+                      <div className="plan-task-actions">
                         {canEdit && (
                           <button
                             type="button"
                             disabled={busy}
                             onClick={() => void beginEdit(task)}
-                            className="text-blue-700"
                           >{messages.tasks.editFuture}</button>
                         )}
 
                         <button
                           type="button"
+                          aria-expanded={historyTaskId === task.id}
+                          aria-controls={historyTaskId === task.id ? `plan-task-history-${task.id}` : undefined}
                           onClick={() =>
                             void toggleHistory(task.id)
                           }
-                          className="text-blue-700"
                         >
                           {historyTaskId === task.id
                             ? messages.history.collapse
-                            : messages.navigation.history}
+                            : messages.history.view}
                         </button>
 
                         {planStatus === "ACTIVE" && (
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() =>
-                              void handleDelete(task)
-                            }
-                            className="text-red-700"
-                          >{messages.common.delete}</button>
+                          <details className="plan-task-more">
+                            <summary aria-label={messages.plans.moreActions}><Ellipsis size={18} aria-hidden="true" /></summary>
+                            <button type="button" disabled={busy} onClick={(event) => {
+                              event.currentTarget.closest("details")?.removeAttribute("open");
+                              void handleDelete(task);
+                            }}><Trash2 size={15} aria-hidden="true" />{messages.common.delete}</button>
+                          </details>
                         )}
                       </div>
                     </div>
 
                     {historyTaskId === task.id && (
-                      <div className="mt-3 border-t pt-3">
+                      <div id={`plan-task-history-${task.id}`} className="plan-task-history">
                         {historyLoading ? (
                           <p>{messages.history.fetching}</p>
                         ) : historyError ? (
@@ -398,9 +395,9 @@ export function PlanTasksPanel({
                         ) : records.length === 0 ? (
                           <p>{messages.history.emptyRecords}</p>
                         ) : (
-                          <ul className="space-y-2">
+                          <ul>
                             {records.map((record) => (
-                              <li key={record.id} className="text-sm">
+                              <li key={record.id}>
                                 {record.event_type ===
                                 "BOOLEAN_COMPLETE"
                                   ? messages.tasks.booleanCheckin
@@ -413,56 +410,27 @@ export function PlanTasksPanel({
                         )}
                       </div>
                     )}
+                    {editing?.id === task.id && (
+                      <div className="plan-task-edit">
+                        <h4>{messages.tasks.editFutureTitle(editing.step_name)}</h4>
+                        <label htmlFor={`future-edit-${task.id}`}>{editing.task_type === "BOOLEAN" ? messages.tasks.content : messages.tasks.newTarget}</label>
+                        <input id={`future-edit-${task.id}`} type="text" value={editText} disabled={busy} onChange={(event) => setEditText(event.target.value)} />
+                        {editing.task_type === "NUMERIC" && <p>{messages.tasks.minimumTargetHint}</p>}
+                        <div>
+                          <button type="button" disabled={busy} onClick={() => void saveEdit()}>{messages.common.saveChanges}</button>
+                          <button type="button" disabled={busy} onClick={() => setEditing(null)}>{messages.common.cancel}</button>
+                        </div>
+                      </div>
+                    )}
                   </article>
                 );
               })}
+              </div>
             </section>
           ))}
         </div>
       )}
-
-      {editing && (
-        <div className="space-y-3 rounded border p-4">
-          <h3 className="font-semibold">{messages.tasks.editFutureTitle(editing.step_name)}
-          </h3>
-
-          <p className="text-sm">{messages.tasks.dateText(editing.task_date)}
-          </p>
-
-          <label htmlFor="future-edit" className="block">
-            {editing.task_type === "BOOLEAN"
-              ? messages.tasks.content
-              : messages.tasks.newTarget}
-          </label>
-
-          <input
-            id="future-edit"
-            type="text"
-            value={editText}
-            disabled={busy}
-            onChange={(event) =>
-              setEditText(event.target.value)
-            }
-            className="w-full rounded border p-2"
-          />
-
-          <p className="text-sm text-slate-500">{messages.tasks.minimumTargetHint}</p>
-
-          <div className="flex gap-3">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void saveEdit()}
-              className="text-blue-700"
-            >{messages.common.saveChanges}</button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setEditing(null)}
-            >{messages.common.cancel}</button>
-          </div>
-        </div>
-      )}
+      <SaveSuccessDialog message={saveMessage} onClose={() => setSaveMessage(null)} />
     </section>
   );
 }

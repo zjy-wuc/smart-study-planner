@@ -7,6 +7,7 @@ import { ArrowLeft, Check } from "lucide-react";
 
 import { ActiveStepManager } from "@/components/plans/ActiveStepManager";
 import { StepTreeEditor } from "@/components/plans/StepTreeEditor";
+import { SaveSuccessDialog } from "@/components/ui/SaveSuccessDialog";
 import { PlanWorkflowNav } from "@/components/plans/PlanWorkflowNav";
 import { messages } from "@/messages";
 import { getPlan } from "@/services/plans.service";
@@ -121,7 +122,6 @@ export default function PlanStepsPage() {
         <small>{messages.plans.period(plan.start_date, plan.end_date)}</small>
       </div>}
 
-      {notice && <p role="status" className="plan-detail-notice">{notice}</p>}
       {error && <p role="alert" className="plan-detail-error">{error}</p>}
 
       {plan.status === "ACTIVE" ? (
@@ -136,6 +136,7 @@ export default function PlanStepsPage() {
           </Link>
         </footer>
       )}
+      <SaveSuccessDialog message={notice} onClose={() => setNotice(null)} />
     </div>
   );
 }

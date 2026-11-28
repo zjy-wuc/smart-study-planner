@@ -179,7 +179,7 @@ export function PlanForm({
     >
       {error && <div role="alert" className="plan-form-error">{error}</div>}
 
-      <p className="plan-form-draft-note">{messages.plans.draftExplanation}</p>
+      <p className="plan-form-draft-note">{initialPlan?.status === "ACTIVE" ? messages.plans.activeEditExplanation : messages.plans.draftExplanation}</p>
 
       <fieldset disabled={submitting}>
       <div className="plan-form-field">

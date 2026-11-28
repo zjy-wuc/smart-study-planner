@@ -5,7 +5,7 @@ import { messages } from "@/messages";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Ellipsis, Play, Trash2 } from "lucide-react";
+import { ArrowRight, ChevronDown, Ellipsis, Play, Trash2 } from "lucide-react";
 
 import { DraftScheduleEditor } from
   "@/components/plans/DraftScheduleEditor";
@@ -13,6 +13,7 @@ import { DraftScheduleEditor } from
 import { startPlan } from "@/services/plans.service";
 
 import { PlanForm } from "@/components/plans/PlanForm";
+import { SaveSuccessDialog } from "@/components/ui/SaveSuccessDialog";
 import { PlanWorkflowNav, useDraftPlanView } from "@/components/plans/PlanWorkflowNav";
 import { StepTreeEditor } from "@/components/plans/StepTreeEditor";
 import {
@@ -60,6 +61,7 @@ export default function PlanDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [notice, setNotice] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [draftDirty, setDraftDirty] = useState(false);
   const [managing, setManaging] = useState(false);
@@ -223,6 +225,7 @@ function handlePlanEnded(result: EndPlanResult) {
     }
 
     setNotice(null);
+    setSaveMessage(null);
 
     const data: PlanUpdate = {
       name: values.name,
@@ -242,7 +245,7 @@ function handlePlanEnded(result: EndPlanResult) {
     const updated = await getPlan(planId);
 
     setPlan(updated);
-    setNotice(messages.plans.updateSuccess);
+    setSaveMessage(messages.plans.updateSuccess);
   }
 
 
@@ -381,7 +384,7 @@ function handlePlanEnded(result: EndPlanResult) {
   }
 
   return (
-    <div className="plan-detail-page">
+    <div className="plan-detail-page plan-manage-page">
       <div className="plan-detail-navigation">
         <Link href="/plans">{messages.plans.backToMyPlans}</Link>
         <button type="button" onClick={() => setManaging(false)}>
@@ -394,11 +397,19 @@ function handlePlanEnded(result: EndPlanResult) {
           <h1 className="text-2xl font-bold">
             {plan.name}
           </h1>
-
-          <p className="mt-2 text-slate-500">{messages.plans.statusText(statusLabels[plan.status])}
-          </p>
+          <div className="plan-detail-meta">
+            <span data-status={plan.status}>{statusLabels[plan.status]}</span>
+            <span>{messages.plans.period(plan.start_date, plan.end_date)}</span>
+          </div>
         </div>
       </div>
+
+      <nav className="plan-detail-section-nav" aria-label={messages.plans.manageSections}>
+        {plan.status !== "ENDED" && <a href="#plan-basic">{messages.plans.workflowBasic}</a>}
+        <a href="#plan-steps">{messages.plans.workflowSteps}</a>
+        <a href="#plan-tasks">{messages.tasks.planTitle}</a>
+        <a href="#plan-management">{messages.plans.actionTitle}</a>
+      </nav>
 
 
       {notice && <p role="status" className="plan-detail-notice">{notice}</p>}
@@ -430,21 +441,7 @@ function handlePlanEnded(result: EndPlanResult) {
         </>
       )}
 
-      <section id="plan-actions" className="plan-detail-action-card plan-detail-anchor" aria-labelledby="plan-action-title">
-        <div className="plan-detail-action-copy">
-          <span data-status={plan.status}>{statusLabels[plan.status]}</span>
-          <h2 id="plan-action-title">{messages.plans.actionTitle}</h2>
-          <p>{plan.status === "ACTIVE" ? messages.plans.actionActiveDescription : messages.plans.actionEndedDescription}</p>
-        </div>
-
-        <div className="plan-detail-action-buttons">
-          <button type="button" disabled={deleting} onClick={handleDelete} className="plan-detail-delete-button">
-            <Trash2 size={17} aria-hidden="true" />
-            {deleting ? messages.common.deleting : messages.plans.delete}
-          </button>
-        </div>
-      </section>
-
+<div id="plan-steps" className="plan-detail-anchor">
 {plan.status === "ACTIVE" ? (
   <ActiveStepManager
     plan={plan}
@@ -462,6 +459,7 @@ function handlePlanEnded(result: EndPlanResult) {
     }
   />
 )}
+</div>
 
 
   <PlanTasksPanel
@@ -471,12 +469,21 @@ function handlePlanEnded(result: EndPlanResult) {
   />
 
 
-{plan.status === "ACTIVE" && (
-  <PlanLifecyclePanel
-    plan={plan}
-    onEnded={handlePlanEnded}
-  />
-)}
+      <details id="plan-management" className="plan-detail-management plan-detail-anchor">
+        <summary>
+          <span>{messages.plans.actionTitle}</span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </summary>
+        <div className="plan-detail-management-body">
+          {plan.status === "ACTIVE" && <PlanLifecyclePanel plan={plan} onEnded={handlePlanEnded} />}
+          <button type="button" disabled={deleting} onClick={handleDelete} className="plan-detail-delete-button">
+            <Trash2 size={17} aria-hidden="true" />
+            {deleting ? messages.common.deleting : messages.plans.delete}
+          </button>
+        </div>
+      </details>
+
+      <SaveSuccessDialog message={saveMessage} onClose={() => setSaveMessage(null)} />
 
     </div>
   );

@@ -7,7 +7,7 @@ import { MessageCircle } from "lucide-react";
 import { messages } from "@/messages";
 import { aiPractice } from "@/messages/zh-CN/ai-practice";
 import { useKnowledgeAction, useKnowledgeQuery } from "@/hooks/useKnowledge";
-import { addReview, createNote, deleteNote, getNote, getReviews, updateNote } from "@/services/knowledge.service";
+import { createNote, deleteNote, getNote, updateNote } from "@/services/knowledge.service";
 import { listPlans } from "@/services/plans.service";
 import { getPlanSteps } from "@/services/steps.service";
 import { knowledgeChanges, knowledgeLeaves, parseKnowledgeTags } from "@/lib/knowledge";
@@ -17,6 +17,7 @@ import type { KnowledgeAiDraft } from "@/types/knowledge-ai";
 import { KnowledgeAiPanel } from "./KnowledgeAiPanel";
 import { KnowledgeQaPanel } from "./KnowledgeQaPanel";
 import { KnowledgeMarkdownPreview } from "./KnowledgeMarkdownPreview";
+import { SaveSuccessDialog } from "@/components/ui/SaveSuccessDialog";
 import "@/components/css/Knowledge.css";
 
 const m = messages.knowledge;
@@ -45,23 +46,6 @@ export function KnowledgeEditorPage({ noteId }: { noteId: number }) {
   /> : null;
 }
 
-function ReviewHistory({ noteId }: { noteId: number }) {
-  const load = useCallback(() => getReviews(noteId), [noteId]);
-  const history = useKnowledgeQuery(load);
-  const action = useKnowledgeAction();
-  return <section className="knowledge-review">
-    <div className="knowledge-heading"><h2>{m.reviewHistory}</h2><button className="knowledge-primary" disabled={action.busy} onClick={() => void action.run(async () => { await addReview(noteId); history.refresh(); }, m.reviewSaved)}>{action.busy ? m.saving : m.review}</button></div>
-    {action.error && <p role="alert" className="knowledge-error">{action.error}</p>}
-    {action.notice && <p role="status" className="knowledge-success">{action.notice}</p>}
-    {history.loading ? <p role="status">{m.loading}</p> : history.error ? <p role="alert" className="knowledge-error">{history.error} {action.notice && m.reviewRefreshFailed} <button onClick={history.refresh}>{m.retry}</button></p> : <>
-      <p>{m.reviewCount(history.data?.length ?? 0)}</p>
-      {!!history.data?.length && <p>{m.latestReview}：{history.data[0].reviewed_at.replace("T", " ")}</p>}
-      <p className="knowledge-meta">{m.timeHint}</p>
-      {history.data?.length === 0 ? <p>{m.noReviews}</p> : <ol>{history.data?.map((record) => <li key={record.id}><time>{record.reviewed_at.replace("T", " ")}</time></li>)}</ol>}
-    </>}
-  </section>;
-}
-
 export function KnowledgeEditor({
   initial,
   qaStaleNotice = "",
@@ -84,6 +68,7 @@ export function KnowledgeEditor({
   const [aiNotice, setAiNotice] = useState(transfer.draft ? m.ai.applied : "");
   const [qaOpen, setQaOpen] = useState(false);
   const [qaVersion, setQaVersion] = useState(0);
+  const [savedNoteId, setSavedNoteId] = useState<number | null>(null);
   const [tab, setTab] = useState("edit");
   const action = useKnowledgeAction();
   const plans = useKnowledgeQuery(listPlans);
@@ -143,7 +128,7 @@ export function KnowledgeEditor({
       setBaseline(result);
       setTags(result.tags.join(", "));
       if (savedSourceChanged) setQaVersion((version) => version + 1);
-      if (!initial) router.replace(`/knowledge/${result.id}`);
+      setSavedNoteId(result.id);
     }, m.saved);
   }
 
@@ -167,12 +152,11 @@ export function KnowledgeEditor({
       {initial && <Link href={`/ai/practice?note_id=${initial.id}`}>{aiPractice.practice}</Link>}
       {initial && <Link href={`/ai/practice/history?note_id=${initial.id}`}>{aiPractice.history}</Link>}
       {initial && <button type="button" className="knowledge-qa-open" onClick={() => setQaOpen(true)}><MessageCircle size={16} aria-hidden="true" />{m.qa.open}</button>}
-      <Link href="/knowledge">{m.back}</Link>
+      <Link href={initial ? `/knowledge/${initial.id}` : "/knowledge"}>{initial ? m.backToNote : m.back}</Link>
     </div></header>
     {transfer.expired && <p role="alert" className="knowledge-error">{m.ai.draftExpired}</p>}
     {aiNotice && <p role="status" className="knowledge-success">{aiNotice}</p>}
     {action.error && <p role="alert" className="knowledge-error">{action.error}</p>}
-    {action.notice && <p role="status" className="knowledge-success">{action.notice}</p>}
     <div className="knowledge-qa-layout" data-open={qaOpen}>
     <div className="knowledge-workspace">
     <main>
@@ -222,12 +206,11 @@ export function KnowledgeEditor({
             void action.run(async () => { await deleteNote(initial.id); skipGuard.current = true; router.replace("/knowledge/trash"); }, m.deleted);
           }}>{m.delete}</button>}
           {dirty && <span className="knowledge-meta">{m.unsaved}</span>}
-          <Link className="knowledge-note-cancel" href="/knowledge">{m.cancel}</Link>
+          <Link className="knowledge-note-cancel" href={initial ? `/knowledge/${initial.id}` : "/knowledge"}>{m.cancel}</Link>
           <button className="knowledge-primary" type="submit">{action.busy ? m.saving : m.save}</button>
         </div>
       </fieldset>
     </form>
-    {initial && <ReviewHistory noteId={initial.id} />}
     </main>
     <KnowledgeAiPanel noteId={initial?.id} dirty={dirty} onApply={applyAiDraft} />
     </div>
@@ -243,5 +226,13 @@ export function KnowledgeEditor({
       onClose={() => setQaOpen(false)}
     />}
     </div>
+    <SaveSuccessDialog
+      message={savedNoteId === null ? null : m.saved}
+      onClose={() => {
+        if (savedNoteId === null) return;
+        if (!initial) router.replace(`/knowledge/${savedNoteId}`);
+        setSavedNoteId(null);
+      }}
+    />
   </div>;
 }

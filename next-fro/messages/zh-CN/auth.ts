@@ -29,7 +29,7 @@ export const auth = {
   register: "注册",
   hasAccount: "已有账号？ ",
   backToLogin: "返回登录",
-  email: "邮箱", emailPlaceholder: "请输入邮箱地址", emailCode: "邮箱验证码", codePlaceholder: "请输入 6 位验证码", sendCode: "发送验证码", codeSent: "验证码已发送，请检查邮箱。", codeFailed: "验证码发送失败", resendIn: (seconds: number) => `${seconds} 秒后重发`, optional: "可选",
+  email: "邮箱", emailPlaceholder: "请输入邮箱地址", emailCode: "邮箱验证码", codePlaceholder: "请输入 6 位验证码", sendCode: "发送验证码", codeSent: "如果邮箱符合当前操作条件，验证码会发送至邮箱，请检查收件箱和垃圾邮件。", loginCodeRequested: "如果邮箱已注册，验证码会发送至邮箱；没有账号请先注册。", codeFailed: "验证码发送失败", resendIn: (seconds: number) => `${seconds} 秒后重发`, optional: "可选",
   loginMode: "登录方式", usernameLogin: "用户名密码", emailPasswordLogin: "邮箱密码", emailCodeLogin: "邮箱验证码", forgotPassword: "忘记密码",
   newPassword: "新密码", confirmPassword: "确认新密码", passwordMismatch: "两次输入的密码不一致", resetPassword: "重置密码", resetting: "正在重置…", resetSuccess: "密码已重置，请重新登录。", resetFailed: "密码重置失败",
   newPasswordPlaceholder: "请输入新密码（至少 8 位）", confirmPasswordPlaceholder: "请再次输入新密码",

@@ -1,6 +1,6 @@
 export const knowledge = {
   title: "知识中心", description: "记录所学，也为下一次复习留下线索。",
-  create: "创建笔记", edit: "编辑笔记", trash: "回收站", back: "返回知识中心",
+  create: "创建笔记", edit: "编辑笔记", view: "查看笔记", trash: "回收站", back: "返回知识中心", backToNote: "返回笔记",
   search: "搜索标题或正文", tagFilter: "标签精确筛选", planFilter: "筛选关联计划", allPlans: "全部计划",
   apply: "搜索与筛选", reset: "重置筛选", empty: "还没有知识笔记，创建第一篇吧。",
   noResults: "没有找到匹配的笔记，请调整筛选条件。", emptyTrash: "回收站为空。",

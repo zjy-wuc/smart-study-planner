@@ -78,7 +78,8 @@
 .today-task-state { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 9px; font-size: 13px; }
 .today-task-state strong { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .today-task-actions { justify-content: flex-end; }
-.workspace-app .today-task-actions .task-action-input { width: 70px; min-height: 38px; padding: 6px 8px; }
+.workspace-app .today-task-actions .task-action-input { width: 88px; min-height: 38px; padding: 6px 8px; }
+.workspace-app .today-task-actions .task-action-input::placeholder { color: #526b83; opacity: 1; }
 .workspace-app .today-task-actions .workspace-button--primary { background: #2867ce; min-height: 38px; }
 .workspace-app .today-task-actions .workspace-button--primary:hover:not(:disabled) { background: #1b54b1; }
 .workspace-app .today-task-actions .checkin-success-text { color: #26734e; }

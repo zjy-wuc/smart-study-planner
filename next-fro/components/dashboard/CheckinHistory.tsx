@@ -49,7 +49,7 @@ function HistoryItem({ task }: { task: DailyTask }) {
 export function CheckinHistory({ tasks }: { tasks: DailyTask[] }) {
   return (
     <section className="workspace-panel dashboard-history" aria-labelledby="history-heading">
-      <div className="workspace-section-heading"><div className="workspace-section-title"><div><h2 id="history-heading">{messages.navigation.history}</h2><p>{messages.history.todayDescription}</p></div></div></div>
+      <div className="workspace-section-heading"><div className="workspace-section-title"><div><h2 id="history-heading">{messages.history.recordsTitle}</h2><p>{messages.history.todayDescription}</p></div></div></div>
       {tasks.length === 0 ? <p className="workspace-empty-state">{messages.history.emptyToday}</p> : <ul>{tasks.map((task) => <HistoryItem key={task.id} task={task} />)}</ul>}
     </section>
   );

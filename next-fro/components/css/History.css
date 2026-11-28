@@ -32,6 +32,134 @@
   cursor: pointer;
 }
 
+.workspace-app .history-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.workspace-app .history-tabs button {
+  padding: 9px 15px;
+  border: 1px solid #dceaf3;
+  border-radius: 9px;
+  color: #45647c;
+  background: #fff;
+  cursor: pointer;
+}
+
+.workspace-app .history-tabs button[aria-current="page"] {
+  border-color: #95c0e8;
+  color: #205aa0;
+  background: #eaf4ff;
+  font-weight: 650;
+}
+
+.workspace-app .history-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  margin-bottom: 18px;
+}
+
+.workspace-app .history-toolbar .history-filters {
+  margin: 0;
+}
+
+.workspace-app .history-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #526b83;
+  font-size: 13px;
+}
+
+.workspace-app .history-toolbar select {
+  max-width: 220px;
+  padding: 8px;
+  border: 1px solid #d5e8f2;
+  border-radius: 8px;
+  color: #24455c;
+  background: #fff;
+}
+
+.workspace-app .history-full-link {
+  display: inline-block;
+  margin-top: 18px;
+  color: #2458a3;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.workspace-app .history-deleted-step {
+  color: #7890a5;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.workspace-app .history-secondary-panel > p {
+  margin: 8px 0 18px;
+  color: #526b83;
+  font-size: 13px;
+}
+
+.workspace-app .history-secondary-list {
+  display: grid;
+  gap: 10px;
+}
+
+.workspace-app .history-secondary-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  border: 1px solid #e0edf4;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+.workspace-app .history-secondary-list strong {
+  min-width: 180px;
+  color: #24455c;
+}
+
+.workspace-app .history-secondary-list span,
+.workspace-app .history-secondary-list time {
+  color: #526b83;
+  font-size: 13px;
+}
+
+.workspace-app .history-secondary-list span {
+  flex: 1;
+}
+
+.workspace-app .history-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  color: #526b83;
+  font-size: 13px;
+}
+
+.workspace-app .history-pagination button {
+  padding: 7px 12px;
+  border: 1px solid #d5e8f2;
+  border-radius: 8px;
+  color: #2458a3;
+  background: #fff;
+  cursor: pointer;
+}
+
+.workspace-app .history-pagination button:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
 .workspace-app .history-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);

@@ -1,6 +1,7 @@
 "use client";
 
 import { messages } from "@/messages";
+import { SaveSuccessDialog } from "@/components/ui/SaveSuccessDialog";
 
 import {
   useEffect,
@@ -422,12 +423,6 @@ export function DraftScheduleEditor({
         </p>
       )}
 
-      {notice && (
-        <p role="status" className="text-green-700">
-          {notice}
-        </p>
-      )}
-
       {(
         <>
           <div>
@@ -572,6 +567,7 @@ export function DraftScheduleEditor({
           </button>
         </>
       )}
+      <SaveSuccessDialog message={notice} onClose={() => setNotice(null)} />
     </section>
   );
 }

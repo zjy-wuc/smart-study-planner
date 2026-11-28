@@ -296,7 +296,44 @@
   cursor: wait;
 }
 
+.plan-manage-page .plan-form fieldset {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  align-items: start;
+  gap: 18px 22px;
+  padding: 22px;
+}
+
+.plan-manage-page .plan-form-textarea {
+  min-height: 76px;
+}
+
+.plan-manage-page .plan-form-period,
+.plan-manage-page .plan-form-locked-note {
+  grid-column: 1 / -1;
+}
+
+.plan-manage-page .plan-form-period {
+  padding-top: 16px;
+}
+
+.plan-manage-page .plan-form-period-heading p,
+.plan-manage-page .plan-form-duration {
+  margin-top: 6px;
+}
+
+.plan-manage-page .plan-form-date-grid {
+  margin-top: 12px;
+}
+
+.plan-manage-page .plan-form-actions {
+  padding: 14px 22px;
+}
+
 @media (max-width: 640px) {
+  .plan-manage-page .plan-form fieldset {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .plan-form fieldset,
   .plan-form-actions {
     padding-inline: 20px;

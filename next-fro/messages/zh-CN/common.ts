@@ -17,6 +17,8 @@ export const common = {
   refresh: "刷新",
   statusActive: "进行中",
   saveChanges: "保存修改",
+  saveSuccessDescription: "已保存，你可以继续操作。",
+  continue: "继续",
   deleting: "正在删除...",
   refreshing: "刷新中...",
   refreshData: "刷新数据",

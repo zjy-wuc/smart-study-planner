@@ -3,7 +3,7 @@ export const navigation = {
   dailyGroup: "日常学习",
   reviewGroup: "学习回顾",
   toggleMenu: "展开或收起导航",
-  history: "打卡历史",
+  history: "学习记录",
   loadingWorkspace: "正在加载工作台...",
   plans: "我的计划",
   backHome: "返回首页",

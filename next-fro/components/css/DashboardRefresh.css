@@ -200,10 +200,15 @@
 }
 
 .workspace-refresh .dashboard-refresh .dashboard-checkin input {
-  width: 66px;
+  width: 88px;
   text-align: center;
   border-color: #dae4ef;
   font-variant-numeric: tabular-nums;
+}
+
+.workspace-refresh .dashboard-refresh .dashboard-checkin input::placeholder {
+  color: #526b83;
+  opacity: 1;
 }
 
 .workspace-refresh .dashboard-refresh .dashboard-checkin-label {

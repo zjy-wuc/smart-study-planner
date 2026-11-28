@@ -6,6 +6,17 @@
 
 .knowledge-page h1 { font-size: 26px; font-weight: 650; }
 .knowledge-page h2 { font-size: 18px; font-weight: 600; }
+.knowledge-detail-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-bottom: 24px; }
+.knowledge-detail-heading h1 { margin: 14px 0 8px; overflow-wrap: anywhere; }
+.knowledge-detail-back { color: #345d8c; text-underline-offset: 3px; }
+.knowledge-detail-heading .knowledge-tags { margin-top: 14px; }
+.knowledge-detail-actions { justify-content: flex-end; }
+.knowledge-detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 20px; }
+.knowledge-detail-content { min-width: 0; min-height: 360px; padding: 28px 32px; border: 1px solid #e6edf4; border-radius: 16px; background: #fff; }
+.knowledge-detail-content .knowledge-markdown > :first-child { margin-top: 0; }
+.knowledge-detail-page .knowledge-review { position: sticky; top: 20px; }
+.knowledge-detail-page .knowledge-review h2 { margin: 0 0 18px; }
+.knowledge-detail-page .knowledge-review-action { width: 100%; margin-top: 18px; }
 .knowledge-heading, .knowledge-actions, .knowledge-pagination {
   display: flex;
   align-items: center;
@@ -83,9 +94,10 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.knowledge-card { display: flex; flex-direction: column; gap: 14px; transition: border-color 150ms; }
+.knowledge-card { position: relative; display: flex; flex-direction: column; gap: 14px; transition: border-color 150ms; }
 .knowledge-card:hover { border-color: #9cbce8; }
-.knowledge-card .knowledge-actions { margin-top: auto; }
+.knowledge-card h2 a::after { position: absolute; inset: 0; content: ""; }
+.knowledge-card .knowledge-actions { position: relative; z-index: 1; margin-top: auto; }
 .knowledge-excerpt { color: #617287; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .knowledge-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .knowledge-tags span { padding: 3px 8px; background: #edf4ff; color: #426a9c; border-radius: 5px; font-size: 12px; }
@@ -255,6 +267,10 @@
 }
 @media (max-width: 700px) {
   .knowledge-cards, .knowledge-filters { grid-template-columns: minmax(0, 1fr); }
+  .knowledge-detail-layout { grid-template-columns: minmax(0, 1fr); }
+  .knowledge-detail-content { min-height: 240px; padding: 20px; }
+  .knowledge-detail-page .knowledge-review { position: static; }
+  .knowledge-detail-actions { justify-content: flex-start; }
   .knowledge-filter-actions { grid-column: auto; }
   .knowledge-filter-actions button { flex: 1; }
 }

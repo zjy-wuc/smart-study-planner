@@ -26,6 +26,7 @@ import {
 import { useAdminPoll } from "@/hooks/useAdminPoll";
 import type { AIConfig } from "@/types/admin";
 import { messages } from "@/messages";
+import { SaveSuccessDialog } from "@/components/ui/SaveSuccessDialog";
 
 const m = messages.admin;
 
@@ -39,6 +40,7 @@ export function AdminAI() {
   const [config, setConfig] = useState<AIConfig | null>(null);
   const [configError, setConfigError] = useState("");
   const [notice, setNotice] = useState("");
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [userLimit, setUserLimit] = useState("");
@@ -119,7 +121,8 @@ export function AdminAI() {
     try {
       const updated = await updateAdminAIConfig(changes);
       setConfig(updated);
-      setNotice(updated.changed ? m.configSaved : m.configUnchanged);
+      setNotice(updated.changed ? "" : m.configUnchanged);
+      if (updated.changed) setSaveMessage(m.configSaved);
       setEditing(false);
       setReason("");
       void refresh();
@@ -457,6 +460,7 @@ export function AdminAI() {
           </form>
         </DialogContent>
       </Dialog>
+      <SaveSuccessDialog message={saveMessage} onClose={() => setSaveMessage(null)} />
     </div>
   );
 }

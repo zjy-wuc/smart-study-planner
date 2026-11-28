@@ -71,7 +71,7 @@ export function KnowledgeNoteList({ trash = false }: { trash?: boolean }) {
             <div className="knowledge-tags">{note.tags.map((value) => <span key={value}>{value}</span>)}</div>
             {!trash && <p className="knowledge-meta">{m.plan}：{note.plan_id === null ? m.unattached : plans.data?.find((item) => item.id === note.plan_id)?.name ?? m.unavailable}</p>}
             <p className="knowledge-meta">{trash ? m.deletedAt : m.updated}：<time>{(trash ? note.deleted_at : note.updated_at)?.replace("T", " ")}</time></p>
-            <div className="knowledge-actions">{!trash && <Link href={`/knowledge/${note.id}`}>{m.edit}</Link>}
+            <div className="knowledge-actions">{!trash && <Link href={`/knowledge/${note.id}`}>{m.view}</Link>}
               <button type="button" disabled={action.busy} onClick={() => void mutate(note.id)}>{action.busy ? m.saving : trash ? m.restore : m.delete}</button>
             </div>
           </article>)}

@@ -43,6 +43,7 @@ import { API_BASE_URL } from "@/lib/api/client";
 import { messages } from "@/messages";
 import type { LoginSession } from "@/types/auth";
 import { LandscapeScene } from "@/components/common/LandscapeScene";
+import { SaveSuccessDialog } from "@/components/ui/SaveSuccessDialog";
 import "@/components/css/Profile.css";
 import "@/components/css/ProfileAuth.css";
 
@@ -91,6 +92,7 @@ export default function UserProfile() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [message, setMessage] = useState("");
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [codeCooldown, setCodeCooldown] = useState({ old: 0, next: 0 });
 
@@ -125,13 +127,14 @@ export default function UserProfile() {
     };
   }, [page]);
 
-  async function run(work: () => Promise<unknown>, success: string) {
+  async function run(work: () => Promise<unknown>, success: string, showSaveDialog = false) {
     if (busy) return;
     setBusy(true);
     setMessage("");
     try {
       await work();
       setMessage(success);
+      if (showSaveDialog) setSaveMessage(success);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : p.loadFailed);
     } finally {
@@ -192,6 +195,7 @@ export default function UserProfile() {
         new_password: newPassword,
       });
       setSecuritySuccess(p.passwordChanged);
+      setSaveMessage(p.passwordChanged);
       setSecurityDialog(null);
       clearSecurityForm();
     } catch (error) {
@@ -240,6 +244,7 @@ export default function UserProfile() {
       });
       await refreshUser();
       setSecuritySuccess(p.emailChanged);
+      setSaveMessage(p.emailChanged);
       setSecurityDialog(null);
       clearSecurityForm();
     } catch (error) {
@@ -368,7 +373,7 @@ export default function UserProfile() {
                         nickname ?? user.nickname ?? "",
                       );
                       await refreshUser();
-                    }, p.nicknameSaved);
+                    }, p.nicknameSaved, true);
                 }}
               >
                 <label>
@@ -410,7 +415,7 @@ export default function UserProfile() {
                         void run(async () => {
                           await uploadAvatar(file);
                           await refreshUser();
-                        }, p.avatarSaved);
+                        }, p.avatarSaved, true);
                     }}
                   />
                 </label>
@@ -923,6 +928,7 @@ export default function UserProfile() {
           </AlertDialog.Content>
         </AlertDialog.Portal>
       </AlertDialog.Root>
+      <SaveSuccessDialog message={saveMessage} onClose={() => setSaveMessage(null)} />
     </div>
   );
 }

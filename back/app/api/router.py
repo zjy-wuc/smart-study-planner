@@ -4,7 +4,7 @@ from app.api.routes import (
     auth, system, users, plans, steps, tasks, rollovers,
     active_tasks, active_steps, progress, plan_lifecycle,
     schedules, daily_tasks, statistics, knowledge, focus,
-    knowledge_ai, ai_practice,
+    knowledge_ai, ai_practice, history,
 )
 
 from app.api.routes import admin
@@ -36,6 +36,7 @@ api_router.include_router(active_steps.router)
 # 进度与统计
 api_router.include_router(progress.router)
 api_router.include_router(statistics.router)
+api_router.include_router(history.router)
 
 # 知识笔记
 api_router.include_router(knowledge.router)
