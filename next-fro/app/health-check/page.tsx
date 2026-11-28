@@ -1,6 +1,7 @@
 "use client";
 
 import { messages } from "@/messages";
+import { resolveApiBaseUrl } from "@/lib/api/base";
 
 import { useEffect, useState } from "react";
 
@@ -13,7 +14,7 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/health`)
+    fetch(`${resolveApiBaseUrl()}/health`)
       .then((response) => {
         if (!response.ok) {
           throw new Error(messages.health.httpError(response.status));

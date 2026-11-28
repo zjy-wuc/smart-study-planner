@@ -25,12 +25,6 @@
   font-weight: 600;
 }
 
-.statistics-tabs button[data-limited="true"]:not([aria-current="page"]) {
-  min-width: 0;
-  color: #526b83;
-  background: #f2f6fa;
-}
-
 .statistics-tabs button:focus-visible { outline: 2px solid #2867ce; outline-offset: 2px; }
 
 .statistics-focus-summary {
@@ -117,41 +111,6 @@
 
 .statistics-consistency {
   padding: 28px;
-}
-
-.statistics-consistency dl {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin: 24px 0;
-}
-
-.statistics-consistency dl div {
-  padding: 20px;
-  border-radius: 11px;
-  background: #f3f7fc;
-}
-
-.statistics-consistency dt {
-  color: #687f95;
-  font-size: 12px;
-}
-
-.statistics-consistency dd {
-  margin: 8px 0 0;
-  color: #265076;
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.statistics-contract-note {
-  margin: 0;
-  padding: 14px 16px;
-  border-radius: 10px;
-  color: #567188;
-  background: #edf4fb;
-  font-size: 12px;
-  line-height: 1.8;
 }
 
 .statistics-tab-status {

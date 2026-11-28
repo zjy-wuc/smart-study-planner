@@ -24,6 +24,7 @@ function clientFor(adapter, refreshAdapter, race = {}) {
     AxiosHeaders: axios.AxiosHeaders,
   };
   new Function("require", "module", "exports", code)((name) => ({
+    "./base": { API_BASE_URL: "http://localhost:8000" },
     axios: axiosModule,
     "@/messages": { messages: { common: { httpRequestFailed: (status) => `HTTP ${status}` } } },
     "@/lib/auth/coordinator": {

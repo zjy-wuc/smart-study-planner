@@ -56,6 +56,7 @@ test("authenticated requests share one refresh and retry each request once", asy
 
   try {
     const client = load("../lib/api/client.ts", {
+      "./base": load("../lib/api/base.ts"),
       axios: { default: { create: () => ({ interceptors: { request: { use() {} }, response: { use() {} } }, post: async () => {
         refreshCalls += 1;
         await Promise.resolve();

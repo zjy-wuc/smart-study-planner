@@ -18,6 +18,8 @@ import { CheckinTrend } from
 import type { TrendDays } from "@/types/statistics";
 import { useFocusStatistics } from "@/hooks/useFocusStatistics";
 import { FocusStatisticsPanel } from "@/components/statistics/FocusStatisticsPanel";
+import { PlanConsistencyPanel } from "@/components/statistics/PlanConsistencyPanel";
+import { getBusinessToday } from "@/lib/plans/business-date";
 
 import "@/components/css/StatisticsScene.css";
 import "@/components/css/StatisticsTabs.css";
@@ -28,6 +30,7 @@ export default function StatisticsPage() {
   const [days, setDays] = useState<TrendDays>(7);
   const [tab, setTab] = useState<StatisticsTab>("CHECKIN");
   const [focusDays, setFocusDays] = useState<TrendDays>(7);
+  const [consistencyRefreshKey, setConsistencyRefreshKey] = useState(0);
 
   const {
     data,
@@ -45,6 +48,7 @@ export default function StatisticsPage() {
   function refreshAll() {
     refresh();
     calendar.refresh();
+    setConsistencyRefreshKey((value) => value + 1);
   }
 
   return (
@@ -71,7 +75,7 @@ export default function StatisticsPage() {
         </header>
 
         <nav className="statistics-tabs" aria-label={messages.statistics.categoriesLabel}>
-          {(["CHECKIN", "CONSISTENCY", "FOCUS"] as const).map((value) => <button key={value} type="button" data-limited={value === "CONSISTENCY"} aria-current={tab === value ? "page" : undefined} onClick={() => setTab(value)}>{value === "CHECKIN" ? messages.statistics.checkinTab : value === "CONSISTENCY" ? messages.statistics.consistencyTab : messages.statistics.focusTab}</button>)}
+          {(["CHECKIN", "CONSISTENCY", "FOCUS"] as const).map((value) => <button key={value} type="button" aria-current={tab === value ? "page" : undefined} onClick={() => setTab(value)}>{value === "CHECKIN" ? messages.statistics.checkinTab : value === "CONSISTENCY" ? messages.statistics.consistencyTab : messages.statistics.focusTab}</button>)}
         </nav>
 
         {tab === "CHECKIN" && loading && !visibleData && (
@@ -120,12 +124,8 @@ export default function StatisticsPage() {
           </>
         )}
 
-        {tab === "CONSISTENCY" && visibleData && (
-          <section className="statistics-consistency" aria-labelledby="consistency-title">
-            <div><h2 id="consistency-title">{messages.statistics.consistencyTitle}</h2><p>{messages.statistics.consistencySubtitle}</p></div>
-            <dl><div><dt>{messages.statistics.activePlansMetric}</dt><dd>{visibleData.plans.active_count}<small>{messages.common.plansUnit}</small></dd></div><div><dt>{messages.statistics.endedPlansMetric}</dt><dd>{visibleData.plans.ended_count}<small>{messages.common.plansUnit}</small></dd></div></dl>
-            <p className="statistics-contract-note">{messages.statistics.consistencyUnavailable}</p>
-          </section>
+        {tab === "CONSISTENCY" && (
+          <PlanConsistencyPanel today={visibleData?.as_of_date ?? getBusinessToday()} overview={visibleData?.plans ?? null} overviewError={error} refreshing={loading} refreshKey={consistencyRefreshKey} onRefresh={refreshAll} />
         )}
 
         {tab === "FOCUS" && (focusStatistics.loading && !focusStatistics.data ? <p role="status" className="statistics-tab-status">{messages.statistics.loadingFocus}</p> : focusStatistics.error && !focusStatistics.data ? <div role="alert" className="statistics-tab-status">{focusStatistics.error} <button type="button" onClick={focusStatistics.refresh}>{messages.common.retry}</button></div> : focusStatistics.data && <FocusStatisticsPanel data={focusStatistics.data} days={focusDays} onToggle={() => setFocusDays((value) => value === 7 ? 30 : 7)} disabled={focusStatistics.loading} />)}

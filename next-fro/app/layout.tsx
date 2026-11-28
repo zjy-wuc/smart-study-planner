@@ -2,6 +2,7 @@ import { locale, messages } from "@/messages";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
@@ -26,7 +27,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col"><AuthProvider>{children}</AuthProvider></body>
+      <body className="min-h-full flex flex-col">
+        <Script src="/runtime-config.js" strategy="beforeInteractive" />
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

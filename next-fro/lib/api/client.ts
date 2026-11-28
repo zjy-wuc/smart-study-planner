@@ -7,9 +7,9 @@ import {
 } from "@/lib/auth/coordinator";
 import { clearAccessToken, getAccessToken, getAuthGeneration } from "@/lib/auth/token";
 import type { ValidationIssue } from "@/types/api";
+import { API_BASE_URL } from "./base";
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+export { API_BASE_URL };
 
 type BackendError = {
   detail?: string | { code?: string; message?: string } | ValidationIssue[];
