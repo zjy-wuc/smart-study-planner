@@ -35,7 +35,7 @@ export function KnowledgeNotePreview({ noteId }: { noteId: number }) {
 
   return <div className="knowledge-page knowledge-detail-page">
     <div className="knowledge-qa-layout" data-open={qaOpen}>
-      <div className="knowledge-workspace">
+      <div className="knowledge-detail-workspace">
         <header className="knowledge-detail-heading">
           <div>
             <Link className="knowledge-detail-back" href="/knowledge">{m.back}</Link>

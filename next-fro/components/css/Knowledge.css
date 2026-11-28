@@ -6,6 +6,7 @@
 
 .knowledge-page h1 { font-size: 26px; font-weight: 650; }
 .knowledge-page h2 { font-size: 18px; font-weight: 600; }
+.knowledge-detail-workspace { min-width: 0; container: knowledge-detail / inline-size; }
 .knowledge-detail-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-bottom: 24px; }
 .knowledge-detail-heading h1 { margin: 14px 0 8px; overflow-wrap: anywhere; }
 .knowledge-detail-back { color: #345d8c; text-underline-offset: 3px; }
@@ -273,6 +274,10 @@
   .knowledge-detail-actions { justify-content: flex-start; }
   .knowledge-filter-actions { grid-column: auto; }
   .knowledge-filter-actions button { flex: 1; }
+}
+@container knowledge-detail (max-width: 760px) {
+  .knowledge-detail-layout { grid-template-columns: minmax(0, 1fr); }
+  .knowledge-detail-page .knowledge-review { position: static; }
 }
 @container knowledge-editor (max-width: 650px) {
   .knowledge-attachments, .knowledge-editor-grid { grid-template-columns: minmax(0, 1fr); }

@@ -1,5 +1,5 @@
 export const admin = {
-  brand: "Smart Study Planner · 管理后台",
+  brand: "学迹 · 管理后台",
   overview: "管理概览",
   users: "用户管理",
   ai: "AI 治理中心",

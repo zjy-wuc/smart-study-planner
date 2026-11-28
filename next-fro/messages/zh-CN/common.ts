@@ -24,7 +24,7 @@ export const common = {
   refreshData: "刷新数据",
   loadError: (error: MessageValue): string => `加载失败：${error}`,
   tryAgain: "重新尝试",
-  appName: "学习计划管理系统",
+  appName: "学迹",
   appDescription: "智能学习计划与每日任务管理",
   viewAll: "查看全部",
   savingCompact: "保存中…",

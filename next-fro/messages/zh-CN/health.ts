@@ -5,7 +5,7 @@ export const health = {
   httpError: (status: MessageValue): string =>
     `HTTP 错误：${status}`,
   connectionFailed: "连接失败",
-  title: "智能学习计划管理系统",
+  title: "学迹",
   frontend: "前端：Next.js",
   backend: "后端：Python + FastAPI",
   testTitle: "后端连接测试",

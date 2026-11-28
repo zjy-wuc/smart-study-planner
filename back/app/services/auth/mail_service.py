@@ -47,7 +47,7 @@ def send_verification_code(
     purpose_name = PURPOSE_NAMES[purpose]
 
     subject = (
-        f"Smart Study Planner - {purpose_name}验证码"
+        f"学迹 - {purpose_name}验证码"
     )
 
     content = (
@@ -57,7 +57,7 @@ def send_verification_code(
         f"{settings.EMAIL_CODE_EXPIRE_MINUTES}分钟。\n"
         f"请勿将验证码告知他人。\n\n"
         f"如果不是您本人操作，请忽略此邮件。\n\n"
-        f"Smart Study Planner"
+        f"学迹"
     )
 
     payload = {

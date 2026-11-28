@@ -17,7 +17,7 @@ from app.services.auth import activity_service
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(
-    title="智能学习计划管理系统",
+    title="学迹",
     description="学习计划与每日任务管理 API",
     version="0.1.0",
 )

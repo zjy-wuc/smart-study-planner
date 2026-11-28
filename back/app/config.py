@@ -88,7 +88,7 @@ class Settings(BaseSettings):
 
     BREVO_API_KEY: str | None = None
     MAIL_FROM_EMAIL: str | None = None
-    MAIL_FROM_NAME: str = "Smart Study Planner"
+    MAIL_FROM_NAME: str = "学迹"
 
     MAIL_TIMEOUT_SECONDS: int = Field(default=10, gt=0)#邮件延迟
 
