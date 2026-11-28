@@ -362,7 +362,11 @@
   font-size: 13px;
 }
 .admin-table-scroll {
-  overflow-x: auto;
+  max-height: min(600px, 65vh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #b9cee2 transparent;
+  scrollbar-width: thin;
 }
 .admin-table {
   width: 100%;
@@ -371,6 +375,9 @@
   font-size: 12px;
 }
 .admin-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   padding: 12px 11px;
   background: #f2f7fd;
   color: #5e7892;

@@ -2,13 +2,23 @@ from datetime import datetime, time, timedelta
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import StaticPool
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
+from app.api.routes.history import router
 from app.core.clock import business_today
+from app.core.deps import get_current_user
+from app.database import get_db
 from app.services import history_service
 
 
 def history_db():
-    engine = create_engine("sqlite://")
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     with engine.begin() as conn:
         for statement in (
             "CREATE TABLE study_plans (id INTEGER, user_id INTEGER, name TEXT, deleted_at TEXT)",
@@ -51,3 +61,45 @@ def test_review_history_preserves_deleted_note_and_checks_ownership():
         assert result["total"] == 1
         assert result["items"][0]["note_title"] == "Old note"
         assert result["items"][0]["note_deleted_at"] == "x"
+
+
+def test_checkin_route_accepts_all_display_ranges(monkeypatch):
+    seen = []
+
+    def list_checkins(db, user_id, days, plan_id, page, page_size):
+        seen.append((user_id, days, plan_id, page, page_size))
+        return {"items": [], "total": 0, "page": page, "page_size": page_size}
+
+    monkeypatch.setattr(history_service, "list_checkins", list_checkins)
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[get_current_user] = lambda: {"id": 1}
+    app.dependency_overrides[get_db] = lambda: None
+
+    with TestClient(app) as client:
+        for days in ("7", "30", "all"):
+            assert client.get("/history/checkins", params={"days": days}).status_code == 200
+        assert client.get("/history/checkins").status_code == 200
+        assert client.get("/history/checkins", params={"days": "8"}).status_code == 422
+
+    assert [item[1] for item in seen] == [7, 30, None, 7]
+
+
+def test_review_route_returns_timestamp_used_by_page():
+    seed_session = history_db()
+    engine = seed_session.get_bind()
+    seed_session.close()
+
+    def test_db():
+        with Session(engine) as db:
+            yield db
+
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[get_current_user] = lambda: {"id": 1}
+    app.dependency_overrides[get_db] = test_db
+
+    with TestClient(app) as client:
+        response = client.get("/history/reviews")
+    assert response.status_code == 200
+    assert response.json()["data"]["items"][0]["reviewed_at"]

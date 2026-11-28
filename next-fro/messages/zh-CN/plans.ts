@@ -32,6 +32,7 @@ export const plans = {
   nameCount: (count: MessageValue): string => `${count} / 100`,
   descriptionCount: (count: MessageValue): string => `${count} / 2000`,
   listDescription: "查看全部学习计划",
+  searchResultCount: (count: MessageValue): string => `找到 ${count} 个匹配计划`,
   overviewActive: "进行中计划",
   overviewToday: "今日待办",
   overviewEnded: "已结束计划",

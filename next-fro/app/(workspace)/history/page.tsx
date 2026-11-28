@@ -158,12 +158,15 @@ function HistoryContent() {
   const [range, setRange] = useState<HistoryRange>(7);
   const [page, setPage] = useState(1);
   const [summary, setSummary] = useState<CheckinSummary | null>(null);
-  const [data, setData] = useState<HistoryData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [result, setResult] = useState<{
+    key: string;
+    data: HistoryData | null;
+    error: string;
+  } | null>(null);
   const [summaryError, setSummaryError] = useState("");
   const [revision, setRevision] = useState(0);
   const today = todayInBeijing();
+  const requestKey = `${tab}|${range}|${planId ?? ""}|${page}|${revision}`;
 
   useEffect(() => {
     let live = true;
@@ -191,11 +194,7 @@ function HistoryContent() {
     let live = true;
     Promise.resolve()
       .then(() => {
-        if (live) {
-          setLoading(true);
-          setData(null);
-          setError("");
-        }
+        if (!live) return null;
         const request: Promise<HistoryData> =
           tab === "focus"
             ? getFocusHistory(page, 20)
@@ -206,24 +205,30 @@ function HistoryContent() {
                 : getCheckins(range, page, planId);
         return request;
       })
-      .then((result) => {
-        if (live) setData(result);
+      .then((data) => {
+        if (live && data) setResult({ key: requestKey, data, error: "" });
       })
       .catch((cause) => {
         if (live)
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : messages.common.loadFailedRetry,
-          );
-      })
-      .finally(() => {
-        if (live) setLoading(false);
+          setResult({
+            key: requestKey,
+            data: null,
+            error:
+              cause instanceof Error
+                ? cause.message
+                : messages.common.loadFailedRetry,
+          });
       });
     return () => {
       live = false;
     };
-  }, [tab, range, planId, page, revision]);
+  }, [tab, range, planId, page, revision, requestKey]);
+
+  // 只渲染与当前标签、筛选和页码相符的请求结果。
+  const currentResult = result?.key === requestKey ? result : null;
+  const data = currentResult?.data ?? null;
+  const error = currentResult?.error ?? "";
+  const loading = currentResult === null;
 
   const checkins =
     tab === "checkins" ? (data as HistoryPage<CheckinRecord> | null) : null;
@@ -255,7 +260,6 @@ function HistoryContent() {
   const chooseTab = (value: Tab) => {
     setTab(value);
     setPage(1);
-    setError("");
   };
 
   return (

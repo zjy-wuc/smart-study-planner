@@ -1500,7 +1500,7 @@ def seed_audit(
             ti=target_id,
             before=json.dumps(before, ensure_ascii=False),
             after=json.dumps(after, ensure_ascii=False),
-            reason=f"{DEMO_TAG} 答辩演示审计：{action}",
+            reason=f"{DEMO_TAG} 演示审计：{action}",
             at=now - timedelta(days=1 + index, hours=index % 12),
         )
         manifest.add("admin_audit_logs", audit_id, owner=special["admin"]["id"])

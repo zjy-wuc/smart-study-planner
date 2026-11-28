@@ -62,6 +62,7 @@ export default function RegisterForm() {
         ...form,
         nickname: form.nickname || null,
       });
+      setForm((current) => ({ ...current, password: "", code: "" }));
       if (!sameAuthEpoch(result.authEpoch)) throw new Error(copy.sessionChanged);
       auth.completeLogin(result.data.user);
       router.replace("/");

@@ -219,6 +219,7 @@
 }
 .workspace-app .dashboard-checkin-error { margin-top: 5px; color: #bd3f47; font-size: 12px; }
 .workspace-app .dashboard-history { margin-top: 24px; }
+.workspace-app .dashboard-history > ul { max-height: 360px; padding-right: 8px; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: #b9cee2 transparent; scrollbar-gutter: stable; scrollbar-width: thin; }
 .workspace-app .dashboard-history-item { padding: 12px 0; border-top: 1px solid #e7f0f6; }
 .workspace-app .dashboard-history-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .workspace-app .dashboard-history-heading small, .workspace-app .dashboard-history-records span { color: #829aab; }
@@ -742,7 +743,6 @@
 }
 
 /* 8. 加载、空内容、成功与失败反馈。 */
-.workspace-app .workspace-summary-note,
 .workspace-app .workspace-muted {
   margin: 12px 0;
   color: var(--workspace-muted);
@@ -801,10 +801,6 @@
 .workspace-app .workspace-task-cards {
   display: grid;
   gap: 18px;
-}
-
-.workspace-app .workspace-task-cards > .workspace-summary-note {
-  margin: 0;
 }
 
 /* 9. 小窗口缩减留白，首页下方始终保留两列。 */

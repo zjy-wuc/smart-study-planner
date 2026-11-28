@@ -74,6 +74,7 @@ export default function UserProfile() {
   const [newEmail, setNewEmail] = useState("");
   const [newCode, setNewCode] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [sessionPasswordEditable, setSessionPasswordEditable] = useState(false);
   const [sessionAction, setSessionAction] = useState<SessionAction | null>(
     null,
   );
@@ -180,6 +181,20 @@ export default function UserProfile() {
     clearSecurityForm();
   }
 
+  function openSessionAction(action: SessionAction) {
+    setConfirmPassword("");
+    setSessionError("");
+    setSessionPasswordEditable(false);
+    setSessionAction(action);
+  }
+
+  function closeSessionAction() {
+    setSessionAction(null);
+    setConfirmPassword("");
+    setSessionError("");
+    setSessionPasswordEditable(false);
+  }
+
   async function submitPassword(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -199,6 +214,8 @@ export default function UserProfile() {
       setSecurityDialog(null);
       clearSecurityForm();
     } catch (error) {
+      setOldPassword("");
+      setNewPassword("");
       setSecurityError(error instanceof Error ? error.message : p.loadFailed);
     } finally {
       setBusy(false);
@@ -248,6 +265,8 @@ export default function UserProfile() {
       setSecurityDialog(null);
       clearSecurityForm();
     } catch (error) {
+      setEmailPassword("");
+      setEmailStep(1);
       setSecurityError(error instanceof Error ? error.message : p.loadFailed);
     } finally {
       setBusy(false);
@@ -257,24 +276,29 @@ export default function UserProfile() {
   async function confirmSessionAction(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!sessionAction || !confirmPassword || busy) return;
+    const action = sessionAction;
+    const password = confirmPassword;
+    setConfirmPassword("");
     setBusy(true);
     setSessionError("");
     try {
-      if (sessionAction.kind === "single") {
-        await revokeSession(sessionAction.familyId, confirmPassword);
+      if (action.kind === "single") {
+        await revokeSession(action.familyId, password);
         await refreshSessions();
         setMessage(p.sessionRevoked);
-      } else if (sessionAction.kind === "others") {
-        await revokeOtherSessions(confirmPassword);
+      } else if (action.kind === "others") {
+        await revokeOtherSessions(password);
         await refreshSessions();
         setMessage(p.otherDevicesRevoked);
       } else {
-        await logoutAllSessions(confirmPassword);
+        await logoutAllSessions(password);
+        closeSessionAction();
+        clearSecurityForm();
         auth.clear();
         router.replace("/login");
+        return;
       }
-      setSessionAction(null);
-      setConfirmPassword("");
+      closeSessionAction();
     } catch (error) {
       setSessionError(error instanceof Error ? error.message : p.loadFailed);
     } finally {
@@ -522,7 +546,7 @@ export default function UserProfile() {
                     type="button"
                     disabled={busy}
                     onClick={() =>
-                      setSessionAction({
+                      openSessionAction({
                         kind: "single",
                         familyId: session.family_id,
                         deviceName: session.device_name,
@@ -566,6 +590,8 @@ export default function UserProfile() {
                     const result = await logoutUser();
                     if (!result.data.session_revoked)
                       throw new Error(p.logoutUnconfirmed);
+                    closeSessionAction();
+                    clearSecurityForm();
                     auth.clear();
                     router.replace("/login");
                   }, p.logoutCurrent)
@@ -576,7 +602,7 @@ export default function UserProfile() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => setSessionAction({ kind: "others" })}
+                onClick={() => openSessionAction({ kind: "others" })}
               >
                 {p.logoutOthers}
               </button>
@@ -584,7 +610,7 @@ export default function UserProfile() {
                 className="profile-button-danger"
                 type="button"
                 disabled={busy}
-                onClick={() => setSessionAction({ kind: "all" })}
+                onClick={() => openSessionAction({ kind: "all" })}
               >
                 {p.logoutAll}
               </button>
@@ -873,9 +899,7 @@ export default function UserProfile() {
         open={sessionAction !== null}
         onOpenChange={(open) => {
           if (!open && !busy) {
-            setSessionAction(null);
-            setConfirmPassword("");
-            setSessionError("");
+            closeSessionAction();
           }
         }}
       >
@@ -890,14 +914,16 @@ export default function UserProfile() {
                   ? p.logoutOthersDescription
                   : p.logoutAllDescription}
             </AlertDialog.Description>
-            <form onSubmit={(event) => void confirmSessionAction(event)}>
+            <form autoComplete="off" onSubmit={(event) => void confirmSessionAction(event)}>
               <label htmlFor="profile-session-confirm-password">
                 {p.confirmPassword}
               </label>
               <input
                 id="profile-session-confirm-password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="off"
+                readOnly={!sessionPasswordEditable}
+                onFocus={() => setSessionPasswordEditable(true)}
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 minLength={8}

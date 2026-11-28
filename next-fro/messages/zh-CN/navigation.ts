@@ -19,7 +19,6 @@ export const navigation = {
   accountLabel: "账户",
   mottoFirstLine: "每一天的努力，",
   mottoSecondLine: "都在带你靠近目标。",
-  searchContextError: "必须在 WorkspaceShell 内使用搜索状态",
   searchLabel: "搜索学习计划",
   searchPlaceholder: "搜索计划名称...",
 };

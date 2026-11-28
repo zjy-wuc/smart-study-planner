@@ -85,7 +85,7 @@
   color: #60768b;
   background: transparent;
 }
-.knowledge-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.knowledge-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; gap: 20px; max-height: min(700px, 70vh); padding-right: 8px; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: #b9cee2 transparent; scrollbar-gutter: stable; scrollbar-width: thin; }
 .knowledge-card, .knowledge-review {
   padding: 24px;
   background: white;

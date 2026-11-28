@@ -4,11 +4,9 @@ import { messages } from "@/messages";
 
 import Link from "next/link";
 import Image from "next/image";
-import { useMemo } from "react";
 
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { isOpenTodayTask } from "@/lib/tasks/today-presentation";
-import { useWorkspaceSearch } from "@/components/layout/WorkspaceShell";
 
 import { PlanCard } from "@/components/dashboard/PlanCard";
 import { TodayTaskList } from "@/components/dashboard/TodayTaskList";
@@ -27,22 +25,8 @@ export default function Dashboard() {
     reload,
   } = useDashboardData();
 
-  const { search } = useWorkspaceSearch();
-
-  const filteredPlans = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-
-    if (!keyword) {
-      return plans;
-    }
-
-    return plans.filter((plan) =>
-      plan.name.toLowerCase().includes(keyword),
-    );
-  }, [plans, search]);
-
   // 首页只展示最多 3 个，完整列表在 /plans
-  const featuredPlans = filteredPlans.slice(0, 3);
+  const featuredPlans = plans.slice(0, 3);
   const pendingTasks = tasks.filter(isOpenTodayTask).length;
   const previewTasks = [...tasks].sort((left, right) =>
     Number(isOpenTodayTask(right)) - Number(isOpenTodayTask(left)),
@@ -119,24 +103,16 @@ export default function Dashboard() {
           ) : plansError ? (
             <p role="alert" className="workspace-feedback workspace-feedback--error">{messages.dashboard.plansError(plansError)}
             </p>
-          ) : filteredPlans.length === 0 ? (
+          ) : plans.length === 0 ? (
             <p className="workspace-empty-state">
-              {search.trim()
-                ? messages.dashboard.noMatches
-                : messages.dashboard.noPlans}
+              {messages.dashboard.noPlans}
             </p>
           ) : (
-            <>
-              <div className="workspace-plan-grid">
-                {featuredPlans.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} />
-                ))}
-              </div>
-
-              {filteredPlans.length > 3 && (
-                <p className="workspace-summary-note">{messages.dashboard.searchSummary(filteredPlans.length)}</p>
-              )}
-            </>
+            <div className="workspace-plan-grid">
+              {featuredPlans.map((plan) => (
+                <PlanCard key={plan.id} plan={plan} />
+              ))}
+            </div>
           )}
         </section>
 

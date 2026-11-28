@@ -7,9 +7,7 @@ import { ReminderNotice } from
 
 
 import {
-  createContext,
   Fragment,
-  useContext,
   useEffect,
   useState,
   type ReactNode,
@@ -33,28 +31,6 @@ import "@/components/css/WorkspaceRefresh.css";
 import {
   ReminderSettingsProvider,
 } from "@/components/reminders/ReminderSettingsProvider";
-
-
-type WorkspaceSearchContextValue = {
-  search: string;
-  setSearch: (value: string) => void;
-};
-
-const WorkspaceSearchContext =
-  createContext<WorkspaceSearchContextValue | null>(null);
-
-
-export function useWorkspaceSearch() {
-  const context = useContext(WorkspaceSearchContext);
-
-  if (!context) {
-    throw new Error(
-      messages.navigation.searchContextError,
-    );
-  }
-
-  return context;
-}
 
 
 const navigation: {
@@ -87,7 +63,6 @@ export function WorkspaceShell({
   const pathname = usePathname();
 
   const auth = useAuth();
-  const [search, setSearch] = useState("");
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [adminAccessRevoked, setAdminAccessRevoked] = useState(false);
   const section = pathname.split("/").filter(Boolean)[0] ?? "home";
@@ -120,9 +95,6 @@ export function WorkspaceShell({
 
   return (
   <ReminderSettingsProvider>
-    <WorkspaceSearchContext.Provider
-      value={{ search, setSearch }}
-    >
       <ScrollPositionManager />
     
 
@@ -147,24 +119,6 @@ export function WorkspaceShell({
             <strong>{currentPage?.label}</strong>
           </div>
 
-          <div>
-            {pathname === "/" && (
-              <div className="workspace-search-field">
-                <WorkspaceIcon name="search" />
-
-                <input
-                  type="search"
-                  aria-label={messages.navigation.searchLabel}
-                  placeholder={messages.navigation.searchPlaceholder}
-                  value={search}
-                  onChange={(event) =>
-                    setSearch(event.target.value)
-                  }
-                  className="workspace-search"
-                />
-              </div>
-            )}
-          </div>
         </header>
 
 
@@ -235,7 +189,6 @@ export function WorkspaceShell({
           </main>
         </div>
       </div>
-        </WorkspaceSearchContext.Provider>
   </ReminderSettingsProvider>
 );
 }

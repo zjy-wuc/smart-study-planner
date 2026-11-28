@@ -1,6 +1,7 @@
 .auth-mode-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
 .auth-mode-tabs button { flex: 1; min-width: 90px; padding: 9px 6px; border: 1px solid #c9dff0; border-radius: 8px; color: #346180; background: #f5faff; cursor: pointer; }
 .auth-mode-tabs button[aria-pressed="true"] { color: #fff; border-color: #2867ce; background: #2867ce; }
+.auth-mode-tabs button:disabled { opacity: .6; cursor: not-allowed; }
 .auth-inline-field { display: flex; gap: 8px; }
 .auth-inline-field input { min-width: 0; flex: 1; }
 .auth-inline-field button { flex: none; padding: 0 12px; border: 1px solid #b9d4ed; border-radius: 8px; color: #205cae; background: #eef6ff; cursor: pointer; }

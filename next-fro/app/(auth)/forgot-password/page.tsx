@@ -62,6 +62,9 @@ export default function ForgotPasswordPage() {
     try {
       const epoch = authEpoch();
       await resetPassword({ email, code, new_password: password });
+      setPassword("");
+      setConfirm("");
+      setCode("");
       if (sameAuthEpoch(epoch) && auth.user?.email.toLowerCase() === email.trim().toLowerCase()) {
         auth.clear();
         announceAuthChange("logout");

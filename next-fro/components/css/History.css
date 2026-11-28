@@ -107,7 +107,15 @@
 
 .workspace-app .history-secondary-list {
   display: grid;
+  align-content: start;
   gap: 10px;
+  max-height: min(460px, 60vh);
+  padding-right: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #b9cee2 transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
 .workspace-app .history-secondary-list li {

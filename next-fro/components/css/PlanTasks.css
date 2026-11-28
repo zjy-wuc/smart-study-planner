@@ -261,9 +261,16 @@
 
 .plan-task-history ul {
   display: grid;
+  align-content: start;
   gap: 8px;
+  max-height: 260px;
   margin: 0;
   padding-left: 18px;
+  padding-right: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #b9cee2 transparent;
+  scrollbar-width: thin;
 }
 
 .plan-task-edit {

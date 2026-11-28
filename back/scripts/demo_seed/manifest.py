@@ -1,7 +1,8 @@
 """Seed Manifest：记录演示数据批次、主键与归属。
 
 清单只包含数据库主键、归属关系与数量，不包含密码、Token 或连接信息。
-默认写入仓库之外的受保护目录，可通过 SSP_SEED_MANIFEST_DIR 覆盖。
+默认写入项目内 ops 归档目录（已加入 .gitignore），可通过
+SSP_SEED_MANIFEST_DIR 覆盖。
 """
 
 import json
@@ -14,7 +15,7 @@ def default_manifest_dir() -> Path:
     configured = os.environ.get("SSP_SEED_MANIFEST_DIR")
     if configured:
         return Path(configured)
-    return Path(r"D:\ssp_seed_manifests")
+    return Path(r"D:\project\ops\a7.2\manifests")
 
 
 class SeedManifest:

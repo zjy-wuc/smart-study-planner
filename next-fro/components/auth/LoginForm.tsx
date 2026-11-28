@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { sameAuthEpoch } from "@/lib/auth/coordinator";
+import { ApiError } from "@/lib/api/client";
 import {
   loginUser,
   loginWithEmail,
@@ -28,12 +29,22 @@ export default function LoginForm() {
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
+  function switchMode(next: Mode) {
+    if (busy || next === mode) return;
+    setMode(next);
+    setIdentifier("");
+    setPassword("");
+    setCode("");
+    setMessage("");
+  }
+
   async function sendCode() {
     if (busy || cooldown || !identifier) return;
     setBusy(true);
     setMessage("");
     try {
       await sendEmailCode(identifier, "LOGIN");
+      setCode("");
       setMessage(copy.loginCodeRequested);
       setCooldown(60);
       const timer = window.setInterval(
@@ -64,10 +75,16 @@ export default function LoginForm() {
         mode === "email-code"
           ? await loginWithEmail({ email: identifier, code })
           : await loginUser({ username: identifier, password });
+      setPassword("");
+      setCode("");
       if (!sameAuthEpoch(result.authEpoch)) throw new Error(copy.sessionChanged);
       auth.completeLogin(result.data.user);
       router.replace("/");
     } catch (error) {
+      if (error instanceof ApiError && ["INVALID_CREDENTIALS", "EMAIL_CODE_INVALID", "ACCOUNT_DISABLED"].includes(error.code ?? "")) {
+        if (mode === "email-code") setCode("");
+        else setPassword("");
+      }
       setMessage(error instanceof Error ? error.message : copy.loginFailed);
     } finally {
       setBusy(false);
@@ -89,11 +106,8 @@ export default function LoginForm() {
               key={value}
               type="button"
               aria-pressed={mode === value}
-              onClick={() => {
-                setMode(value);
-                setIdentifier("");
-                setMessage("");
-              }}
+              disabled={busy}
+              onClick={() => switchMode(value)}
             >
               {value === "username"
                 ? copy.usernameLogin
@@ -114,7 +128,10 @@ export default function LoginForm() {
           type={mode === "username" ? "text" : "email"}
           placeholder={mode === "username" ? copy.usernamePlaceholder : copy.emailPlaceholder}
           value={identifier}
-          onChange={(event) => setIdentifier(event.target.value)}
+          onChange={(event) => {
+            setIdentifier(event.target.value);
+            if (mode === "email-code") setCode("");
+          }}
           required
         />
       </div>
@@ -124,6 +141,7 @@ export default function LoginForm() {
           <div className="auth-inline-field">
             <input
               id="login-code"
+              autoComplete="one-time-code"
               inputMode="numeric"
               pattern="[0-9]{6}"
               maxLength={6}

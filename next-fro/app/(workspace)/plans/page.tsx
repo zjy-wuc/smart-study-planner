@@ -15,6 +15,7 @@ import "@/components/css/PlansPage.css";
 
 
 export default function PlansPage() {
+  const [search, setSearch] = useState("");
   const [status, setStatus] = useState<PlanStatus | "ALL">("ALL");
   const [sort, setSort] = useState<"UPDATED" | "START" | "END">("UPDATED");
   const {
@@ -25,12 +26,18 @@ export default function PlansPage() {
     reload,
   } = useDashboardData();
 
-  const visiblePlans = useMemo(() => plans
-    .filter((plan) => status === "ALL" || plan.status === status)
-    .sort((left, right) => {
-      const key = sort === "START" ? "start_date" : sort === "END" ? "end_date" : "updated_at";
-      return right[key].localeCompare(left[key]);
-    }), [plans, sort, status]);
+  const visiblePlans = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return plans
+      .filter((plan) =>
+        (status === "ALL" || plan.status === status) &&
+        plan.name.toLowerCase().includes(keyword),
+      )
+      .sort((left, right) => {
+        const key = sort === "START" ? "start_date" : sort === "END" ? "end_date" : "updated_at";
+        return right[key].localeCompare(left[key]);
+      });
+  }, [plans, search, sort, status]);
 
   const counts = useMemo(() => ({
     active: plans.filter((plan) => plan.status === "ACTIVE").length,
@@ -46,6 +53,17 @@ export default function PlansPage() {
         </div>
 
         <div className="workspace-heading-actions">
+          <label className="workspace-search-field plans-search">
+            <WorkspaceIcon name="search" />
+            <input
+              type="search"
+              className="workspace-search"
+              aria-label={messages.navigation.searchLabel}
+              placeholder={messages.navigation.searchPlaceholder}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
           <button type="button" onClick={reload} className="workspace-button workspace-button--secondary">
             <WorkspaceIcon name="refresh" />{messages.common.refresh}</button>
           <Link href="/plans/new" className="workspace-button workspace-button--primary">
@@ -66,6 +84,7 @@ export default function PlansPage() {
             </div>
             <label className="plans-sort"><span>{messages.plans.sortLabel}</span><select value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}><option value="UPDATED">{messages.plans.sortUpdated}</option><option value="START">{messages.plans.sortStart}</option><option value="END">{messages.plans.sortEnd}</option></select></label>
           </div>
+          {search.trim() && <p className="plans-search-count" role="status">{messages.plans.searchResultCount(visiblePlans.length)}</p>}
         </>
       )}
 

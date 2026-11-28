@@ -47,7 +47,7 @@ local count = redis.call('ZCARD', key)
 if count >= limit then
 
     local index = count - limit
-
+--拿到最早的请求
     local oldest = redis.call(
         'ZRANGE',
         key,
@@ -94,7 +94,6 @@ def check_ai_rate_limit(
     user_id: int,
 ) -> None:
     """
-    基于 Redis ZSET 和 Lua 的精确滑动窗口限流。
 
     多 Worker 共享用户级限流状态。
     Redis 不可用时拒绝新 AI 请求。
