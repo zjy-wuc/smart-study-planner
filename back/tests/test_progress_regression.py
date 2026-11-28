@@ -11,6 +11,10 @@ from app.api.routes import progress as progress_route
 from app.core.clock import business_today
 from app.database import engine
 from app.services.progress import progress_service
+from tests.db_guard import ensure_isolated_database
+
+
+ensure_isolated_database(engine)
 
 
 class ProgressRegression(unittest.TestCase):

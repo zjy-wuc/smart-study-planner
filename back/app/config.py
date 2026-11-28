@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
-    #  数据库 
+    #  数据库
 
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 3306
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=15, gt=0)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, gt=0)
 
-    # 登录会话 
+    # 登录会话
 
     SESSION_IDLE_EXPIRE_DAYS: int = Field(
     default=7,
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
     ]
 
-    #  邮箱验证码 
+    #  邮箱验证码
 
     EMAIL_CODE_SECRET: str
     EMAIL_CODE_EXPIRE_MINUTES: int = Field(
@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     )
 
 
-    # 邮件服务 
+    # 邮件服务
 
     MAIL_ENABLED: bool = False
 
@@ -97,7 +97,7 @@ class Settings(BaseSettings):
         gt=0,
     )
 
-    #  IP 认证限流 
+    #  IP 认证限流
 
     AUTH_IP_WINDOW_MINUTES: int = Field(#设置 IP 认证限流的统计窗口为 15 分钟
         default=15,
@@ -121,7 +121,7 @@ class Settings(BaseSettings):
 
 
 
-        #  认证安全 
+        #  认证安全
     PASSWORD_MAX_FAILED_ATTEMPTS: int = Field(
         default=5,
         gt=0,
@@ -137,12 +137,12 @@ class Settings(BaseSettings):
         gt=0,
     )
 
-    # 头像 
+    # 头像
 
     AVATAR_MAX_BYTES: int = 2 * 1024 * 1024
     AVATAR_MAX_SIZE: int = 512
 
-    #  AI 原有配置 
+    #  AI 原有配置
 
     AI_ENABLED: bool = False
     DEEPSEEK_API_KEY: str | None = None
@@ -162,7 +162,7 @@ class Settings(BaseSettings):
     AI_MAX_STREAM_SECONDS: int = 120
     AI_LEASE_SECONDS: int = 180
 
-    # 密钥校验 
+    # 密钥校验
 
     @field_validator("SECRET_KEY", "EMAIL_CODE_SECRET")
     @classmethod
@@ -178,7 +178,7 @@ class Settings(BaseSettings):
             raise ValueError("JWT和邮箱验证码不能使用相同密钥")
 
         return self
-    
+
 
     @model_validator(mode="after")
     def validate_ai_limits(self):

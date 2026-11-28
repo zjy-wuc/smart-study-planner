@@ -20,6 +20,10 @@ from app.services.steps import active_step_service
 from app.services.tasks import active_task_service, task_service
 from app.services.plans import plan_lifecycle_service
 from app.services.rollovers import rollover_service
+from tests.db_guard import ensure_isolated_database
+
+
+ensure_isolated_database(engine)
 
 
 class PlanLifecycleRegression(unittest.TestCase):

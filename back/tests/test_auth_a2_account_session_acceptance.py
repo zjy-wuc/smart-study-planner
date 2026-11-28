@@ -1,7 +1,7 @@
 """Auth V2.0 A2.1 / A2.2 集中验收测试（只读业务源码）。
 
 覆盖：忘记密码、主动改密、邮箱换绑、会话列表、指定会话撤销、退出其他/全部设备。
-仅使用隔离库 ssp_a0_migrate2；邮件全部 Mock；测试数据在 tearDownClass 精确清理。
+仅使用隔离库 ssp_v3_admin_test；邮件全部 Mock；测试数据在 tearDownClass 精确清理。
 """
 
 import inspect
@@ -33,7 +33,11 @@ from app.services.auth import (
     auth_service,
     verification_service,
 )
+from tests.db_guard import ensure_isolated_database
 from tests.test_auth_a1_3_acceptance import CSRF, PASSWORD, BaseAuthTest
+
+
+ensure_isolated_database(engine)
 
 
 NEW_PASSWORD = "NewPass456"

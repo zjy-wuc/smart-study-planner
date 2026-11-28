@@ -1,4 +1,4 @@
-﻿﻿"""A4 AI 知识问答：Schema、历史裁剪、Prompt、流式与 Guard 结算测试。
+"""A4 AI 知识问答：Schema、历史裁剪、Prompt、流式与 Guard 结算测试。
 
 全部使用 Mock，不访问数据库、不调用 DeepSeek。
 """

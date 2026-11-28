@@ -14,6 +14,10 @@ from app.services.rollovers import rollover_service
 from app.services.tasks import task_service
 from app.repositories.rollovers import rollover_repository
 from app.repositories.tasks import task_repository
+from tests.db_guard import ensure_isolated_database
+
+
+ensure_isolated_database(engine)
 
 
 class RolloverRegression(unittest.TestCase):
